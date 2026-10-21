@@ -5,6 +5,7 @@ import { useCashierStore } from '../../stores/cashierStore.ts';
 import { formatRupiah, formatDate, formatTime } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
+import { playPaymentSound } from '../../lib/sound/sound.ts';
 
 export interface ReceiptScreenProps {
   onNewOrder: () => void;
@@ -17,22 +18,9 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // Putar audio assets/audio/payment_check.mp3 saat struk dimuat
+  // Putar audio assets/audio/payment_check.mp3 saat struk dimuat (didukung debounce)
   React.useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
-        const audio = new Audio('/assets/audio/payment_check.mp3');
-        // JSDom tidak memiliki implementasi play
-        if (typeof audio.play === 'function') {
-          const p = audio.play();
-          if (p && typeof p.catch === 'function') {
-            p.catch(() => {});
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
+    playPaymentSound();
   }, []);
 
   // Fallback data jika dibuka tanpa transaksi baru

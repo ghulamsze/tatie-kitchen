@@ -57,19 +57,19 @@ export function useSwipeNav({
       trackRef.current.style.transform = `translate3d(calc(-${t} * 100%), 0, 0)`;
     }
 
-    // Perbarui bobot dan opacity tombol tab navbar secara proporsional
+    // Perbarui opacity tombol tab navbar secara proporsional tanpa mengubah lebar teks
     if (navbarRef.current) {
       const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
       buttons.forEach((btn, idx) => {
         const diff = Math.abs(t - idx);
         const weight = Math.max(0, 1 - diff);
         btn.style.opacity = String(0.65 + weight * 0.35);
-        btn.style.fontWeight = weight > 0.5 ? '800' : '700';
+        btn.style.fontWeight = '700'; // Selalu 700 agar tidak memicu resize navbar
       });
     }
   }, []);
 
-  // Animasi halus 220ms ease-out (tanpa overshoot) menuju tab target
+  // Animasi halus 220ms ease-out (tanpa overshoot) menuju tab target (0 = Home, 1 = Riwayat, 2 = Akun)
   const animateTo = useCallback((targetIndex: number) => {
     const clampedTarget = Math.max(0, Math.min(tabs.length - 1, targetIndex));
     tRef.current = clampedTarget;
@@ -120,18 +120,36 @@ export function useSwipeNav({
     }
   }, [activeTab, tabs, animateTo]);
 
-  // Perhitungan koordinat kontinu pada navbar jika di-hold & drag
-  const calculateNavbarT = useCallback((clientX: number): number => {
+  // Temukan tab diskrit (0, 1, atau 2) dari koordinat horizontal clientX di navbar
+  const getTabIndexFromClientX = useCallback((clientX: number): number => {
     if (!navbarRef.current) return tRef.current;
-    const rect = navbarRef.current.getBoundingClientRect();
-    const padding = 4;
-    const totalWidth = rect.width - padding * 2;
-    const itemWidth = totalWidth / tabs.length;
-    const relativeX = clientX - rect.left - padding;
-    const rawT = (relativeX - itemWidth / 2) / itemWidth;
-    return Math.max(0, Math.min(tabs.length - 1, rawT));
+    const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
+    if (!buttons || buttons.length === 0) return tRef.current;
+
+    for (let i = 0; i < buttons.length; i++) {
+      const rect = buttons[i].getBoundingClientRect();
+      if (clientX >= rect.left && clientX <= rect.right) {
+        return i;
+      }
+    }
+
+    // Jika di luar batas, cari tombol terdekat
+    let closestIdx = 0;
+    let minDistance = Infinity;
+    buttons.forEach((btn, idx) => {
+      const rect = btn.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const dist = Math.abs(clientX - center);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = idx;
+      }
+    });
+
+    return Math.max(0, Math.min(tabs.length - 1, closestIdx));
   }, [tabs.length]);
 
+  // Interaksi pada navbar: memilih dan menahan tab secara solid tanpa bergeser liar
   const handleNavbarPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     cancelOngoingAnimation();
 
@@ -143,19 +161,18 @@ export function useSwipeNav({
 
     isDraggingRef.current = true;
     dragSourceRef.current = 'navbar';
-    lastXRef.current = e.clientX;
-    lastTimeRef.current = performance.now();
-    velocityRef.current = 0;
 
-    const newT = calculateNavbarT(e.clientX);
-    applyT(newT, true);
-  }, [cancelOngoingAnimation, calculateNavbarT, applyT]);
+    const targetIdx = getTabIndexFromClientX(e.clientX);
+    animateTo(targetIdx);
+  }, [cancelOngoingAnimation, getTabIndexFromClientX, animateTo]);
 
   const handleNavbarPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
-    const newT = calculateNavbarT(e.clientX);
-    applyT(newT, true);
-  }, [calculateNavbarT, applyT]);
+    const targetIdx = getTabIndexFromClientX(e.clientX);
+    if (Math.round(tRef.current) !== targetIdx) {
+      animateTo(targetIdx);
+    }
+  }, [getTabIndexFromClientX, animateTo]);
 
   const handleNavbarPointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
@@ -168,10 +185,9 @@ export function useSwipeNav({
       // ignore
     }
 
-    const currentT = tRef.current;
-    const targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(currentT)));
-    animateTo(targetIndex);
-  }, [animateTo, tabs.length]);
+    const targetIdx = getTabIndexFromClientX(e.clientX);
+    animateTo(targetIdx);
+  }, [getTabIndexFromClientX, animateTo]);
 
   // Pointer events untuk swipe halaman layar (Pager)
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -249,20 +265,21 @@ export function useSwipeNav({
       lastXRef.current = e.clientX;
       lastTimeRef.current = now;
 
-      // Pergeseran 1:1 mengikuti pointer dengan resistensi halus di tepi
+      // Pergeseran 1:1 mengikuti pointer dengan resistensi halus di tepi (hanya 3 tab: 0, 1, 2)
       const currIdx = activeIndexRef.current;
       let effectiveDx = dx;
       if (currIdx === 0 && dx > 0) {
-        // Tarik ke kanan saat berada di Home
+        // Tarik ke kanan saat berada di Home (ujung kiri)
         effectiveDx = dx * 0.3;
       } else if (currIdx === tabs.length - 1 && dx < 0) {
-        // Tarik ke kiri saat berada di Akun
+        // Tarik ke kiri saat berada di Akun (ujung kanan)
         effectiveDx = dx * 0.3;
       }
 
       const containerWidth = containerRef.current?.clientWidth || 1024;
       const deltaT = -effectiveDx / containerWidth;
       const newT = currIdx + deltaT;
+      // Dibatasi ketat dengan rentang resistensi halus, tidak pernah melompat keluar batas
       const clampedT = Math.max(-0.15, Math.min(tabs.length - 1 + 0.15, newT));
 
       applyT(clampedT, true);

@@ -13,6 +13,7 @@ export interface PaymentScreenProps {
 }
 
 import { getQuickCashOptions } from './quickCash.ts';
+import { playPaymentSound } from '../../lib/sound/sound.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
@@ -21,8 +22,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const { activeCashier } = useCashierStore();
 
   const total = calculateTotal();
-  // Default meja selalu x dengan warna abu-abu
-  const [tableInput, setTableInput] = useState<string>(tableNo && tableNo !== 'x' ? tableNo : 'x');
+  // Default meja selalu '...' dengan warna abu-abu
+  const [tableInput, setTableInput] = useState<string>(tableNo && tableNo !== '...' && tableNo !== 'x' ? tableNo : '...');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('tunai');
   const [isManualCash, setIsManualCash] = useState<boolean>(false);
   const [manualCashInput, setManualCashInput] = useState<string>(cashReceived ? String(cashReceived) : '');
@@ -32,7 +33,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Meja wajib diinput sebelum pembayaran dapat diproses
-  const isTableSet = tableInput !== 'x' && tableInput.trim().length > 0;
+  const isTableSet = tableInput !== '...' && tableInput !== 'x' && tableInput.trim().length > 0;
 
   // Status input manual aktif jika sedang difokuskan atau sudah diisi
   const isManualActive = isManualCash || Boolean(manualCashInput && manualCashInput.trim().length > 0);
@@ -48,17 +49,29 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   // Opsi cepat uang diterima dihitung secara dinamis
   const quickCashOptions = getQuickCashOptions(total);
 
-  // Auto-confirm nomor meja saat digit diketik, maksimal meja 15
+  // Auto-confirm nomor meja saat digit diketik, maksimal 2 digit dan maksimal meja 15
   const handleKeypadPress = (val: string | number) => {
     if (val === 'Hapus') {
-      const next = tableInput.length > 1 && tableInput !== 'x' ? tableInput.slice(0, -1) : 'x';
-      setTableInput(next);
-      setTableNo(next);
+      if (tableInput.length > 1 && tableInput !== '...' && tableInput !== 'x') {
+        const next = tableInput.slice(0, -1);
+        setTableInput(next);
+        setTableNo(next);
+      } else {
+        setTableInput('...');
+        setTableNo('...');
+      }
     } else {
       const digit = String(val);
-      const candidateStr = tableInput === 'x' ? digit : `${tableInput}${digit}`;
+      const isPlaceholder = tableInput === '...' || tableInput === 'x';
+      const candidateStr = isPlaceholder ? digit : `${tableInput}${digit}`;
+
+      // Nomor meja maksimal 2 digit
+      if (candidateStr.length > 2) {
+        return;
+      }
+
       const candidateNum = parseInt(candidateStr, 10);
-      // Maksimal nomor meja adalah 15: blokir input yang menghasilkan 16+ atau angka 0 tunggal
+      // Maksimal nomor meja adalah 15: blokir angka 0 tunggal atau nilai 16+
       if (!isNaN(candidateNum) && candidateNum >= 1 && candidateNum <= 15) {
         setTableInput(candidateStr);
         setTableNo(candidateStr);
@@ -145,6 +158,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             setLastOrder(recordedOrder, recordedItems);
             useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
             clearCart();
+            playPaymentSound();
             onSuccess();
             return;
           }
@@ -179,6 +193,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       setLastOrder(recordedOrder, recordedItems);
       useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
       clearCart();
+      playPaymentSound();
       onSuccess();
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Terjadi kesalahan transaksi.');
@@ -210,11 +225,11 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           </h3>
         </div>
 
-        {/* Default meja selalu 'x' dengan warna abu-abu */}
+        {/* Default meja selalu '...' dengan warna abu-abu */}
         <div
           className="tk-table-display"
           style={{
-            color: tableInput === 'x' ? 'var(--ink-3)' : 'var(--ink)',
+            color: (tableInput === '...' || tableInput === 'x') ? 'var(--ink-3)' : 'var(--ink)',
             fontSize: '56px',
             lineHeight: '64px',
             fontWeight: 800,
@@ -234,18 +249,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               {key}
             </button>
           ))}
-          <div style={{ height: '52px' }} aria-hidden="true" />
-          <button
-            type="button"
-            onClick={() => handleKeypadPress(0)}
-          >
-            0
-          </button>
+          {/* Baris Bawah: Tombol Hapus (Ikon Saja di Kiri), Angka 0 (Tengah), Placeholder Kosong (Kanan) */}
           <button
             type="button"
             onClick={() => handleKeypadPress('Hapus')}
             aria-label="Hapus"
             title="Hapus"
+            style={{ display: 'grid', placeItems: 'center' }}
           >
             <svg
               width="24"
@@ -263,6 +273,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               <line x1="12" y1="9" x2="18" y2="15" />
             </svg>
           </button>
+          <button
+            type="button"
+            onClick={() => handleKeypadPress(0)}
+          >
+            0
+          </button>
+          <div style={{ height: '52px' }} aria-hidden="true" />
         </div>
       </div>
 

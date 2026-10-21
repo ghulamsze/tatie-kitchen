@@ -242,7 +242,7 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
 
     it('harus membatasi nomor meja maksimal 15 dan auto-confirm input', () => {
       act(() => {
-        useCartStore.getState().setTableNo('x');
+        useCartStore.getState().setTableNo('...');
       });
 
       render(<PaymentScreen onSuccess={vi.fn()} onCancel={vi.fn()} />);
@@ -268,9 +268,9 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
       fireEvent.click(backspaceBtn);
       expect(useCartStore.getState().tableNo).toBe('1');
 
-      // Tekan backspace lagi -> kembali ke 'x'
+      // Tekan backspace lagi -> kembali ke '...'
       fireEvent.click(backspaceBtn);
-      expect(useCartStore.getState().tableNo).toBe('x');
+      expect(useCartStore.getState().tableNo).toBe('...');
     });
 
     it('harus menghasilkan 4 opsi uang cepat sesuai algoritma tanpa duplikat', () => {

@@ -169,7 +169,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
 
     const handleResize = () => {
       measureTabs();
-      applyIndicatorGeometry(effectiveProgress, false);
+      applyIndicatorGeometry(activeIndex, false);
     };
 
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
@@ -184,7 +184,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       if (ro) ro.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [effectiveProgress, measureTabs, applyIndicatorGeometry]);
+  }, [activeIndex, measureTabs, applyIndicatorGeometry]);
 
   // Update geometri pill saat progress/activeItem berubah
   useLayoutEffect(() => {
@@ -269,7 +269,11 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
             className={`tk-navbar-item ${isCurrentActive ? 'active' : ''}`}
             style={{
               opacity: 0.65 + weight * 0.35,
-              fontWeight: weight > 0.5 ? 800 : 700,
+              fontWeight: 700,
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              if (!isBlocked) onSelect(item);
             }}
             onClick={(e) => {
               e.stopPropagation();
