@@ -53,7 +53,9 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
 
   const handleAdd = async (name: string) => {
     const newCashier = await addNewCashier(name);
-    handleSelect(newCashier);
+    didTriggerHoldRef.current = false;
+    setActiveCashier(newCashier);
+    onSelectCashier(newCashier);
   };
 
   return (

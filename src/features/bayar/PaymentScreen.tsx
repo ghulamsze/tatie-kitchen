@@ -82,9 +82,15 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           };
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data, error } = await (supabase.rpc as any)('create_order', {
+          const rpcPromise = (supabase.rpc as any)('create_order', {
             p_order: payload,
           });
+          const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 1200)
+          );
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (Promise.race([rpcPromise, timeoutPromise]) as Promise<any>);
 
           if (!error && data) {
             recordedOrder = data as Order;

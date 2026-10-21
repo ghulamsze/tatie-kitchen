@@ -24,6 +24,15 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     return found ? !found.available : false;
   };
 
+  const filteredItems = items.filter((item) => {
+    if (selectedCategory === 'semua') return true;
+    if (selectedCategory === 'makanan') return item.group_id.includes('makanan');
+    if (selectedCategory === 'mie') return item.group_id.includes('mie');
+    if (selectedCategory === 'snack') return item.group_id.includes('snack');
+    if (selectedCategory === 'minuman') return item.group_id.includes('minuman');
+    return true;
+  });
+
   return (
     <div className="scr tk-customer-menu-overlay" role="dialog" aria-modal="true" aria-label="Menu Lengkap Pembeli">
       {/* Top Bar */}
@@ -106,13 +115,23 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
           </div>
         )}
 
-        {/* Grup Menu Berdasarkan Kategori */}
-        {items
-          .filter((i) => i.available)
-          .slice(0, 9)
-          .map((item) => (
-            <div key={item.id} className="g-acrylic" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+        {/* Daftar Menu Lengkap Berdasarkan Kategori */}
+        {filteredItems.map((item) => {
+          const habis = !item.available;
+          return (
+            <div
+              key={item.id}
+              className="g-acrylic"
+              style={{
+                padding: '16px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                opacity: habis ? 0.55 : 1,
+                minHeight: '92px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span className="tk-menu-icon-box">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" />
@@ -120,11 +139,20 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
                 </span>
                 <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>{item.name}</b>
               </div>
-              <span style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800, color: 'var(--accent-ink)' }}>
+              <span
+                style={{
+                  fontSize: 'var(--t-lg)',
+                  lineHeight: 'var(--l-lg)',
+                  fontWeight: 800,
+                  color: habis ? 'var(--ink-3)' : 'var(--accent-ink)',
+                  marginTop: '8px',
+                }}
+              >
                 {formatRupiah(item.price_idr)}
               </span>
             </div>
-          ))}
+          );
+        })}
       </div>
     </div>
   );

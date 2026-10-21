@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { MenuCard } from './MenuCard.tsx';
@@ -18,6 +18,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onProceedToPayment,
   onChangeCashier: _onChangeCashier,
 }) => {
+  const [isClearing, setIsClearing] = useState(false);
+
   const {
     items,
     selectedCategory,
@@ -39,6 +41,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     notes,
     setNotes,
   } = useCartStore();
+
+  const handleClearCart = () => {
+    setIsClearing(true);
+    setTimeout(() => {
+      clearCart();
+      setIsClearing(false);
+    }, 280);
+  };
 
   const categories = [
     { key: 'Semua', label: 'Semua' },
@@ -110,9 +120,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {/* Input Pencarian Menu Persis Sesuai Gambar Referensi */}
-          <div style={{ flex: 'none', width: '100%' }}>
+          <div style={{ flex: 'none', width: '100%', position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
-              type="search"
+              type="text"
               className="tk-input"
               placeholder="Cari menu"
               value={searchQuery}
@@ -120,13 +130,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               style={{
                 width: '100%',
                 height: '42px',
-                padding: '0 16px',
+                padding: searchQuery ? '0 42px 0 16px' : '0 16px',
                 fontSize: 'var(--t-sm)',
                 borderRadius: 'var(--r-md)',
                 boxSizing: 'border-box',
               }}
               aria-label="Cari menu"
             />
+            {searchQuery.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Hapus teks pencarian"
+                title="Hapus pencarian"
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.16)',
+                  color: 'var(--ink)',
+                  border: 'none',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
           {/* Chip Kategori */}
           <div style={{ display: 'flex', gap: '8px', flex: 'none', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -201,7 +238,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {lines.length > 0 && (
               <button
                 type="button"
-                onClick={clearCart}
+                onClick={handleClearCart}
+                disabled={isClearing}
                 style={{
                   minHeight: '36px',
                   background: 'none',
@@ -209,10 +247,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   color: 'var(--danger)',
                   fontSize: 'var(--t-xs)',
                   fontWeight: 700,
-                  cursor: 'pointer',
+                  cursor: isClearing ? 'not-allowed' : 'pointer',
                   padding: '6px 10px',
                   display: 'inline-flex',
                   alignItems: 'center',
+                  opacity: isClearing ? 0.6 : 1,
+                  transition: 'opacity 0.15s ease',
                 }}
               >
                 Kosongkan
@@ -252,7 +292,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ) : (
               lines.map((line) => (
-                <div key={line.item.id} className="tk-cart-row tk-cart-item-in">
+                <div
+                  key={line.item.id}
+                  className={`tk-cart-row ${isClearing ? 'tk-cart-item-out' : 'tk-cart-item-in'}`}
+                >
                   <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
                     <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {line.item.name}

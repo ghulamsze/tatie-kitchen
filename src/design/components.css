@@ -313,6 +313,10 @@
   z-index: 1;
 }
 
+.tk-nav-elastic-indicator.dragging {
+  transition: none !important;
+}
+
 .tk-navbar-item {
   position: relative;
   z-index: 2;
@@ -651,6 +655,65 @@
     transform: translateX(0) scale(1);
     background: transparent;
   }
+}
+
+/* ===== ANIMASI HAPUS/KOSONGKAN KERANJANG ===== */
+@keyframes tk-cart-item-out {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 80px;
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(25px) scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(60px) scale(0.85);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom-color: transparent;
+  }
+}
+
+.tk-cart-item-out {
+  animation: tk-cart-item-out 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ===== ANIMASI HOLD MEMUTARI MENU (PROGRESS RING SWEEP) ===== */
+@keyframes tk-hold-spin {
+  0% {
+    stroke-dashoffset: 280;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tk-hold-svg-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: var(--r-md);
+  overflow: visible;
+}
+
+.tk-hold-svg-border rect {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 3px;
+  stroke-dasharray: 280;
+  stroke-dashoffset: 280;
+  stroke-linecap: round;
+  animation: tk-hold-spin 0.5s linear forwards;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 10px var(--accent));
 }
 
 .tk-cart-row {

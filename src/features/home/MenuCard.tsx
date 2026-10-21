@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { MenuItem } from '../../lib/supabase/types.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 
@@ -16,15 +16,19 @@ export const MenuCard: React.FC<MenuCardProps> = ({
   onHold,
 }) => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isHolding, setIsHolding] = useState(false);
   const hue = item.hue || 28;
 
   const handlePointerDown = () => {
+    setIsHolding(true);
     timerRef.current = setTimeout(() => {
+      setIsHolding(false);
       onHold(item);
     }, 500); // Tahan kartu ~0,5 detik
   };
 
   const handlePointerUp = () => {
+    setIsHolding(false);
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -48,13 +52,27 @@ export const MenuCard: React.FC<MenuCardProps> = ({
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       role="button"
       tabIndex={0}
       aria-label={`${item.name}, ${formatRupiah(item.price_idr)}, ${item.available ? 'Tersedia' : 'Habis'}`}
       style={{
         minHeight: '136px',
+        position: 'relative',
       }}
     >
+      {/* Animasi Garis Memutari Menu saat di-Hold */}
+      {isHolding && (
+        <svg
+          className="tk-hold-svg-border"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <rect x="2" y="2" width="96" height="96" rx="8" ry="8" pathLength="280" />
+        </svg>
+      )}
+
       {/* Lapisan foto asli & gradien warna cadangan */}
       <div
         className="photo-layer"

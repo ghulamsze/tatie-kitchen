@@ -2,31 +2,14 @@ import React, { useState } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
-import { DeleteCashierDialog } from '../profil/DeleteCashierDialog.tsx';
 
 export interface AccountScreenProps {
   onChangeCashier: () => void;
 }
 
 export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier }) => {
-  const { activeCashier, shiftStartTime, removeCashier } = useCashierStore();
+  const { activeCashier, shiftStartTime } = useCashierStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePointerDown = () => {
-    if (!activeCashier) return;
-    holdTimerRef.current = setTimeout(() => {
-      setIsDeleteOpen(true);
-    }, 550);
-  };
-
-  const handlePointerUp = () => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-  };
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
   const getInitials = (name: string): string => {
@@ -61,14 +44,9 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
           textAlign: 'center',
         }}
       >
-        {/* Avatar Kasir Aktif - Hold to remove */}
+        {/* Avatar Kasir Aktif */}
         <div
           className="g-liquid"
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          title="Tahan 0.5 detik untuk menghapus profil kasir ini"
           style={{
             width: '112px',
             height: '112px',
@@ -78,8 +56,6 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
             fontSize: 'var(--t-xl)',
             lineHeight: 'var(--l-xl)',
             fontWeight: 800,
-            cursor: 'pointer',
-            transition: 'transform 0.15s ease',
           }}
         >
           {getInitials(cashierName)}
@@ -93,9 +69,6 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
           <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)' }}>
             Bertugas sejak {shiftStartTime}
           </span>
-          <div style={{ color: 'var(--ink-3)', fontSize: '11px', marginTop: '4px' }}>
-            (Tahan foto profil untuk hapus kasir)
-          </div>
         </div>
 
         {/* Tombol Tampilan */}
@@ -126,17 +99,6 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
       <AppearanceSheet
         isOpen={isAppearanceOpen}
         onClose={() => setIsAppearanceOpen(false)}
-      />
-
-      {/* Dialog Hapus Kasir (Hold Avatar) */}
-      <DeleteCashierDialog
-        isOpen={isDeleteOpen}
-        cashier={activeCashier}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={async (id) => {
-          await removeCashier(id);
-          onChangeCashier();
-        }}
       />
     </div>
   );
