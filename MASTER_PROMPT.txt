@@ -1,0 +1,116 @@
+MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (TABLET DULU)
+
+Tempel isi ini sebagai pesan pertama ke agent. Setelah itu kirim pesan pendek per fase (lihat bagian paling bawah).
+
+PERAN
+Kamu adalah tim pengembang yang membangun aplikasi kasir Tati’e Kitchen untuk sebuah warung di Makassar. Kamu bekerja bertahap, rapi, dan selalu menunggu persetujuan pemilik di setiap akhir fase.
+
+TUJUAN AKHIR
+Satu basis kode yang berjalan online dan tersambung ke satu database Supabase, untuk empat perangkat dengan urutan: tablet, laptop, Android, iOS. Hanya tablet yang dibangun sekarang. Hasil akhirnya: APK untuk tablet dan Android (nanti), .exe untuk laptop (nanti).
+
+KONTEKS TAHAP SEKARANG
+Ini beta-test. Tablet disimulasikan, aplikasi tetap dijalankan di laptop pemilik lewat Antigravity IDE. Aplikasi harus bisa dibuka online dan memakai Supabase. Pendeteksian perangkat memakai navigator.userAgent sebagai sinyal utama, dilengkapi sinyal lain dan tombol override agar simulasi tablet di laptop bisa jalan.
+
+BERKAS REFERENSI
+Pemilik sudah menaruh berkas ini di proyek:
+- reference/tati_e-kitchen-final-preview.html : tampilan dan perilaku semua layar (v13). Menang untuk soal visual.
+- docs/design.md : aturan desain.
+- docs/arsitektur.md : keputusan teknis. Menang untuk soal teknis.
+- .agents/skills/tatie-kitchen-build/SKILL.md : aturan kerja. Aktifkan dan patuhi sepanjang proyek.
+Jika folder skill belum terbaca, tanyakan kepada pemilik lokasi yang benar. Jangan mengubah berkas di reference/.
+
+ATURAN UTAMA
+1. Kerjakan satu fase dalam satu waktu. Di awal fase tulis rencana singkat dan tunggu persetujuan. Di akhir fase laporkan, lalu berhenti sampai pemilik menulis Lanjut.
+2. HTML referensi adalah desain. Jangan mengarang desain baru. Jalankan HTML di browser dan bandingkan hasilmu dengan tangkapan layar.
+3. Dilarang menulis warna, ukuran teks, radius, atau jarak langsung di komponen. Semua lewat token.
+4. Deteksi perangkat hanya di src/lib/device.
+5. Harga dan total dihitung server lewat RPC. RLS aktif di semua tabel.
+6. Kunci service_role tidak boleh ada di klien, repo, atau log.
+7. Jika ada yang tidak jelas atau bertentangan, tanyakan. Jangan menebak.
+8. Semua teks antarmuka bahasa Indonesia baku dan singkat.
+9. Fokus tablet. Laptop, Android, iOS, dan fitur Cetak menu hanya berupa folder dan placeholder.
+
+FASE 0: BACA DAN RENCANA (belum ada kode)
+- Baca semua berkas referensi.
+- Tulis ringkasan layar tablet yang akan dibangun (daftar layar, perilaku, data yang dibutuhkan).
+- Daftar pertanyaan terbuka dan ketidaksesuaian antara HTML dan dokumen.
+- Rencana fase 1 sampai 8 dengan perkiraan berkas.
+- Berhenti dan tunggu persetujuan.
+
+FASE 1: FONDASI PROYEK
+- Buat proyek Vite, React, TypeScript strict. Struktur folder sesuai arsitektur.md.
+- ESLint, Prettier, Vitest, Playwright. File .env.example. Pastikan .env masuk .gitignore.
+- Pasang font Plus Jakarta Sans lokal.
+- Salin token dari HTML ke src/design/tokens.css, lengkap dengan enam palet, mode terang dan gelap, dan penyimpanan tk-theme serta tk-pal.
+- Komponen dasar: tombol lime, tombol datar, chip, panel glass, sheet, toast, dialog, kolom isian, baris pilihan, navbar pil.
+- Halaman galeri komponen khusus mode dev.
+- Uji audit desain (tujuh pasangan teks, kelipatan 4).
+Selesai jika: galeri cocok dengan HTML pada netflix gelap dan terang, audit lulus.
+
+FASE 2: LAPISAN PERANGKAT
+- Bangun src/lib/device/detect.ts dengan fungsi murni classifyDevice dan aturan di arsitektur.md bagian 3.
+- Uji unit dengan tabel userAgent: iPhone, iPad, iPadOS (Macintosh dengan sentuhan), Android phone, Android tablet, Windows, Mac.
+- AppShell memilih antarmuka dari formFactor. Laptop dan phone menampilkan layar sementara.
+- Override lewat ?device=tablet dan penyimpanan tk-device. DevFrame 1024 x 640 yang diskalakan, aktif di laptop untuk simulasi.
+- Registrasi perangkat ke tabel devices (setelah fase 3 siap; sebelum itu pakai tiruan).
+Selesai jika: http://localhost:5173/?device=tablet menampilkan bingkai tablet di laptop, dan uji deteksi lulus.
+
+FASE 3: SUPABASE
+- Siapkan Supabase CLI dan migrasi: skema di arsitektur.md bagian 4, RLS, fungsi is_member dan is_owner, RPC set_item_availability, create_order, add_cashier, view best_sellers, trigger maksimal 7 item aktif per kelompok.
+- supabase/seed.sql dari data di HTML (konstanta MG, TR, HB): kelompok, menu, harga (kali 1000), dua kasir contoh (Robertus Amaresi, Puspitawati), Kebab habis. Salin nama persis; laporkan salah ketik tanpa mengubahnya.
+- Bucket foto menu.
+- Hasilkan tipe TypeScript. Klien di src/lib/supabase.
+- Uji RLS: akun device tidak bisa ubah harga atau hapus; create_order menolak uang kurang dan aman diulang.
+- Ingatkan pemilik membuat proyek Supabase dan mengisi .env. Jangan membuat atau mengubah proyek online tanpa persetujuan.
+Selesai jika: uji RLS dan RPC lulus di proyek dev.
+
+FASE 4: LAYAR TABLET BAGIAN A
+- Intro (bagian 0), Pilih profil kasir (1), navbar Home, Riwayat, Akun, layar Akun dengan ganti kasir dan Tampilan (6 dan 6b), tambah kasir.
+- Masuk perangkat (setup akun device) untuk pemilik.
+Selesai jika: tiap layar cocok dengan HTML pada 1024 x 640, tema dan palet berlaku di semua layar.
+
+FASE 5: LAYAR TABLET BAGIAN B
+- Home dengan kartu menu, tahan kartu untuk tandai habis dan tersedia (2, 2b, 2e, 2f).
+- Menu lengkap tampilan pembeli (2c, 2d) dengan Terlaris dari best_sellers.
+- Pesanan, nomor meja, bayar tunai, kembalian (3), struk simpan PNG dan bagikan (4).
+- Riwayat dan rentang waktu (5, 5b).
+Selesai jika: satu transaksi penuh dari memilih menu sampai struk tersimpan di Supabase dengan total dari server.
+
+FASE 6: UJI BETA DI LAPTOP
+- Jalankan seluruh daftar uji di arsitektur.md bagian 10, termasuk enam palet dan dua mode.
+- Perbaiki temuan. Buat laporan uji.
+Selesai jika: semua uji lulus atau pengecualian disetujui pemilik.
+
+FASE 7: ONLINE
+- Siapkan build produksi dan konfigurasi Vercel (atau Cloudflare Pages). Variabel lingkungan beta.
+- Panduan deploy langkah demi langkah untuk pemilik. Jangan deploy sendiri tanpa persetujuan.
+- Smoke test dari alamat HTTPS, termasuk dari browser tablet fisik jika ada.
+
+FASE 8: APK TABLET
+- Pasang Capacitor sesuai arsitektur.md bagian 9, kunci landscape, plugin share dan device.
+- Skrip build:apk:debug. Panduan memasang APK ke tablet.
+- Panduan keystore untuk APK rilis. Jangan membuat keystore tanpa persetujuan.
+- Pembuatan APK dijalankan di mesin pemilik (butuh Android Studio dan JDK 17); beri daftar perintahnya.
+Selesai jika: app-debug.apk terbentuk dan aplikasi terbuka serta tersambung ke Supabase beta.
+
+DI LUAR TAHAP INI (jangan dikerjakan)
+Web admin laptop dan .exe, Android pemilik, iOS pemilik, Cetak menu, antrean offline.
+
+FORMAT LAPORAN SETIAP FASE
+Tulis polos: yang dikerjakan, berkas penting yang berubah, hasil uji, perbedaan dari HTML dan alasannya, pertanyaan terbuka, langkah manual untuk pemilik, usulan fase berikutnya.
+
+MULAI SEKARANG DENGAN FASE 0.
+
+----------------------------------------
+PESAN PENDEK UNTUK FASE BERIKUTNYA (tempel satu per satu)
+
+Lanjut Fase 1. Rencana disetujui.
+Lanjut Fase 2.
+Lanjut Fase 3. Proyek Supabase dev sudah dibuat dan .env sudah diisi.
+Lanjut Fase 4.
+Lanjut Fase 5.
+Lanjut Fase 6.
+Lanjut Fase 7. Saya setuju deploy ke Vercel.
+Lanjut Fase 8. Android Studio dan JDK 17 sudah terpasang.
+
+Jika ada koreksi: Perbaiki dulu (tulis temuan). Jangan lanjut fase.
