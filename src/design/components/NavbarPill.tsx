@@ -5,11 +5,13 @@ export type NavItem = 'Home' | 'Riwayat' | 'Akun';
 export interface NavbarPillProps {
   activeItem: NavItem;
   onSelect: (item: NavItem) => void;
+  scrollProgress?: number;
 }
 
 export const NavbarPill: React.FC<NavbarPillProps> = ({
   activeItem,
   onSelect,
+  scrollProgress,
 }) => {
   const items: NavItem[] = ['Home', 'Riwayat', 'Akun'];
   const activeIndex = Math.max(0, items.indexOf(activeItem));
@@ -19,24 +21,19 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   const [dragProgress, setDragProgress] = useState(activeIndex);
   const isDraggingRef = useRef(false);
 
+  // Perhitungan progress drag terkunci ketat di dalam batas navbar (0 .. items.length - 1)
   const calculateProgress = useCallback((clientX: number): number => {
     if (!navRef.current) return activeIndex;
     const rect = navRef.current.getBoundingClientRect();
     const padding = 4;
     const totalWidth = rect.width - padding * 2;
-    const itemWidth = totalWidth / 3;
+    const itemWidth = totalWidth / items.length;
     const relativeX = clientX - rect.left - padding;
     const rawIndex = (relativeX - itemWidth / 2) / itemWidth;
 
-    // Elastisitas rubber band overshoot di ujung kiri & kanan
-    if (rawIndex < 0) {
-      return rawIndex * 0.35;
-    }
-    if (rawIndex > 2) {
-      return 2 + (rawIndex - 2) * 0.35;
-    }
-    return rawIndex;
-  }, [activeIndex]);
+    // Batasi ketat 0 sampai 2 agar indikator tidak pernah keluar dari navbar
+    return Math.max(0, Math.min(items.length - 1, rawIndex));
+  }, [activeIndex, items.length]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
     try {
@@ -68,13 +65,18 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     }
 
     const p = calculateProgress(e.clientX);
-    const nearestIndex = Math.max(0, Math.min(2, Math.round(p)));
+    const nearestIndex = Math.max(0, Math.min(items.length - 1, Math.round(p)));
     onSelect(items[nearestIndex]);
   };
 
-  const currentTranslate = isDragging
-    ? `translateX(calc(${dragProgress} * 100%))`
-    : `translateX(calc(${activeIndex} * 100%))`;
+  // Posisi progress real-time (baik dari drag navbar maupun swipeable pager gesture Safari)
+  const effectiveProgress = isDragging
+    ? dragProgress
+    : (scrollProgress !== undefined ? scrollProgress : activeIndex);
+
+  const isRealtimeMoving = isDragging || (scrollProgress !== undefined && Math.abs(scrollProgress - activeIndex) > 0.005);
+
+  const currentTranslate = `translateX(calc(${effectiveProgress} * 100%))`;
 
   return (
     <nav
@@ -92,21 +94,27 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     >
       {/* Elastic Liquid Glass Sliding Indicator */}
       <div
-        className={`tk-nav-elastic-indicator ${isDragging ? 'dragging' : ''}`}
+        className={`tk-nav-elastic-indicator ${isRealtimeMoving ? 'dragging' : ''}`}
         style={{
+          width: `calc((100% - 8px) / ${items.length})`,
           transform: currentTranslate,
         }}
         aria-hidden="true"
       />
       {items.map((item, idx) => {
-        const isCurrentActive = isDragging
-          ? Math.round(dragProgress) === idx
-          : activeItem === item;
+        const diff = Math.abs(effectiveProgress - idx);
+        const weight = Math.max(0, 1 - diff); // 1 = aktif penuh, 0 = tidak aktif
+        const isCurrentActive = activeItem === item;
+
         return (
           <button
             key={item}
             type="button"
             className={`tk-navbar-item ${isCurrentActive ? 'active' : ''}`}
+            style={{
+              opacity: 0.65 + weight * 0.35,
+              fontWeight: weight > 0.5 ? 800 : 700,
+            }}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(item);

@@ -9,16 +9,38 @@ import { PaymentScreen } from '../../features/bayar/PaymentScreen.tsx';
 import { ReceiptScreen } from '../../features/struk/ReceiptScreen.tsx';
 import { HistoryScreen } from '../../features/riwayat/HistoryScreen.tsx';
 import { NavbarPill, NavItem } from '../../design/components/NavbarPill.tsx';
+import { SwipePager } from './SwipePager.tsx';
+import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
+
+const NAV_TABS: NavItem[] = ['Home', 'Riwayat', 'Akun'];
 
 export const TabletRoot: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<TabletScreen>('intro');
   const [isDeviceSetupOpen, setIsDeviceSetupOpen] = useState(false);
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
+
+  const activeNavTab: NavItem =
+    currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
+
+  const handleNavTabChange = (tab: NavItem) => {
+    setCurrentScreen((prev) => {
+      if (prev === 'Home' || prev === 'Riwayat' || prev === 'Akun') {
+        return tab;
+      }
+      return prev;
+    });
+  };
+
+  const { pagerRef, scrollProgress, handleScroll, scrollToTab } = useSwipeNav({
+    tabs: NAV_TABS,
+    activeTab: activeNavTab,
+    onTabChange: handleNavTabChange,
+  });
 
   const handleIntroFinish = () => {
     // Jika belum ada kasir aktif, arahkan ke pilih kasir
@@ -77,7 +99,7 @@ export const TabletRoot: React.FC = () => {
     );
   }
 
-  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Navbar Pil Melayang
+  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Swipeable Pages Gesture Safari iOS
   const showNavbar = currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun';
 
   return (
@@ -90,33 +112,28 @@ export const TabletRoot: React.FC = () => {
         background: 'var(--scr-bg)',
       }}
     >
-      {/* Konten Berdasarkan Tab Aktif */}
-      {currentScreen === 'Akun' && (
-        <AccountScreen onChangeCashier={handleChangeCashier} />
-      )}
-
-      {currentScreen === 'Home' && (
+      {/* Horizontal Swipeable Container dengan CSS Scroll-Snap (Home, Riwayat, Akun) */}
+      <SwipePager pagerRef={pagerRef} onScroll={handleScroll}>
         <HomeScreen
           onOpenCustomerMenu={() => setIsCustomerMenuOpen(true)}
           onProceedToPayment={() => setCurrentScreen('payment')}
           onChangeCashier={handleChangeCashier}
         />
-      )}
-
-      {currentScreen === 'Riwayat' && (
         <HistoryScreen />
-      )}
+        <AccountScreen onChangeCashier={handleChangeCashier} />
+      </SwipePager>
 
       {/* Overlay Menu Lengkap Pembeli (Golden Triangle) */}
       {isCustomerMenuOpen && (
         <CustomerMenuView onClose={() => setIsCustomerMenuOpen(false)} />
       )}
 
-      {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet */}
+      {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet dengan Indikator Real-time */}
       {showNavbar && (
         <NavbarPill
-          activeItem={currentScreen as NavItem}
-          onSelect={(item) => setCurrentScreen(item)}
+          activeItem={activeNavTab}
+          onSelect={(item) => scrollToTab(item)}
+          scrollProgress={scrollProgress}
         />
       )}
     </div>

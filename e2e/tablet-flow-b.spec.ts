@@ -14,7 +14,7 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     }
 
     // Tunggu layar pilih kasir
-    await expect(page.locator('h2')).toContainText('Siapa yang bertugas?', { timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Siapa yang bertugas?' })).toBeVisible({ timeout: 10000 });
 
     // Pilih Robertus Amaresi
     const cashierOption = page.locator('text=Robertus Amaresi');
@@ -22,7 +22,7 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     await cashierOption.click();
 
     // 3. Masuk ke Layar Home
-    await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
+    await expect(page.getByRole('heading', { name: 'Tati’e Kitchen' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Menu lengkap' })).toBeVisible();
 
     // 4. Uji Menu Lengkap Pembeli (Golden Triangle)
@@ -44,7 +44,7 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     await mieCard.click();
 
     // Verifikasi keranjang terisi
-    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pesanan baru' })).toBeVisible();
     await expect(page.locator('.tk-cart-row b:has-text("Mie Goreng Komplit")')).toBeVisible();
 
     // Tambah kuantitas dengan tombol +
@@ -84,14 +84,14 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     await pesananBaruBtn.click();
 
     // Kembali ke Home dengan keranjang bersih
-    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pesanan baru' })).toBeVisible();
     await expect(page.locator('text=Keranjang masih kosong')).toBeVisible();
 
     // 10. Buka Riwayat Transaksi via Navbar
     const riwayatNav = page.getByRole('button', { name: 'Riwayat' });
     await riwayatNav.click();
 
-    await expect(page.locator('h2')).toContainText('Riwayat Transaksi');
+    await expect(page.getByRole('heading', { name: 'Riwayat Transaksi' })).toBeVisible();
     const rangeBtn = page.getByRole('button', { name: 'Pilih rentang waktu' });
     await expect(rangeBtn).toBeVisible();
     await rangeBtn.click();

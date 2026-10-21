@@ -32,7 +32,7 @@ test.describe('Smoke Test Produksi & HTTPS (Fase 7)', () => {
     }
 
     // Layar Home
-    await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
+    await expect(page.getByRole('heading', { name: 'Tati’e Kitchen' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Menu lengkap' })).toBeVisible();
 
     // Tambah menu
@@ -41,7 +41,7 @@ test.describe('Smoke Test Produksi & HTTPS (Fase 7)', () => {
     await mieCard.click();
 
     // Verifikasi keranjang terisi
-    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pesanan baru' })).toBeVisible();
     await expect(page.locator('.tk-cart-row b:has-text("Mie Goreng Komplit")')).toBeVisible();
 
     // Tombol bayar lime

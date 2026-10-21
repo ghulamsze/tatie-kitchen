@@ -19,6 +19,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onChangeCashier: _onChangeCashier,
 }) => {
   const [isClearing, setIsClearing] = useState(false);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
 
   const {
     items,
@@ -48,6 +49,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       clearCart();
       setIsClearing(false);
     }, 280);
+  };
+
+  const handleMinusQty = (itemId: string, currentQty: number) => {
+    if (currentQty <= 1) {
+      setRemovingItemId(itemId);
+      setTimeout(() => {
+        updateQty(itemId, -1);
+        setRemovingItemId(null);
+      }, 280);
+    } else {
+      updateQty(itemId, -1);
+    }
   };
 
   const categories = [
@@ -130,7 +143,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               style={{
                 width: '100%',
                 height: '42px',
-                padding: searchQuery ? '0 42px 0 16px' : '0 16px',
+                padding: searchQuery ? '0 46px 0 16px' : '0 16px',
                 fontSize: 'var(--t-sm)',
                 borderRadius: 'var(--r-md)',
                 boxSizing: 'border-box',
@@ -145,16 +158,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 title="Hapus pencarian"
                 style={{
                   position: 'absolute',
-                  right: '10px',
-                  width: '26px',
-                  height: '26px',
+                  right: '4px',
+                  width: '36px',
+                  height: '36px',
                   borderRadius: '50%',
                   background: 'rgba(255, 255, 255, 0.16)',
                   color: 'var(--ink)',
                   border: 'none',
                   display: 'grid',
                   placeItems: 'center',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   fontWeight: 800,
                   cursor: 'pointer',
                   padding: 0,
@@ -266,6 +279,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               flex: 1,
               minHeight: 0,
               overflowY: 'auto',
+              overflowX: 'hidden',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
@@ -291,57 +305,93 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </small>
               </div>
             ) : (
-              lines.map((line) => (
-                <div
-                  key={line.item.id}
-                  className={`tk-cart-row ${isClearing ? 'tk-cart-item-out' : 'tk-cart-item-in'}`}
-                >
-                  <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
-                    <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {line.item.name}
-                    </b>
-                    <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-xs)' }}>
-                      {formatRupiah(line.item.price_idr)}
-                    </span>
+              lines.map((line) => {
+                const isThanosSnap = isClearing || removingItemId === line.item.id;
+                return (
+                  <div
+                    key={line.item.id}
+                    className={`tk-cart-row ${isThanosSnap ? 'tk-thanos-snap-out' : 'tk-cart-item-in'}`}
+                  >
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                      <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {line.item.name}
+                      </b>
+                      <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-xs)' }}>
+                        {formatRupiah(line.item.price_idr)}
+                      </span>
+                    </div>
+                    <div className="tk-qty-control" style={{ gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="tk-qty-btn"
+                        onClick={() => handleMinusQty(line.item.id, line.qty)}
+                        style={{ width: '32px', height: '32px', fontSize: '18px' }}
+                        aria-label={`Kurangi ${line.item.name}`}
+                      >
+                        -
+                      </button>
+                      <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 700, fontSize: 'var(--t-sm)' }}>
+                        {line.qty}
+                      </span>
+                      <button
+                        type="button"
+                        className="tk-qty-btn"
+                        onClick={() => addItem(line.item)}
+                        style={{ width: '32px', height: '32px', fontSize: '18px' }}
+                        aria-label={`Tambah ${line.item.name}`}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                  <div className="tk-qty-control" style={{ gap: '8px' }}>
-                    <button
-                      type="button"
-                      className="tk-qty-btn"
-                      onClick={() => updateQty(line.item.id, -1)}
-                      style={{ width: '32px', height: '32px', fontSize: '18px' }}
-                      aria-label={`Kurangi ${line.item.name}`}
-                    >
-                      -
-                    </button>
-                    <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 700, fontSize: 'var(--t-sm)' }}>
-                      {line.qty}
-                    </span>
-                    <button
-                      type="button"
-                      className="tk-qty-btn"
-                      onClick={() => updateQty(line.item.id, 1)}
-                      style={{ width: '32px', height: '32px', fontSize: '18px' }}
-                      aria-label={`Tambah ${line.item.name}`}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          {/* Kolom Catatan Pesanan - Sesuai gambar referensi */}
-          <div style={{ flex: 'none' }}>
+          {/* Kolom Catatan Pesanan dengan Tombol X - Sesuai permintaan */}
+          <div style={{ flex: 'none', position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
               type="text"
               className="tk-input tk-notes-input"
               placeholder="Catatan: kurang pedas"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              style={{ height: '38px', fontSize: 'var(--t-xs)', padding: '0 12px' }}
+              style={{
+                height: '38px',
+                fontSize: 'var(--t-xs)',
+                padding: notes.length > 0 ? '0 38px 0 12px' : '0 12px',
+                width: '100%',
+              }}
+              aria-label="Catatan pesanan"
             />
+            {notes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setNotes('')}
+                aria-label="Hapus catatan"
+                title="Hapus catatan"
+                style={{
+                  position: 'absolute',
+                  right: '4px',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.16)',
+                  color: 'var(--ink)',
+                  border: 'none',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Total & Tombol Lime Pembayaran */}

@@ -502,7 +502,7 @@ export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
     group_id: 'g-snack',
     name: 'Kebab',
     price_idr: 30000,
-    available: false, // Kebab Habis
+    available: true,
     photo_path: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&auto=format&fit=crop&q=80',
     sort: 38,
     active: true,

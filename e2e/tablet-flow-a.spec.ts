@@ -14,7 +14,7 @@ test.describe('Alur Tablet Kasir Bagian A (Viewport 1024 x 640)', () => {
     }
 
     // 3. Layar Pilih Profil: "Siapa yang bertugas?"
-    await expect(page.locator('h2')).toContainText('Siapa yang bertugas?', { timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Siapa yang bertugas?' })).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Robertus Amaresi')).toBeVisible();
     await expect(page.locator('text=Puspitawati')).toBeVisible();
 
@@ -30,7 +30,7 @@ test.describe('Alur Tablet Kasir Bagian A (Viewport 1024 x 640)', () => {
     await submitBtn.click();
 
     // 5. Kasir baru terpilih, masuk ke Home tablet
-    await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
+    await expect(page.getByRole('heading', { name: 'Tati’e Kitchen' })).toBeVisible();
     const navbar = page.locator('nav[aria-label="Navigasi Utama"]');
     await expect(navbar).toBeVisible();
 
@@ -68,7 +68,7 @@ test.describe('Alur Tablet Kasir Bagian A (Viewport 1024 x 640)', () => {
     await gantiBtn.click();
 
     // Kembali ke layar Pilih Profil
-    await expect(page.locator('h2')).toContainText('Siapa yang bertugas?');
+    await expect(page.getByRole('heading', { name: 'Siapa yang bertugas?' })).toBeVisible();
     await expect(page.locator('text=Dewi Sartika')).toBeVisible();
   });
 });

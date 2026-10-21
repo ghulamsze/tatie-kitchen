@@ -61,7 +61,7 @@ test.describe('Fase 6: Audit Beta Lengkap di Laptop (Arsitektur Bagian 10)', () 
     }
 
     // Layar 1: HOME SCREEN
-    await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
+    await expect(page.getByRole('heading', { name: 'Tati’e Kitchen' })).toBeVisible();
     // Hitung tombol .tk-btn-lime di Home
     const homeLimeBtns = page.locator('.tk-btn-lime');
     await expect(homeLimeBtns).toHaveCount(1);
@@ -103,7 +103,7 @@ test.describe('Fase 6: Audit Beta Lengkap di Laptop (Arsitektur Bagian 10)', () 
     // Layar 5: RIWAYAT TRANSAKSI
     const riwayatNav = page.getByRole('button', { name: 'Riwayat' });
     await riwayatNav.click();
-    await expect(page.locator('h2')).toContainText('Riwayat Transaksi');
+    await expect(page.getByRole('heading', { name: 'Riwayat Transaksi' })).toBeVisible();
     // Di layar utama riwayat tidak ada tombol lime (hanya di dalam sheet filter saat dibuka)
     const riwayatMainLimeBtns = page.locator('.scr > .tk-btn-lime');
     await expect(riwayatMainLimeBtns).toHaveCount(0);
