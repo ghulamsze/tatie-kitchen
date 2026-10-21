@@ -121,7 +121,8 @@ export function useSwipeNav({
   }, [activeTab, tabs, animateTo]);
 
 
-  // Scroll mouse horizontal (deltaX) atau shift+scroll (deltaY) ganti tab tanpa perlu tenaga lebih
+  // Scroll mouse horizontal saja (deltaX / trackpad geser kiri-kanan) untuk ganti tab
+  // Scroll vertikal (deltaY) DIABAIKAN — tidak mengganti tab
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -129,6 +130,13 @@ export function useSwipeNav({
     let wheelCooldown = false;
 
     const handleWheel = (e: WheelEvent) => {
+      const absDx = Math.abs(e.deltaX);
+      const absDy = Math.abs(e.deltaY);
+
+      // Hanya proses jika gerakan dominan horizontal (deltaX lebih besar dari deltaY)
+      // Ini memastikan scroll atas/bawah tidak menggeser tab
+      if (absDx <= absDy) return;
+
       // Jika target adalah elemen yang bisa scroll vertikal, abaikan
       const target = e.target as HTMLElement;
       const scrollable = target.closest<HTMLElement>(
@@ -136,20 +144,19 @@ export function useSwipeNav({
       );
       if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) return;
 
-      // Ambil delta horizontal (trackpad 2-jari atau shift+scroll)
-      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      if (Math.abs(delta) < 8) return; // Abaikan noise kecil
+      // Ambang minimum deltaX agar tidak terpicu noise kecil trackpad
+      if (absDx < 20) return;
 
-      // Blokir scroll browser (kiri/kanan/atas/bawah)
+      // Blokir scroll browser horizontal
       e.preventDefault();
 
-      // Cooldown 300ms agar tidak berpindah 2 tab sekaligus
+      // Cooldown 450ms agar tidak loncat 2 tab sekaligus (kecepatan terkontrol)
       if (wheelCooldown) return;
       wheelCooldown = true;
-      setTimeout(() => { wheelCooldown = false; }, 300);
+      setTimeout(() => { wheelCooldown = false; }, 450);
 
       const currIdx = activeIndexRef.current;
-      if (delta > 0) {
+      if (e.deltaX > 0) {
         animateTo(Math.min(tabs.length - 1, currIdx + 1));
       } else {
         animateTo(Math.max(0, currIdx - 1));
