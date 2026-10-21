@@ -78,7 +78,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
         className="photo-layer"
         style={{
           background: hasPhotoUrl
-            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%), url(${item.photo_path}) center/cover no-repeat`
+            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%), url('${item.photo_path}') center/cover no-repeat`
             : backgroundGradient,
         }}
       />
