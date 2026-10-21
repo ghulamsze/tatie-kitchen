@@ -30,3 +30,6 @@ test-results/
 *.zip
 Agent-Reach-main/
 pyqt6/
+
+__pycache__/
+*.pyc
