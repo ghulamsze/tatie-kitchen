@@ -1,8 +1,8 @@
 import React from 'react';
-import { ComponentGallery } from './dev/ComponentGallery.tsx';
+import { AppShell } from './app/AppShell.tsx';
 
 export const App: React.FC = () => {
-  return <ComponentGallery />;
+  return <AppShell />;
 };
 
 export default App;

@@ -1,0 +1,43 @@
+import React, { useEffect } from 'react';
+import { useDevice } from '../lib/device/useDevice.ts';
+import { registerDevice } from '../lib/device/deviceRegistration.ts';
+import { DevFrame } from './DevFrame.tsx';
+import { LaptopPlaceholder } from '../platform/laptop/LaptopPlaceholder.tsx';
+import { PhonePlaceholder } from '../platform/phone/PhonePlaceholder.tsx';
+import { ComponentGallery } from '../dev/ComponentGallery.tsx';
+
+export const AppShell: React.FC = () => {
+  const device = useDevice();
+
+  useEffect(() => {
+    // Daftarkan perangkat saat pertama dibuka dan perbarui aktivitas
+    registerDevice(device);
+  }, [device]);
+
+  // Cek jika pengguna membuka rute galeri langsung
+  const isGalleryRoute = typeof window !== 'undefined' && window.location.pathname === '/dev/gallery';
+
+  if (isGalleryRoute) {
+    return <ComponentGallery />;
+  }
+
+  // Pilih antarmuka berdasarkan formFactor
+  if (device.formFactor === 'laptop') {
+    return <LaptopPlaceholder device={device} />;
+  }
+
+  if (device.formFactor === 'phone') {
+    return <PhonePlaceholder device={device} />;
+  }
+
+  // Tablet Kasir (di laptop akan otomatis dibungkus DevFrame 1024 x 640)
+  return (
+    <DevFrame device={device}>
+      {/* Di Fase 2 ini tablet menampilkan Galeri Komponen di dalam bingkai 1024x640;
+          pada Fase 4 & 5 akan diganti dengan layar alur kasir (Intro, Profil, Home, dsb) */}
+      <ComponentGallery />
+    </DevFrame>
+  );
+};
+
+export default AppShell;
