@@ -12,6 +12,8 @@ export interface PaymentScreenProps {
   onCancel: () => void;
 }
 
+import { getQuickCashOptions } from './quickCash.ts';
+
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
 export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCancel }) => {
@@ -32,32 +34,41 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   // Meja wajib diinput sebelum pembayaran dapat diproses
   const isTableSet = tableInput !== 'x' && tableInput.trim().length > 0;
 
+  // Status input manual aktif jika sedang difokuskan atau sudah diisi
+  const isManualActive = isManualCash || Boolean(manualCashInput && manualCashInput.trim().length > 0);
+
   // Hitung uang tunai efektif yang diterima
   const effectiveCash = paymentMethod !== 'tunai'
     ? total
-    : (isManualCash ? (parseInt(manualCashInput, 10) || 0) : selectedQuickCash);
+    : (isManualActive ? (parseInt(manualCashInput, 10) || 0) : selectedQuickCash);
 
   const change = Math.max(0, effectiveCash - total);
   const isCashSufficient = effectiveCash >= total;
 
-  // Opsi cepat uang diterima
-  const quickCashOptions = [
-    { label: 'Uang pas', amount: total },
-    { label: formatRupiah(Math.max(50000, total)), amount: Math.max(50000, total) },
-    { label: formatRupiah(Math.max(100000, total)), amount: Math.max(100000, total) },
-    { label: formatRupiah(Math.max(200000, total)), amount: Math.max(200000, total) },
-  ];
+  // Opsi cepat uang diterima dihitung secara dinamis
+  const quickCashOptions = getQuickCashOptions(total);
 
+  // Auto-confirm nomor meja saat digit diketik, maksimal meja 15
   const handleKeypadPress = (val: string | number) => {
     if (val === 'Hapus') {
-      setTableInput((prev) => (prev.length > 1 && prev !== 'x' ? prev.slice(0, -1) : 'x'));
+      const next = tableInput.length > 1 && tableInput !== 'x' ? tableInput.slice(0, -1) : 'x';
+      setTableInput(next);
+      setTableNo(next);
     } else {
-      setTableInput((prev) => (prev === 'x' ? String(val) : (prev.length < 3 ? `${prev}${val}` : prev)));
+      const digit = String(val);
+      const candidateStr = tableInput === 'x' ? digit : `${tableInput}${digit}`;
+      const candidateNum = parseInt(candidateStr, 10);
+      // Maksimal nomor meja adalah 15: blokir input yang menghasilkan 16+ atau angka 0 tunggal
+      if (!isNaN(candidateNum) && candidateNum >= 1 && candidateNum <= 15) {
+        setTableInput(candidateStr);
+        setTableNo(candidateStr);
+      }
     }
   };
 
   const handleSelectCash = (amt: number) => {
     setIsManualCash(false);
+    setManualCashInput('');
     setSelectedQuickCash(amt);
     setCashReceived(amt);
   };
@@ -233,8 +244,24 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           <button
             type="button"
             onClick={() => handleKeypadPress('Hapus')}
+            aria-label="Hapus"
+            title="Hapus"
           >
-            Hapus
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+              <line x1="18" y1="9" x2="12" y2="15" />
+              <line x1="12" y1="9" x2="18" y2="15" />
+            </svg>
           </button>
         </div>
       </div>
@@ -290,7 +317,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                 <button
                   key={i}
                   type="button"
-                  className={!isManualCash && selectedQuickCash === opt.amount ? 'selected' : ''}
+                  className={!isManualActive && selectedQuickCash === opt.amount ? 'selected' : ''}
                   onClick={() => handleSelectCash(opt.amount)}
                 >
                   {opt.label}
@@ -298,7 +325,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               ))}
             </div>
 
-            {/* Kolom Input Nominal Manual (Ukuran 52px disesuaikan dengan kolom lain) */}
+            {/* Kolom Input Nominal Manual (Ukuran sama persis dengan tombol lain: height 68px, radius var(--r-md), width 100%) */}
             <input
               type="text"
               inputMode="numeric"
@@ -313,13 +340,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               }}
               onChange={handleManualCashChange}
               style={{
-                height: '52px',
+                height: '68px',
                 padding: '0 16px',
-                fontSize: 'var(--t-md)',
+                fontSize: 'var(--t-lg)',
                 fontWeight: 700,
                 borderRadius: 'var(--r-md)',
-                borderColor: isManualCash ? 'var(--ring)' : 'var(--ctl-line)',
-                boxShadow: isManualCash ? '0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent)' : 'none',
+                borderColor: isManualActive ? 'var(--ring)' : 'var(--ctl-line)',
+                boxShadow: isManualActive ? '0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent)' : 'none',
                 boxSizing: 'border-box',
                 width: '100%',
               }}
@@ -367,7 +394,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               </svg>
             </div>
             <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>Scan QRIS Tati’e Kitchen</b>
-            <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)' }}>Uang pas · Tanpa kembalian</span>
           </div>
         ) : (
           <div
@@ -389,7 +415,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               <b style={{ fontSize: 'var(--t-lg)', letterSpacing: '0.05em' }}>7890-1234-56</b>
               <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>a.n. Tati’e Kitchen Makassar</span>
             </div>
-            <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)' }}>Pastikan nominal transfer sesuai: <b>{formatRupiah(total)}</b></span>
           </div>
         )}
 

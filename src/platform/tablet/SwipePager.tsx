@@ -36,7 +36,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
         position: 'relative',
         overflow: 'hidden',
         touchAction: 'pan-y',
-        userSelect: 'none',
+        userSelect: isDragging ? 'none' : 'auto',
       }}
     >
       <div
@@ -47,7 +47,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
           width: '100%',
           height: '100%',
           transform: `translate3d(calc(-${progress} * 100%), 0, 0)`,
-          transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+          transition: isDragging ? 'none' : 'transform 220ms cubic-bezier(0, 0, 0.2, 1)',
           willChange: 'transform',
         }}
       >

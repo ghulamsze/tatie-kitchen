@@ -5,6 +5,7 @@ import { MenuCard } from './home/MenuCard.tsx';
 import { HomeScreen } from './home/HomeScreen.tsx';
 import { CustomerMenuView } from './menu-lengkap/CustomerMenuView.tsx';
 import { PaymentScreen } from './bayar/PaymentScreen.tsx';
+import { getQuickCashOptions } from './bayar/quickCash.ts';
 import { ReceiptScreen } from './struk/ReceiptScreen.tsx';
 import { HistoryScreen } from './riwayat/HistoryScreen.tsx';
 import { useCartStore } from '../stores/cartStore.ts';
@@ -237,6 +238,67 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
 
       // Sekarang tombol aktif
       expect(payButton).not.toBeDisabled();
+    });
+
+    it('harus membatasi nomor meja maksimal 15 dan auto-confirm input', () => {
+      act(() => {
+        useCartStore.getState().setTableNo('x');
+      });
+
+      render(<PaymentScreen onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      const key1 = screen.getByRole('button', { name: '1' });
+      const key6 = screen.getByRole('button', { name: '6' });
+      const key5 = screen.getByRole('button', { name: '5' });
+      const backspaceBtn = screen.getByRole('button', { name: 'Hapus' });
+
+      // Tekan 1 -> meja 1
+      fireEvent.click(key1);
+      expect(useCartStore.getState().tableNo).toBe('1');
+
+      // Tekan 6 -> 16 > 15 (diblokir, tetap 1)
+      fireEvent.click(key6);
+      expect(useCartStore.getState().tableNo).toBe('1');
+
+      // Tekan 5 -> 15 <= 15 (diizinkan, jadi 15)
+      fireEvent.click(key5);
+      expect(useCartStore.getState().tableNo).toBe('15');
+
+      // Tekan backspace -> kembali ke 1
+      fireEvent.click(backspaceBtn);
+      expect(useCartStore.getState().tableNo).toBe('1');
+
+      // Tekan backspace lagi -> kembali ke 'x'
+      fireEvent.click(backspaceBtn);
+      expect(useCartStore.getState().tableNo).toBe('x');
+    });
+
+    it('harus menghasilkan 4 opsi uang cepat sesuai algoritma tanpa duplikat', () => {
+      // Contoh 1: 25.000 -> Uang pas, 50k, 100k, 200k
+      const opts25k = getQuickCashOptions(25000);
+      expect(opts25k.map((o: { amount: number }) => o.amount)).toEqual([25000, 50000, 100000, 200000]);
+
+      // Contoh 2: 130.000 -> Uang pas, 150k, 200k, 500k
+      const opts130k = getQuickCashOptions(130000);
+      expect(opts130k.map((o: { amount: number }) => o.amount)).toEqual([130000, 150000, 200000, 500000]);
+
+      // Contoh 3: 400.000 -> Uang pas, 450k, 500k, 1M
+      const opts400k = getQuickCashOptions(400000);
+      expect(opts400k.map((o: { amount: number }) => o.amount)).toEqual([400000, 450000, 500000, 1000000]);
+    });
+
+    it('harus men-deselect "Uang pas" saat kolom manual difokuskan atau diisi', () => {
+      render(<PaymentScreen onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      const uangPasBtn = screen.getByRole('button', { name: 'Uang pas' });
+      expect(uangPasBtn).toHaveClass('selected');
+
+      const manualInput = screen.getByPlaceholderText('Input manual uang diterima...');
+      // Fokus pada input manual
+      fireEvent.focus(manualInput);
+
+      // Uang pas harus ter-deselect
+      expect(uangPasBtn).not.toHaveClass('selected');
     });
   });
 
