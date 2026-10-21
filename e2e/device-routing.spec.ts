@@ -20,8 +20,8 @@ test.describe('Routing dan Deteksi Perangkat (AppShell & DevFrame)', () => {
     const frameInner = page.locator('.dev-frame-inner');
     await expect(frameInner).toBeVisible();
 
-    // Pastikan konten galeri tablet termuat di dalam bingkai
-    await expect(page.locator('h1')).toContainText('Galeri Komponen Tati’e Kitchen');
+    // Pastikan konten tablet termuat di dalam bingkai (Intro atau Siapa yang bertugas)
+    await expect(page.locator('.tk-intro-container, h2')).toBeVisible();
   });
 
   test('dengan ?device=phone: menampilkan layar sementara ponsel', async ({ page }) => {

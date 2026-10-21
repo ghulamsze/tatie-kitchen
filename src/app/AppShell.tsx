@@ -5,6 +5,7 @@ import { DevFrame } from './DevFrame.tsx';
 import { LaptopPlaceholder } from '../platform/laptop/LaptopPlaceholder.tsx';
 import { PhonePlaceholder } from '../platform/phone/PhonePlaceholder.tsx';
 import { ComponentGallery } from '../dev/ComponentGallery.tsx';
+import { TabletRoot } from '../platform/tablet/TabletRoot.tsx';
 
 export const AppShell: React.FC = () => {
   const device = useDevice();
@@ -33,9 +34,7 @@ export const AppShell: React.FC = () => {
   // Tablet Kasir (di laptop akan otomatis dibungkus DevFrame 1024 x 640)
   return (
     <DevFrame device={device}>
-      {/* Di Fase 2 ini tablet menampilkan Galeri Komponen di dalam bingkai 1024x640;
-          pada Fase 4 & 5 akan diganti dengan layar alur kasir (Intro, Profil, Home, dsb) */}
-      <ComponentGallery />
+      <TabletRoot />
     </DevFrame>
   );
 };

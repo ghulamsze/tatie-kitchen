@@ -126,7 +126,7 @@
 
 /* ===== 4. OVERLAY & SHEET (LIQUID GLASS) ===== */
 .tk-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
   background: var(--ov);
@@ -169,7 +169,7 @@
 
 /* ===== 5. TOAST (LIQUID GLASS) ===== */
 .tk-toast {
-  position: fixed;
+  position: absolute;
   left: 50%;
   bottom: 32px;
   transform: translateX(-50%);
@@ -344,4 +344,166 @@
   border-radius: 50%;
   background: var(--danger);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+/* ===== 10. INTRO SCREEN ANIMATION (HTML Preview 0) ===== */
+.tk-intro-container {
+  width: 1024px;
+  height: 640px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.tk-intro-wordmark {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  padding: 36px 72px;
+  font-size: var(--t-3xl);
+  line-height: var(--l-3xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  filter: drop-shadow(0 0 20px rgb(var(--w) / 0.25));
+  animation: tk-iout 0.4s cubic-bezier(0.4, 0, 1, 1) 0.85s forwards;
+}
+
+.tk-intro-letter {
+  display: inline-block;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--ink) 85%, transparent);
+  background: linear-gradient(105deg, transparent 40%, var(--ink) 50%, transparent 60%) 130% 0 / 260% 100% no-repeat,
+              linear-gradient(180deg, color-mix(in srgb, var(--ink) 97%, transparent), color-mix(in srgb, var(--ink) 38%, transparent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: tk-iin 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 0.03s) both,
+             tk-igl 0.5s ease-out calc(0.3s + var(--i) * 0.03s) both;
+}
+
+.tk-intro-space {
+  width: 0.3em;
+  flex: none;
+}
+
+.tk-intro-replay-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  margin: 0;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+@keyframes tk-iin {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes tk-igl {
+  from {
+    background-position: 130% 0, 0 0;
+  }
+  to {
+    background-position: -30% 0, 0 0;
+  }
+}
+
+@keyframes tk-iout {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 20px rgb(var(--w) / 0.25)) blur(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-intro-wordmark,
+  .tk-intro-letter {
+    animation: none !important;
+  }
+}
+
+/* ===== 11. KARTU PROFIL KASIR (HTML 1) ===== */
+.tk-cashier-card {
+  width: 192px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-weight: 700;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  color: var(--ink);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: transform 0.15s ease;
+}
+
+.tk-cashier-card:active {
+  transform: scale(0.96);
+}
+
+.tk-avatar-box {
+  width: 152px;
+  height: 152px;
+  border-radius: var(--r-xl);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-2xl);
+  line-height: var(--l-2xl);
+  font-weight: 800;
+  transition: outline 0.15s ease;
+}
+
+.tk-cashier-card.selected .tk-avatar-box {
+  outline: 3px solid var(--ring);
+  outline-offset: 4px;
+}
+
+/* ===== 12. TAMPILAN BUTTON (AKUN 6) ===== */
+.tk-btn-appearance {
+  height: var(--c-md);
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 700;
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  border: 1px solid var(--ctl-line);
+  background: var(--ctl);
+  color: var(--ink);
+}
+
+.tk-dot-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgb(var(--w) / 0.4);
+  flex: none;
 }

@@ -4,7 +4,7 @@ test.describe('Audit Desain Galeri Komponen (1024 x 640)', () => {
   test.use({ viewport: { width: 1024, height: 640 } });
 
   test('harus memuat galeri komponen dan memvalidasi token netflix gelap & terang', async ({ page }) => {
-    await page.goto('/?device=tablet');
+    await page.goto('/dev/gallery');
 
     // Cek judul
     await expect(page).toHaveTitle(/Tati’e Kitchen/);
@@ -48,7 +48,7 @@ test.describe('Audit Desain Galeri Komponen (1024 x 640)', () => {
   });
 
   test('audit otomatis skala teks (hanya 7 ukuran yang diperbolehkan)', async ({ page }) => {
-    await page.goto('/?device=tablet');
+    await page.goto('/dev/gallery');
 
     // Skala yang diizinkan (px): 12, 14, 16, 20, 32, 44, 64
     const validSizes = [12, 14, 16, 20, 32, 44, 64];
