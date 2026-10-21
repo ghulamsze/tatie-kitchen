@@ -90,7 +90,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
       </span>
 
       {/* Nama Menu di Kiri Bawah */}
-      <b style={{ position: 'relative', zIndex: 2, fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)' }}>
+      <b style={{ position: 'relative', zIndex: 2, fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', color: 'var(--ink)' }}>
         {item.name}
       </b>
     </div>

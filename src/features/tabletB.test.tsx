@@ -207,6 +207,37 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
       expect(useCartStore.getState().lines.length).toBe(0);
       expect(useCartStore.getState().lastOrder).not.toBeNull();
     });
+
+    it('harus menonaktifkan tombol selesaikan pembayaran jika meja belum diisi (default x)', () => {
+      act(() => {
+        useCartStore.getState().setTableNo('x');
+        useCartStore.getState().addItem({
+          id: 'm-01',
+          shop_id: 'shop-001',
+          group_id: 'g-mie',
+          name: 'Mie Goreng Komplit',
+          price_idr: 40000,
+          available: true,
+          photo_path: '',
+          sort: 1,
+          active: true,
+          created_at: '',
+        });
+      });
+
+      render(<PaymentScreen onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+      const payButton = screen.getByRole('button', { name: 'Selesaikan pembayaran' });
+      // Tombol harus disabled saat meja masih 'x'
+      expect(payButton).toBeDisabled();
+
+      // Masukkan nomor meja via keypad
+      const key3 = screen.getByRole('button', { name: '3' });
+      fireEvent.click(key3);
+
+      // Sekarang tombol aktif
+      expect(payButton).not.toBeDisabled();
+    });
   });
 
   describe('5. ReceiptScreen (Struk Monospace & Unduh/Share)', () => {

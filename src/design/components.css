@@ -336,7 +336,7 @@
   border: 1px solid rgba(255, 255, 255, 0.34);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
               0 6px 20px rgba(0, 0, 0, 0.35);
-  transition: transform 0.44s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   pointer-events: none;
   z-index: 1;
 }
@@ -633,7 +633,7 @@
   flex-direction: column;
   justify-content: flex-end;
   padding: 16px;
-  color: #ffffff;
+  color: var(--ink);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -1227,32 +1227,59 @@
   margin-top: 2px;
 }
 
-/* ===== 20. HORIZONTAL SWIPE PAGER (GESTURE SAFARI IOS) ===== */
-.tk-swipe-pager {
+/* ===== 20. HORIZONTAL SWIPE PAGER (CONTINUOUS PROGRESS T & SEAMLESS BG) ===== */
+.tk-swipe-pager-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.tk-swipe-pager-track {
   display: flex;
   width: 100%;
   height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tk-swipe-pager::-webkit-scrollbar {
-  display: none;
+  will-change: transform;
 }
 
 .tk-swipe-page {
   flex: 0 0 100%;
   width: 100%;
   height: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
   overflow-y: hidden;
   box-sizing: border-box;
   position: relative;
 }
+
+/* Pastikan panel layar di dalam SwipePager transparan agar latar belakang global menyatu tanpa jahitan/potongan visual */
+.tk-swipe-page .scr {
+  background: transparent !important;
+}
+
+.tk-swipe-page .scr::before {
+  display: none !important;
+}
+
+/* Global Background Layer Seamless */
+.tk-global-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--scr-bg);
+}
+
+.tk-global-bg-bubbles {
+  position: absolute;
+  inset: -12%;
+  filter: blur(26px);
+  pointer-events: none;
+  background-size: cover;
+}
+
 

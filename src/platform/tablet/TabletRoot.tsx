@@ -40,7 +40,21 @@ export const TabletRoot: React.FC = () => {
     });
   };
 
-  const { pagerRef, scrollProgress, handleScroll, scrollToTab } = useSwipeNav({
+  const {
+    progress,
+    isDragging,
+    containerRef,
+    trackRef,
+    indicatorRef,
+    navbarRef,
+    handleNavbarPointerDown,
+    handleNavbarPointerMove,
+    handleNavbarPointerUp,
+    handlePagerPointerDown,
+    handlePagerPointerMove,
+    handlePagerPointerUp,
+    scrollToTab,
+  } = useSwipeNav({
     tabs: NAV_TABS,
     activeTab: activeNavTab,
     onTabChange: handleNavTabChange,
@@ -103,18 +117,14 @@ export const TabletRoot: React.FC = () => {
     );
   }
 
-  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Swipeable Pages Gesture Safari iOS
+  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Seamless Drag-to-Switch
   const showNavbar = currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun';
   const isModalActive = Boolean(heldItem) || isCustomerMenuOpen;
 
-  const handleNavbarDrag = (progress: number) => {
-    if (pagerRef.current) {
-      pagerRef.current.scrollLeft = progress * pagerRef.current.clientWidth;
-    }
-  };
-
   return (
     <div
+      ref={containerRef}
+      className="tk-tablet-root"
       style={{
         width: '1024px',
         height: '640px',
@@ -123,8 +133,44 @@ export const TabletRoot: React.FC = () => {
         background: 'var(--scr-bg)',
       }}
     >
-      {/* Horizontal Swipeable Container dengan CSS Scroll-Snap (Home, Riwayat, Akun) */}
-      <SwipePager pagerRef={pagerRef} onScroll={handleScroll}>
+      {/* Seamless Global Dynamic Background: di luar container sliding, z-index paling bawah, tidak pernah terpotong */}
+      <div
+        className="tk-global-bg"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          background: 'var(--scr-bg)',
+        }}
+      >
+        <div
+          className="tk-global-bg-bubbles"
+          style={{
+            position: 'absolute',
+            inset: '-12%',
+            background: `
+              radial-gradient(circle at calc(14% + var(--bg-t, 0) * 18%) calc(10% + var(--bg-t, 0) * 8%), var(--b1) 0, transparent 26%),
+              radial-gradient(ellipse at calc(55% - var(--bg-t, 0) * 12%) calc(92% - var(--bg-t, 0) * 6%), var(--b2) 0, transparent 55%),
+              radial-gradient(ellipse at calc(95% - var(--bg-t, 0) * 16%) calc(78% - var(--bg-t, 0) * 12%), var(--b3) 0, transparent 42%)
+            `,
+            filter: 'blur(26px)',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+
+      {/* Horizontal Swipeable Container berbasis transform translate3d (Home, Riwayat, Akun) */}
+      <SwipePager
+        trackRef={trackRef}
+        progress={progress}
+        isDragging={isDragging}
+        onPointerDown={handlePagerPointerDown}
+        onPointerMove={handlePagerPointerMove}
+        onPointerUp={handlePagerPointerUp}
+      >
         <HomeScreen
           onOpenCustomerMenu={() => setIsCustomerMenuOpen(true)}
           onProceedToPayment={() => setCurrentScreen('payment')}
@@ -139,13 +185,18 @@ export const TabletRoot: React.FC = () => {
         <CustomerMenuView onClose={() => setIsCustomerMenuOpen(false)} />
       )}
 
-      {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet dengan Indikator Real-time */}
+      {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet dengan Single Progress Value t */}
       {showNavbar && (
         <NavbarPill
           activeItem={activeNavTab}
-          onSelect={(item) => scrollToTab(item)}
-          scrollProgress={scrollProgress}
-          onDragProgress={handleNavbarDrag}
+          onSelect={scrollToTab}
+          progress={progress}
+          isDragging={isDragging}
+          navRef={navbarRef}
+          indicatorRef={indicatorRef}
+          onPointerDown={handleNavbarPointerDown}
+          onPointerMove={handleNavbarPointerMove}
+          onPointerUp={handleNavbarPointerUp}
           isBlocked={isModalActive}
         />
       )}

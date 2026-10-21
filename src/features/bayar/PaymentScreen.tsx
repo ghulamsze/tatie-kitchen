@@ -24,9 +24,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('tunai');
   const [isManualCash, setIsManualCash] = useState<boolean>(false);
   const [manualCashInput, setManualCashInput] = useState<string>(cashReceived ? String(cashReceived) : '');
-  const [selectedQuickCash, setSelectedQuickCash] = useState<number>(cashReceived || Math.max(total, 50000));
+  // Default: uang pas (total)
+  const [selectedQuickCash, setSelectedQuickCash] = useState<number>(cashReceived || total);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Meja wajib diinput sebelum pembayaran dapat diproses
+  const isTableSet = tableInput !== 'x' && tableInput.trim().length > 0;
 
   // Hitung uang tunai efektif yang diterima
   const effectiveCash = paymentMethod !== 'tunai'
@@ -70,7 +74,12 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   };
 
   const handleCompletePayment = async () => {
-    const finalTableNo = tableInput === 'x' ? 'x' : tableInput;
+    if (!isTableSet) {
+      setErrorMessage('Silakan masukkan nomor meja terlebih dahulu.');
+      return;
+    }
+
+    const finalTableNo = tableInput;
     setTableNo(finalTableNo);
 
     if (paymentMethod === 'tunai' && !isCashSufficient) {
@@ -378,11 +387,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         <Button
           variant="lime"
           onClick={handleCompletePayment}
-          disabled={isSubmitting || (paymentMethod === 'tunai' && !isCashSufficient)}
+          disabled={isSubmitting || (paymentMethod === 'tunai' && !isCashSufficient) || !isTableSet}
           style={{ marginTop: 'auto', width: '100%', height: '48px' }}
         >
           {isSubmitting ? 'Memproses Pesanan...' : 'Selesaikan pembayaran'}
         </Button>
+        {!isTableSet && (
+          <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', textAlign: 'center', marginTop: '-4px' }}>
+            * Masukkan nomor pada keypad di sebelah kiri
+          </span>
+        )}
       </div>
     </div>
   );

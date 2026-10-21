@@ -6,6 +6,14 @@ export interface NavbarPillProps {
   activeItem: NavItem;
   onSelect: (item: NavItem) => void;
   scrollProgress?: number;
+  progress?: number;
+  isDragging?: boolean;
+  navRef?: React.Ref<HTMLElement>;
+  indicatorRef?: React.Ref<HTMLDivElement>;
+  onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void;
+  onPointerMove?: (e: React.PointerEvent<HTMLElement>) => void;
+  onPointerUp?: (e: React.PointerEvent<HTMLElement>) => void;
+  onPointerCancel?: (e: React.PointerEvent<HTMLElement>) => void;
   onDragProgress?: (progress: number) => void;
   isBlocked?: boolean;
 }
@@ -14,32 +22,40 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   activeItem,
   onSelect,
   scrollProgress,
+  progress,
+  isDragging: externalIsDragging,
+  navRef: externalNavRef,
+  indicatorRef: externalIndicatorRef,
+  onPointerDown: externalOnPointerDown,
+  onPointerMove: externalOnPointerMove,
+  onPointerUp: externalOnPointerUp,
+  onPointerCancel: externalOnPointerCancel,
   onDragProgress,
   isBlocked = false,
 }) => {
   const items: NavItem[] = ['Home', 'Riwayat', 'Akun'];
   const activeIndex = Math.max(0, items.indexOf(activeItem));
 
-  const navRef = useRef<HTMLElement | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const internalNavRef = useRef<HTMLElement | null>(null);
+  const [internalIsDragging, setInternalIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState(activeIndex);
   const isDraggingRef = useRef(false);
 
-  // Perhitungan progress drag terkunci ketat di dalam batas navbar (0 .. items.length - 1)
+  // Perhitungan progress drag jika NavbarPill digunakan mandiri
   const calculateProgress = useCallback((clientX: number): number => {
-    if (!navRef.current) return activeIndex;
-    const rect = navRef.current.getBoundingClientRect();
+    const el = (externalNavRef && 'current' in externalNavRef ? externalNavRef.current : null) || internalNavRef.current;
+    if (!el) return activeIndex;
+    const rect = el.getBoundingClientRect();
     const padding = 4;
     const totalWidth = rect.width - padding * 2;
     const itemWidth = totalWidth / items.length;
     const relativeX = clientX - rect.left - padding;
     const rawIndex = (relativeX - itemWidth / 2) / itemWidth;
 
-    // Batasi ketat 0 sampai 2 agar indikator tidak pernah keluar dari navbar
     return Math.max(0, Math.min(items.length - 1, rawIndex));
-  }, [activeIndex, items.length]);
+  }, [activeIndex, items.length, externalNavRef]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
+  const handleInternalPointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if (isBlocked) return;
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -47,23 +63,23 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       // ignore
     }
     isDraggingRef.current = true;
-    setIsDragging(true);
+    setInternalIsDragging(true);
     const p = calculateProgress(e.clientX);
     setDragProgress(p);
     onDragProgress?.(p);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
+  const handleInternalPointerMove = (e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current || isBlocked) return;
     const p = calculateProgress(e.clientX);
     setDragProgress(p);
     onDragProgress?.(p);
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLElement>) => {
+  const handleInternalPointerUp = (e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
-    setIsDragging(false);
+    setInternalIsDragging(false);
 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -76,27 +92,40 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     onSelect(items[nearestIndex]);
   };
 
-  // Posisi progress real-time (baik dari drag navbar maupun swipeable pager gesture Safari)
-  const effectiveProgress = isDragging
-    ? dragProgress
-    : (scrollProgress !== undefined ? scrollProgress : activeIndex);
+  const activeDragging = externalIsDragging !== undefined ? externalIsDragging : internalIsDragging;
 
-  const isRealtimeMoving = isDragging || (scrollProgress !== undefined && Math.abs(scrollProgress - activeIndex) > 0.005);
+  // Nilai progress kontinu t (0..2)
+  const effectiveProgress = progress !== undefined
+    ? progress
+    : (activeDragging
+        ? dragProgress
+        : (scrollProgress !== undefined ? scrollProgress : activeIndex));
 
-  const currentTranslate = `translateX(calc(${effectiveProgress} * 100%))`;
+  const isRealtimeMoving = activeDragging || Math.abs(effectiveProgress - activeIndex) > 0.005;
+
+  const currentTranslate = `translate3d(calc(${effectiveProgress} * 100%), 0, 0)`;
 
   return (
     <nav
-      ref={navRef}
+      ref={(el) => {
+        internalNavRef.current = el;
+        if (externalNavRef) {
+          if (typeof externalNavRef === 'function') {
+            externalNavRef(el);
+          } else {
+            (externalNavRef as React.MutableRefObject<HTMLElement | null>).current = el;
+          }
+        }
+      }}
       className={`g-liquid tk-navbar ${isBlocked ? 'blocked' : ''}`}
       aria-label="Navigasi Utama"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      onPointerDown={externalOnPointerDown || handleInternalPointerDown}
+      onPointerMove={externalOnPointerMove || handleInternalPointerMove}
+      onPointerUp={externalOnPointerUp || handleInternalPointerUp}
+      onPointerCancel={externalOnPointerCancel || externalOnPointerUp || handleInternalPointerUp}
       style={{
         touchAction: 'none',
-        cursor: isBlocked ? 'default' : (isDragging ? 'grabbing' : 'pointer'),
+        cursor: isBlocked ? 'default' : (activeDragging ? 'grabbing' : 'pointer'),
         pointerEvents: isBlocked ? 'none' : 'auto',
         filter: isBlocked ? 'blur(3px)' : 'none',
         opacity: isBlocked ? 0.45 : 1,
@@ -105,10 +134,12 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     >
       {/* Elastic Liquid Glass Sliding Indicator */}
       <div
+        ref={externalIndicatorRef}
         className={`tk-nav-elastic-indicator ${isRealtimeMoving ? 'dragging' : ''}`}
         style={{
           width: `calc((100% - 8px) / ${items.length})`,
           transform: currentTranslate,
+          transition: activeDragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
         }}
         aria-hidden="true"
       />

@@ -49,8 +49,10 @@ test.describe('Smoke Test Produksi & HTTPS (Fase 7)', () => {
     await expect(payBtn).toBeVisible();
     await payBtn.click();
 
-    // Keypad meja & bayar
+    // Keypad meja & bayar (wajib input nomor meja)
     await expect(page.locator('text=Nomor meja')).toBeVisible();
+    const key1 = page.getByRole('button', { name: '1', exact: true });
+    await key1.click();
     const selesaikanBtn = page.getByRole('button', { name: 'Selesaikan pembayaran' });
     await expect(selesaikanBtn).toBeVisible();
     await selesaikanBtn.click();
