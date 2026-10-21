@@ -12,9 +12,18 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   onSelect,
 }) => {
   const items: NavItem[] = ['Home', 'Riwayat', 'Akun'];
+  const activeIndex = Math.max(0, items.indexOf(activeItem));
 
   return (
     <nav className="g-liquid tk-navbar" aria-label="Navigasi Utama">
+      {/* Elastic Liquid Glass Sliding Indicator */}
+      <div
+        className="tk-nav-elastic-indicator"
+        style={{
+          transform: `translateX(calc(${activeIndex} * 100%))`,
+        }}
+        aria-hidden="true"
+      />
       {items.map((item) => (
         <button
           key={item}

@@ -45,7 +45,7 @@ describe('Layar Tablet Bagian A (Fase 4)', () => {
       const handleSelect = vi.fn();
       render(<SelectCashierScreen onSelectCashier={handleSelect} />);
 
-      const cashierBtn = screen.getByRole('button', { name: 'Pilih kasir Puspitawati' });
+      const cashierBtn = screen.getByRole('button', { name: /Pilih kasir Puspitawati/i });
       fireEvent.click(cashierBtn);
       expect(handleSelect).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'Puspitawati' })

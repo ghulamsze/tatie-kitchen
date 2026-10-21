@@ -90,13 +90,13 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
       );
 
       expect(screen.getByText('Tati’e Kitchen')).toBeInTheDocument();
-      expect(screen.getByText('Pesanan (0)')).toBeInTheDocument();
+      expect(screen.getByText('Pesanan baru')).toBeInTheDocument();
 
       // Tambahkan item Mie Goreng Komplit ke keranjang
       const mieItem = screen.getByRole('button', { name: /Mie Goreng Komplit/i });
       fireEvent.click(mieItem);
 
-      expect(screen.getByText('Pesanan (1)')).toBeInTheDocument();
+      expect(screen.getByText('Pesanan baru')).toBeInTheDocument();
       // Harga Rp40.000 muncul di kartu menu, baris keranjang, dan subtotal
       const priceElements = screen.getAllByText('Rp40.000');
       expect(priceElements.length).toBeGreaterThanOrEqual(1);

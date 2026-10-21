@@ -45,7 +45,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
       }}
       aria-label="Intro Tati’e Kitchen, ketuk untuk melanjutkan"
     >
-      <div className="g-liquid tk-intro-wordmark" role="img" aria-label="Tati’e Kitchen">
+      <div className="tk-intro-wordmark" role="img" aria-label="Tati’e Kitchen">
         {renderWord('Tati’e', 0)}
         <span className="tk-intro-space" />
         {renderWord('Kitchen', 6)}

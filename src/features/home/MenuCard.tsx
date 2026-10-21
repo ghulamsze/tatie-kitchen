@@ -37,7 +37,9 @@ export const MenuCard: React.FC<MenuCardProps> = ({
     }
   };
 
-  const backgroundGradient = `radial-gradient(circle at 38% 48%, hsl(${hue} 80% 60%) 0 20%, transparent 46%), radial-gradient(circle at 66% 58%, hsl(${hue + 20} 70% 40%) 0 16%, transparent 44%), hsl(${hue} 40% 24%)`;
+  const backgroundGradient = `radial-gradient(circle at 45% 48%, hsl(${hue} 85% 62%) 0 22%, transparent 48%), radial-gradient(circle at 68% 60%, hsl(${hue + 25} 75% 42%) 0 20%, transparent 46%), hsl(${hue} 42% 20%)`;
+
+  const hasPhotoUrl = item.photo_path && item.photo_path.startsWith('http');
 
   return (
     <div
@@ -53,22 +55,26 @@ export const MenuCard: React.FC<MenuCardProps> = ({
         minHeight: '136px',
       }}
     >
-      {/* Lapisan foto & gradien warna cadangan */}
+      {/* Lapisan foto asli & gradien warna cadangan */}
       <div
         className="photo-layer"
         style={{
-          background: backgroundGradient,
+          background: hasPhotoUrl
+            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%), url(${item.photo_path}) center/cover no-repeat`
+            : backgroundGradient,
         }}
       />
       <div className="blur-layer" />
 
-      {/* Tag Harga Liquid Glass */}
+      {/* Tag Harga Liquid Glass di Sudut Kanan Atas */}
       <span className="g-liquid price-tag">
         {formatRupiah(item.price_idr)}
       </span>
 
-      {/* Nama Menu */}
-      <b>{item.name}</b>
+      {/* Nama Menu di Kiri Bawah */}
+      <b style={{ position: 'relative', zIndex: 2, fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)' }}>
+        {item.name}
+      </b>
     </div>
   );
 };

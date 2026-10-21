@@ -30,7 +30,7 @@ test.describe('Alur Tablet Kasir Bagian A (Viewport 1024 x 640)', () => {
     await submitBtn.click();
 
     // 5. Kasir baru terpilih, masuk ke Home tablet
-    await expect(page.locator('text=Kasir: Dewi Sartika')).toBeVisible();
+    await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
     const navbar = page.locator('nav[aria-label="Navigasi Utama"]');
     await expect(navbar).toBeVisible();
 

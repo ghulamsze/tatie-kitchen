@@ -29,6 +29,7 @@ interface CashierState {
   fetchCashiers: (shopId?: string) => Promise<void>;
   setActiveCashier: (cashier: Cashier | null) => void;
   addNewCashier: (name: string, shopId?: string) => Promise<Cashier>;
+  removeCashier: (id: string) => Promise<void>;
 }
 
 export const useCashierStore = create<CashierState>((set) => ({
@@ -107,5 +108,32 @@ export const useCashierStore = create<CashierState>((set) => ({
 
     set((state) => ({ cashiers: [...state.cashiers, localCashier] }));
     return localCashier;
+  },
+
+  removeCashier: async (id: string) => {
+    if (isSupabaseConfigured()) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('cashiers') as any).update({ active: false }).eq('id', id);
+      } catch {
+        // Fallback local
+      }
+    }
+
+    set((state) => {
+      const remaining = state.cashiers.filter((c) => c.id !== id);
+      const isCurrentActive = state.activeCashier?.id === id;
+      if (isCurrentActive) {
+        try {
+          localStorage.removeItem('tk-active-cashier-id');
+        } catch {
+          // ignore
+        }
+      }
+      return {
+        cashiers: remaining,
+        activeCashier: isCurrentActive ? (remaining[0] ?? null) : state.activeCashier,
+      };
+    });
   },
 }));

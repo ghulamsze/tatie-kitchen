@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
-import { useCashierStore } from '../../stores/cashierStore.ts';
 import { MenuCard } from './MenuCard.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Sheet } from '../../design/components/Sheet.tsx';
@@ -11,13 +10,13 @@ import { formatRupiah } from '../../lib/format/formatters.ts';
 export interface HomeScreenProps {
   onOpenCustomerMenu: () => void;
   onProceedToPayment: () => void;
-  onChangeCashier: () => void;
+  onChangeCashier?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenCustomerMenu,
   onProceedToPayment,
-  onChangeCashier,
+  onChangeCashier: _onChangeCashier,
 }) => {
   const {
     items,
@@ -41,13 +40,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setNotes,
   } = useCartStore();
 
-  const { activeCashier } = useCashierStore();
-
   const categories = [
     { key: 'Semua', label: 'Semua' },
+    { key: 'Snack', label: 'Snack' },
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
-    { key: 'Snack', label: 'Snack' },
     { key: 'Minuman', label: 'Minuman' },
   ];
 
@@ -83,76 +80,54 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         boxSizing: 'border-box',
         overflow: 'hidden',
         position: 'relative',
-        padding: '16px 20px 84px 20px',
+        padding: '20px 24px 84px 24px',
       }}
     >
-      {/* 1. Header Atas: Nama Toko, Menu Lengkap, Pencarian, & Kasir Aktif */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          minHeight: '48px',
-          flex: 'none',
-          marginBottom: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800 }}>
-            Tati’e Kitchen
-          </h2>
-          <Button
-            variant="flat"
-            size="md"
-            onClick={onOpenCustomerMenu}
-            style={{ height: '40px', padding: '0 16px', fontSize: 'var(--t-sm)' }}
-          >
-            Menu lengkap
-          </Button>
-        </div>
-
-        {/* Input Pencarian Menu */}
-        <div style={{ flex: 1, maxWidth: '320px' }}>
-          <input
-            type="search"
-            className="tk-input"
-            placeholder="Cari menu..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ height: '40px', padding: '0 16px', fontSize: 'var(--t-sm)' }}
-            aria-label="Cari menu"
-          />
-        </div>
-
-        {/* Info Kasir Aktif */}
-        <button
-          type="button"
-          onClick={onChangeCashier}
-          className="ctl-flat"
-          title="Klik untuk ganti kasir"
-          style={{
-            height: '40px',
-            padding: '0 16px',
-            borderRadius: 'var(--r-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: 'var(--t-sm)',
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: '1px solid var(--ctl-line)',
-            color: 'var(--ink)',
-          }}
-        >
-          Kasir: {activeCashier?.name || 'Robertus Amaresi'}
-        </button>
-      </div>
-
       {/* 2. Area Konten Utama: Katalog Menu (Kiri) + Keranjang Pesanan (Kanan) */}
-      <div style={{ display: 'flex', gap: '16px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {/* Sisi Kiri: Chip Kategori + Grid Kartu Menu */}
+      <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {/* Sisi Kiri: Header Brand + Cari Menu + Chip Kategori + Grid Kartu Menu */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: '12px' }}>
+          {/* Header Brand & Menu Lengkap */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flex: 'none',
+            }}
+          >
+            <h2 style={{ fontSize: '26px', lineHeight: '32px', margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Tati’e Kitchen
+            </h2>
+            <Button
+              variant="flat"
+              size="md"
+              onClick={onOpenCustomerMenu}
+              style={{ minHeight: '40px', height: '40px', padding: '0 16px', fontSize: 'var(--t-sm)', boxSizing: 'border-box' }}
+            >
+              Menu lengkap
+            </Button>
+          </div>
+
+          {/* Input Pencarian Menu Persis Sesuai Gambar Referensi */}
+          <div style={{ flex: 'none', width: '100%' }}>
+            <input
+              type="search"
+              className="tk-input"
+              placeholder="Cari menu"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                height: '42px',
+                padding: '0 16px',
+                fontSize: 'var(--t-sm)',
+                borderRadius: 'var(--r-md)',
+                boxSizing: 'border-box',
+              }}
+              aria-label="Cari menu"
+            />
+          </div>
           {/* Chip Kategori */}
           <div style={{ display: 'flex', gap: '8px', flex: 'none', overflowX: 'auto', paddingBottom: '4px' }}>
             {categories.map((cat) => (
@@ -221,20 +196,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Header Keranjang */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 'none' }}>
             <h3 style={{ margin: 0, fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800 }}>
-              Pesanan ({lines.reduce((acc, l) => acc + l.qty, 0)})
+              Pesanan baru
             </h3>
             {lines.length > 0 && (
               <button
                 type="button"
                 onClick={clearCart}
                 style={{
+                  minHeight: '36px',
                   background: 'none',
                   border: 'none',
                   color: 'var(--danger)',
                   fontSize: 'var(--t-xs)',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  padding: '4px 8px',
+                  padding: '6px 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
               >
                 Kosongkan
@@ -274,14 +252,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ) : (
               lines.map((line) => (
-                <div key={line.item.id} className="tk-cart-row">
+                <div key={line.item.id} className="tk-cart-row tk-cart-item-in">
                   <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
                     <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {line.item.name}
                     </b>
-                    <small style={{ color: 'var(--ink-2)', fontSize: 'var(--t-xs)' }}>
-                      {formatRupiah(line.item.price_idr)} x {line.qty} = {formatRupiah(line.item.price_idr * line.qty)}
-                    </small>
+                    <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-xs)' }}>
+                      {formatRupiah(line.item.price_idr)}
+                    </span>
                   </div>
                   <div className="tk-qty-control" style={{ gap: '8px' }}>
                     <button
@@ -311,12 +289,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             )}
           </div>
 
-          {/* Kolom Catatan Pesanan */}
+          {/* Kolom Catatan Pesanan - Sesuai gambar referensi */}
           <div style={{ flex: 'none' }}>
             <input
               type="text"
-              className="tk-input"
-              placeholder="Catatan pesanan (opsional)..."
+              className="tk-input tk-notes-input"
+              placeholder="Catatan: kurang pedas"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               style={{ height: '38px', fontSize: 'var(--t-xs)', padding: '0 12px' }}

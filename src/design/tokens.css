@@ -414,18 +414,17 @@ body {
   z-index: 1;
 }
 
-/* ===== MATERIAL 1: LIQUID GLASS (hanya lapisan melayang: navbar, sheet, toast, tag harga) ===== */
+/* ===== MATERIAL 1: LIQUID GLASS (PYQT6 FROSTED ACRYLIC FLOATING) ===== */
 .g-liquid {
   isolation: isolate;
-  background: linear-gradient(135deg, rgb(var(--hl) / 0.36), rgb(var(--hl) / 0.08) 55%, rgb(var(--hl) / 0.2)),
-              rgb(var(--tint) / calc(var(--a-tint) - 0.14));
-  -webkit-backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
-  backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
-  border: 1px solid rgb(var(--hl) / 0.55);
-  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.75),
-              inset 0 -1px 0 rgb(var(--hl) / 0.14),
-              inset 0 0 20px rgb(var(--hl) / 0.14),
-              0 16px 40px rgb(var(--sh) / 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(255, 255, 255, 0.08) 100%),
+              rgb(var(--tint) / calc(var(--a-tint) - 0.12));
+  -webkit-backdrop-filter: blur(24px) saturate(190%) brightness(1.06);
+  backdrop-filter: blur(24px) saturate(190%) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+              inset 0 -1px 0 0 rgba(255, 255, 255, 0.06),
+              0 16px 44px rgb(var(--sh) / 0.4);
   color: var(--ink);
 }
 
@@ -436,29 +435,31 @@ body {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(circle at 18% 0, rgb(var(--hl) / 0.5), transparent 38%),
-              linear-gradient(90deg, rgb(var(--hl) / 0.16), transparent 40%, rgb(var(--hl) / 0.12));
+  background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.18), transparent 45%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
 }
 
-/* ===== MATERIAL 2: FROSTED ACRYLIC (panel konten) ===== */
+/* ===== MATERIAL 2: PYQT6 FROSTED ACRYLIC (SURFACE PANEL) ===== */
 .g-acrylic {
   color: var(--ink);
   border-radius: var(--r-lg);
-  background: var(--noise),
-              linear-gradient(180deg, rgb(var(--hl) / 0.14), rgb(var(--hl) / 0.03)),
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%),
               rgb(var(--tint) / var(--a-tint));
-  -webkit-backdrop-filter: blur(32px) saturate(130%);
-  backdrop-filter: blur(32px) saturate(130%);
-  border: 1px solid var(--edge);
-  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.2), 0 8px 24px rgb(var(--sh) / 0.24);
+  -webkit-backdrop-filter: blur(28px) saturate(175%) brightness(1.03);
+  backdrop-filter: blur(28px) saturate(175%) brightness(1.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+              0 14px 38px rgb(var(--sh) / 0.38);
 }
 
 /* KARTU AKSEN HIGHLIGHT */
 .g-acrylic.hi {
-  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-  background: var(--noise),
-              linear-gradient(160deg, color-mix(in srgb, var(--accent) 28%, transparent), rgb(var(--hl) / 0.04) 72%),
+  border-color: color-mix(in srgb, var(--accent) 55%, rgba(255, 255, 255, 0.12));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 26%, transparent) 0%, rgba(255, 255, 255, 0.03) 70%),
               rgb(var(--tint) / var(--a-tint));
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+              0 14px 38px rgb(var(--sh) / 0.42);
 }
 
 /* ===== MATERIAL 3: KONTROL DAN BARIS DATAR (fill tanpa blur) ===== */
@@ -488,3 +489,41 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== ANTI-SELECTION (HAPUS FITUR SALIN / LONG-PRESS CALLOUT) & NO OUTLINE SAAT TAHAN ===== */
+*,
+*::before,
+*::after {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+*:focus,
+*:active,
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Pengecualian form pengisian teks */
+input,
+textarea,
+[contenteditable="true"],
+.tk-input,
+.tk-notes-input {
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+input:focus,
+textarea:focus,
+input:focus-visible,
+textarea:focus-visible,
+.tk-input:focus,
+.tk-notes-input:focus {
+  outline: 2px solid var(--accent, #d92b33) !important;
+  outline-offset: 1px !important;
+}
+

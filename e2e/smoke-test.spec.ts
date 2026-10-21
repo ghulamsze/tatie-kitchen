@@ -41,7 +41,8 @@ test.describe('Smoke Test Produksi & HTTPS (Fase 7)', () => {
     await mieCard.click();
 
     // Verifikasi keranjang terisi
-    await expect(page.locator('text=Pesanan (1)')).toBeVisible();
+    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.locator('.tk-cart-row b:has-text("Mie Goreng Komplit")')).toBeVisible();
 
     // Tombol bayar lime
     const payBtn = page.getByRole('button', { name: 'Lanjut ke meja & bayar' });

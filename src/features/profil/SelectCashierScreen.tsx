@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 import { AddCashierDialog } from './AddCashierDialog.tsx';
+import { DeleteCashierDialog } from './DeleteCashierDialog.tsx';
 
 export interface SelectCashierScreenProps {
   onSelectCashier: (cashier: Cashier) => void;
@@ -12,8 +13,12 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
   onSelectCashier,
   onOpenDeviceSetup,
 }) => {
-  const { cashiers, activeCashier, setActiveCashier, addNewCashier } = useCashierStore();
+  const { cashiers, activeCashier, setActiveCashier, addNewCashier, removeCashier } = useCashierStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [cashierToDelete, setCashierToDelete] = useState<Cashier | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didTriggerHoldRef = React.useRef(false);
 
   const getInitials = (name: string): string => {
     const parts = name.trim().split(/\s+/);
@@ -21,7 +26,27 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const handlePointerDown = (cashier: Cashier) => {
+    didTriggerHoldRef.current = false;
+    holdTimerRef.current = setTimeout(() => {
+      didTriggerHoldRef.current = true;
+      setCashierToDelete(cashier);
+      setIsDeleteOpen(true);
+    }, 550);
+  };
+
+  const handlePointerUp = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
   const handleSelect = (cashier: Cashier) => {
+    if (didTriggerHoldRef.current) {
+      didTriggerHoldRef.current = false;
+      return;
+    }
     setActiveCashier(cashier);
     onSelectCashier(cashier);
   };
@@ -68,7 +93,12 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
               type="button"
               className={`tk-cashier-card ${isSelected ? 'selected' : ''}`}
               onClick={() => handleSelect(c)}
-              aria-label={`Pilih kasir ${c.name}`}
+              onPointerDown={() => handlePointerDown(c)}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              aria-label={`Pilih kasir ${c.name} (Tahan untuk menghapus)`}
+              title="Klik untuk memilih, tahan 0.5 detik untuk menghapus"
             >
               <div className="g-liquid tk-avatar-box">
                 {getInitials(c.name)}
@@ -124,6 +154,19 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onAdd={handleAdd}
+      />
+
+      {/* Dialog Hapus Kasir (Hold Gesture) */}
+      <DeleteCashierDialog
+        isOpen={isDeleteOpen}
+        cashier={cashierToDelete}
+        onClose={() => {
+          setIsDeleteOpen(false);
+          setCashierToDelete(null);
+        }}
+        onConfirm={async (id) => {
+          await removeCashier(id);
+        }}
       />
     </div>
   );

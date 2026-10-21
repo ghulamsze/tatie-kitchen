@@ -280,22 +280,44 @@
   outline-offset: 2px;
 }
 
-/* ===== 8. NAVBAR PIL (TABLET BOTTOM) ===== */
+/* ===== 8. NAVBAR PIL (TABLET BOTTOM - IOS ELASTIC LIQUID GLASS) ===== */
 .tk-navbar {
   position: absolute;
   left: 50%;
   bottom: 16px;
   transform: translateX(-50%);
   display: flex;
-  gap: 4px;
-  padding: 8px;
+  padding: 4px;
   border-radius: var(--r-pill);
   z-index: 50;
+  user-select: none;
+  isolation: isolate;
+}
+
+.tk-nav-elastic-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 100%),
+              color-mix(in srgb, var(--accent) 45%, rgba(255, 255, 255, 0.18));
+  -webkit-backdrop-filter: blur(16px) saturate(190%);
+  backdrop-filter: blur(16px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
+              0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.44s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .tk-navbar-item {
-  height: 44px;
-  padding: 0 16px;
+  position: relative;
+  z-index: 2;
+  height: 40px;
+  padding: 0 22px;
   border-radius: var(--r-pill);
   font-size: var(--t-sm);
   line-height: var(--l-sm);
@@ -307,12 +329,16 @@
   cursor: pointer;
   background: transparent;
   border: none;
-  transition: background 0.15s ease;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.tk-navbar-item:active {
+  transform: scale(0.95);
 }
 
 .tk-navbar-item.active {
-  background: rgb(var(--w) / 0.3);
-  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.6);
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   font-weight: 800;
 }
 
@@ -473,12 +499,12 @@
   font-size: var(--t-2xl);
   line-height: var(--l-2xl);
   font-weight: 800;
-  transition: outline 0.15s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 .tk-cashier-card.selected .tk-avatar-box {
-  outline: 3px solid var(--ring);
-  outline-offset: 4px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 /* ===== 12. TAMPILAN BUTTON ===== */
@@ -567,81 +593,144 @@
   z-index: 2;
 }
 
-.tk-menu-card.unavailable {
-  filter: grayscale(1);
-  opacity: 0.55;
+.tk-menu-card {
+  position: relative;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-.tk-menu-card.unavailable::after {
-  content: "Habis";
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: #000000;
-  color: #ffffff;
-  font-size: var(--t-xs);
-  line-height: var(--l-xs);
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: var(--r-pill);
-  z-index: 3;
+.tk-menu-card:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.tk-menu-card.unavailable {
+  filter: grayscale(1);
+  opacity: 0.5;
 }
 
 .tk-menu-card.hold {
   transform: scale(1.05);
   z-index: 6;
-  outline: 3px solid var(--ring);
-  outline-offset: 3px;
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4), 0 22px 50px rgba(0, 0, 0, 0.55);
 }
 
-/* ===== 14. KERANJANG PESANAN (HTML 2 Kanan) ===== */
+/* ===== 14. KERANJANG PESANAN (SESUAI DESAIN ACUAN) ===== */
 .tk-cart-panel {
-  width: 300px;
+  width: 320px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: none;
+  box-sizing: border-box;
+}
+
+@keyframes tk-cart-item-in {
+  0% {
+    opacity: 0;
+    transform: translateX(18px) scale(0.96);
+    background: rgba(255, 255, 255, 0.12);
+  }
+  50% {
+    transform: translateX(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    background: transparent;
+  }
 }
 
 .tk-cart-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgb(var(--w) / 0.22);
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-size: var(--t-md);
   line-height: var(--l-md);
+  animation: tk-cart-item-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.tk-cart-row b {
+  display: block;
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .tk-cart-row small {
   display: block;
   color: var(--ink-2);
-  font-size: var(--t-sm);
-  line-height: var(--l-sm);
+  font-size: var(--t-xs);
+  line-height: var(--l-xs);
+  margin-top: 2px;
 }
 
 .tk-qty-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tk-qty-btn {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 1px solid rgb(var(--w) / 0.4);
-  background: rgb(var(--w) / 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   display: grid;
   place-items: center;
   font-style: normal;
-  font-size: var(--t-lg);
-  line-height: var(--l-lg);
+  font-size: 16px;
+  line-height: 1;
   color: var(--ink);
   cursor: pointer;
   user-select: none;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.tk-qty-btn:active {
+  transform: scale(0.88);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.tk-notes-input {
+  width: 100%;
+  height: 40px;
+  border-radius: var(--r-md);
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--t-xs);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tk-notes-input:focus {
+  border-color: var(--ring);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ===== 15. KEYPAD MEJA & BAYAR TUNAI (HTML 3) ===== */

@@ -96,7 +96,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
                     >
                       <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>{name}</b>
                       <span style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)', fontWeight: 800, color: habis ? 'var(--ink-3)' : 'var(--accent-ink)' }}>
-                        {habis ? 'Habis' : formatRupiah(price)}
+                        {formatRupiah(price)}
                       </span>
                     </div>
                   );

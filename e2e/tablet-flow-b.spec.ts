@@ -23,7 +23,7 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
 
     // 3. Masuk ke Layar Home
     await expect(page.locator('h2')).toContainText('Tati’e Kitchen');
-    await expect(page.locator('text=Kasir: Robertus Amaresi')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Menu lengkap' })).toBeVisible();
 
     // 4. Uji Menu Lengkap Pembeli (Golden Triangle)
     const menuLengkapBtn = page.getByRole('button', { name: 'Menu lengkap' });
@@ -44,12 +44,13 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     await mieCard.click();
 
     // Verifikasi keranjang terisi
-    await expect(page.locator('text=Pesanan (1)')).toBeVisible();
+    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.locator('.tk-cart-row b:has-text("Mie Goreng Komplit")')).toBeVisible();
 
     // Tambah kuantitas dengan tombol +
     const tambahBtn = page.getByRole('button', { name: 'Tambah Mie Goreng Komplit' });
     await tambahBtn.click();
-    await expect(page.locator('text=Pesanan (2)')).toBeVisible();
+    await expect(page.locator('.tk-qty-control span:has-text("2")')).toBeVisible();
 
     // 6. Lanjut ke Meja & Pembayaran (Tombol Lime)
     const lanjutBayarBtn = page.getByRole('button', { name: 'Lanjut ke meja & bayar' });
@@ -83,7 +84,8 @@ test.describe('Alur Tablet Kasir Bagian B (Viewport 1024 x 640)', () => {
     await pesananBaruBtn.click();
 
     // Kembali ke Home dengan keranjang bersih
-    await expect(page.locator('text=Pesanan (0)')).toBeVisible();
+    await expect(page.locator('text=Pesanan baru')).toBeVisible();
+    await expect(page.locator('text=Keranjang masih kosong')).toBeVisible();
 
     // 10. Buka Riwayat Transaksi via Navbar
     const riwayatNav = page.getByRole('button', { name: 'Riwayat' });
