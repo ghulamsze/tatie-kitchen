@@ -43,7 +43,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({
 
   const backgroundGradient = `radial-gradient(circle at 45% 48%, hsl(${hue} 85% 62%) 0 22%, transparent 48%), radial-gradient(circle at 68% 60%, hsl(${hue + 25} 75% 42%) 0 20%, transparent 46%), hsl(${hue} 42% 20%)`;
 
-  const hasPhotoUrl = item.photo_path && item.photo_path.startsWith('http');
+  const hasPhotoUrl = Boolean(item.photo_path && item.photo_path.trim().length > 0);
 
   return (
     <div
