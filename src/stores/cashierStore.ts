@@ -21,6 +21,19 @@ const DEFAULT_CASHIERS: Cashier[] = [
   },
 ];
 
+const loadSavedCashiers = (): Cashier[] => {
+  try {
+    const raw = localStorage.getItem('tk_cashiers');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_CASHIERS;
+};
+
 interface CashierState {
   cashiers: Cashier[];
   activeCashier: Cashier | null;
@@ -33,7 +46,7 @@ interface CashierState {
 }
 
 export const useCashierStore = create<CashierState>((set) => ({
-  cashiers: DEFAULT_CASHIERS,
+  cashiers: loadSavedCashiers(),
   activeCashier: null,
   shiftStartTime: '08.00',
   isLoading: false,
@@ -106,7 +119,15 @@ export const useCashierStore = create<CashierState>((set) => ({
       created_at: new Date().toISOString(),
     };
 
-    set((state) => ({ cashiers: [...state.cashiers, localCashier] }));
+    set((state) => {
+      const updated = [...state.cashiers, localCashier];
+      try {
+        localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return { cashiers: updated };
+    });
     return localCashier;
   },
 
@@ -123,12 +144,13 @@ export const useCashierStore = create<CashierState>((set) => ({
     set((state) => {
       const remaining = state.cashiers.filter((c) => c.id !== id);
       const isCurrentActive = state.activeCashier?.id === id;
-      if (isCurrentActive) {
-        try {
+      try {
+        localStorage.setItem('tk_cashiers', JSON.stringify(remaining));
+        if (isCurrentActive) {
           localStorage.removeItem('tk-active-cashier-id');
-        } catch {
-          // ignore
         }
+      } catch {
+        // ignore
       }
       return {
         cashiers: remaining,

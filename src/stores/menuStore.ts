@@ -1076,8 +1076,21 @@ interface MenuState {
   fetchMenu: (shopId?: string) => Promise<void>;
 }
 
+const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => {
+  try {
+    const raw = localStorage.getItem('tk_item_availability');
+    if (raw) {
+      const map: Record<string, boolean> = JSON.parse(raw);
+      return initialItems.map((it) => (it.id in map ? { ...it, available: map[it.id] } : it));
+    }
+  } catch {
+    // ignore
+  }
+  return initialItems;
+};
+
 export const useMenuStore = create<MenuState>((set, get) => ({
-  items: SEED_MENU_ITEMS,
+  items: loadSavedAvailability(SEED_MENU_ITEMS),
   groups: SEED_MENU_GROUPS,
   selectedCategory: 'Semua',
   searchQuery: '',
@@ -1090,11 +1103,22 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   setToastMessage: (msg) => set({ toastMessage: msg }),
 
   toggleItemAvailability: async (itemId, available) => {
-    // 1. Update lokal state dulu secara instan
-    set((state) => ({
-      items: state.items.map((i) => (i.id === itemId ? { ...i, available } : i)),
-      heldItem: null,
-    }));
+    // 1. Update lokal state dulu secara instan dan simpan ke localStorage
+    set((state) => {
+      const updatedItems = state.items.map((i) => (i.id === itemId ? { ...i, available } : i));
+      try {
+        const raw = localStorage.getItem('tk_item_availability');
+        const map = raw ? JSON.parse(raw) : {};
+        map[itemId] = available;
+        localStorage.setItem('tk_item_availability', JSON.stringify(map));
+      } catch {
+        // ignore
+      }
+      return {
+        items: updatedItems,
+        heldItem: null,
+      };
+    });
 
     const targetItem = get().items.find((i) => i.id === itemId);
     const toast = targetItem

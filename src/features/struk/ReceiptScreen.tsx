@@ -17,6 +17,24 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // Putar audio assets/audio/payment_check.mp3 saat struk dimuat
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
+        const audio = new Audio('/assets/audio/payment_check.mp3');
+        // JSDom tidak memiliki implementasi play
+        if (typeof audio.play === 'function') {
+          const p = audio.play();
+          if (p && typeof p.catch === 'function') {
+            p.catch(() => {});
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Fallback data jika dibuka tanpa transaksi baru
   const orderDate = lastOrder?.created_at ? new Date(lastOrder.created_at) : new Date();
   const orderId = lastOrder?.id || 'ord-sample123';
@@ -95,16 +113,17 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Kolom Kiri: Kartu Struk Monospace (#fbfaf5) */}
-      <div
-        ref={receiptRef}
-        className="tk-receipt-card"
-        style={{
-          boxSizing: 'border-box',
-          maxHeight: '520px',
-          overflowY: 'auto',
-        }}
-      >
+      {/* Kolom Kiri: Kartu Struk Monospace (#fbfaf5) keluar dari Mesin Struk Kasir */}
+      <div className="tk-receipt-printer-slot">
+        <div
+          ref={receiptRef}
+          className="tk-receipt-card printing"
+          style={{
+            boxSizing: 'border-box',
+            maxHeight: '520px',
+            overflowY: 'auto',
+          }}
+        >
         <div className="center-bold" style={{ fontSize: '16px', marginBottom: '2px' }}>
           Tati’e Kitchen
         </div>
@@ -178,6 +197,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
         <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666', marginTop: '6px' }}>
           Terima kasih atas kunjungan Anda!
         </div>
+        </div>
       </div>
 
       {/* Kolom Kanan: Panel Konfirmasi, Unduh, Bagikan, & Pesanan Baru */}
@@ -194,8 +214,10 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           borderRadius: 'var(--r-xl)',
         }}
       >
-        <div className="tk-receipt-status-icon">
-          ✓
+        <div className="tk-receipt-status-icon animated" aria-label="Pembayaran sukses">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
 
         <div style={{ textAlign: 'center' }}>

@@ -6,12 +6,16 @@ export interface NavbarPillProps {
   activeItem: NavItem;
   onSelect: (item: NavItem) => void;
   scrollProgress?: number;
+  onDragProgress?: (progress: number) => void;
+  isBlocked?: boolean;
 }
 
 export const NavbarPill: React.FC<NavbarPillProps> = ({
   activeItem,
   onSelect,
   scrollProgress,
+  onDragProgress,
+  isBlocked = false,
 }) => {
   const items: NavItem[] = ['Home', 'Riwayat', 'Akun'];
   const activeIndex = Math.max(0, items.indexOf(activeItem));
@@ -36,6 +40,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   }, [activeIndex, items.length]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (isBlocked) return;
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
@@ -45,12 +50,14 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     setIsDragging(true);
     const p = calculateProgress(e.clientX);
     setDragProgress(p);
+    onDragProgress?.(p);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || isBlocked) return;
     const p = calculateProgress(e.clientX);
     setDragProgress(p);
+    onDragProgress?.(p);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLElement>) => {
@@ -81,7 +88,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   return (
     <nav
       ref={navRef}
-      className="g-liquid tk-navbar"
+      className={`g-liquid tk-navbar ${isBlocked ? 'blocked' : ''}`}
       aria-label="Navigasi Utama"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -89,7 +96,11 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       onPointerCancel={handlePointerUp}
       style={{
         touchAction: 'none',
-        cursor: isDragging ? 'grabbing' : 'pointer',
+        cursor: isBlocked ? 'default' : (isDragging ? 'grabbing' : 'pointer'),
+        pointerEvents: isBlocked ? 'none' : 'auto',
+        filter: isBlocked ? 'blur(3px)' : 'none',
+        opacity: isBlocked ? 0.45 : 1,
+        transition: 'opacity 0.25s ease, filter 0.25s ease',
       }}
     >
       {/* Elastic Liquid Glass Sliding Indicator */}
@@ -103,7 +114,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       />
       {items.map((item, idx) => {
         const diff = Math.abs(effectiveProgress - idx);
-        const weight = Math.max(0, 1 - diff); // 1 = aktif penuh, 0 = tidak aktif
+        const weight = Math.max(0, 1 - diff);
         const isCurrentActive = activeItem === item;
 
         return (
@@ -117,9 +128,10 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              onSelect(item);
+              if (!isBlocked) onSelect(item);
             }}
             aria-current={activeItem === item ? 'page' : undefined}
+            disabled={isBlocked}
           >
             {item}
           </button>

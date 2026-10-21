@@ -9,9 +9,12 @@ import { PaymentScreen } from '../../features/bayar/PaymentScreen.tsx';
 import { ReceiptScreen } from '../../features/struk/ReceiptScreen.tsx';
 import { HistoryScreen } from '../../features/riwayat/HistoryScreen.tsx';
 import { NavbarPill, NavItem } from '../../design/components/NavbarPill.tsx';
+import { Sheet } from '../../design/components/Sheet.tsx';
+import { Button } from '../../design/components/Button.tsx';
 import { SwipePager } from './SwipePager.tsx';
 import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
+import { useMenuStore } from '../../stores/menuStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
@@ -23,6 +26,7 @@ export const TabletRoot: React.FC = () => {
   const [isDeviceSetupOpen, setIsDeviceSetupOpen] = useState(false);
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
+  const { heldItem, setHeldItem, toggleItemAvailability } = useMenuStore();
 
   const activeNavTab: NavItem =
     currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
@@ -101,6 +105,13 @@ export const TabletRoot: React.FC = () => {
 
   // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Swipeable Pages Gesture Safari iOS
   const showNavbar = currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun';
+  const isModalActive = Boolean(heldItem) || isCustomerMenuOpen;
+
+  const handleNavbarDrag = (progress: number) => {
+    if (pagerRef.current) {
+      pagerRef.current.scrollLeft = progress * pagerRef.current.clientWidth;
+    }
+  };
 
   return (
     <div
@@ -134,8 +145,41 @@ export const TabletRoot: React.FC = () => {
           activeItem={activeNavTab}
           onSelect={(item) => scrollToTab(item)}
           scrollProgress={scrollProgress}
+          onDragProgress={handleNavbarDrag}
+          isBlocked={isModalActive}
         />
       )}
+
+      {/* Sheet Ubah Status Menu di Level Root agar Navbar Tertutup Blur & Terblokir */}
+      <Sheet
+        isOpen={Boolean(heldItem)}
+        onClose={() => setHeldItem(null)}
+        title={heldItem ? `Ubah status: ${heldItem.name}` : ''}
+      >
+        {heldItem && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+            <p style={{ margin: 0, fontSize: 'var(--t-sm)', color: 'var(--ink-2)' }}>
+              Status saat ini:{' '}
+              <b style={{ color: heldItem.available ? 'var(--accent-ink)' : 'var(--danger)' }}>
+                {heldItem.available ? 'Tersedia' : 'Habis'}
+              </b>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <Button variant="flat" size="md" onClick={() => setHeldItem(null)}>
+                Batal
+              </Button>
+              <Button
+                variant={heldItem.available ? 'danger' : 'lime'}
+                size="md"
+                onClick={() => toggleItemAvailability(heldItem.id, !heldItem.available)}
+              >
+                {heldItem.available ? 'Tandai habis' : 'Tandai tersedia'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Sheet>
     </div>
   );
 };

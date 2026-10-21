@@ -3,7 +3,6 @@ import { useMenuStore } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { MenuCard } from './MenuCard.tsx';
 import { Button } from '../../design/components/Button.tsx';
-import { Sheet } from '../../design/components/Sheet.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 
@@ -20,6 +19,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [isClearing, setIsClearing] = useState(false);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const touchStartXRef = React.useRef<number | null>(null);
 
   const {
     items,
@@ -29,7 +29,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setSearchQuery,
     heldItem,
     setHeldItem,
-    toggleItemAvailability,
     toastMessage,
   } = useMenuStore();
 
@@ -193,9 +192,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             ))}
           </div>
 
-          {/* Grid Kartu Menu */}
+          {/* Grid Kartu Menu dengan Dukungan Swipe Horizontal Antar Kategori */}
           <div
             className="tk-menu-grid"
+            onTouchStart={(e) => {
+              touchStartXRef.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartXRef.current === null) return;
+              const diff = e.changedTouches[0].clientX - touchStartXRef.current;
+              touchStartXRef.current = null;
+              if (Math.abs(diff) > 40) {
+                const keys = ['Semua', 'Snack', 'Makanan', 'Mie', 'Minuman'];
+                const curIdx = keys.indexOf(selectedCategory);
+                if (diff < 0 && curIdx < keys.length - 1) {
+                  setCategory(keys[curIdx + 1]);
+                } else if (diff > 0 && curIdx > 0) {
+                  setCategory(keys[curIdx - 1]);
+                }
+              }
+            }}
             style={{
               flex: 1,
               minHeight: 0,
@@ -415,37 +431,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Sheet Tahan Kartu Menu: Tandai Habis / Tersedia */}
-      <Sheet
-        isOpen={Boolean(heldItem)}
-        onClose={() => setHeldItem(null)}
-        title={heldItem ? `Ubah status: ${heldItem.name}` : ''}
-      >
-        {heldItem && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-            <p style={{ margin: 0, fontSize: 'var(--t-sm)', color: 'var(--ink-2)' }}>
-              Status saat ini:{' '}
-              <b style={{ color: heldItem.available ? 'var(--accent-ink)' : 'var(--danger)' }}>
-                {heldItem.available ? 'Tersedia' : 'Habis'}
-              </b>
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <Button variant="flat" size="md" onClick={() => setHeldItem(null)}>
-                Batal
-              </Button>
-              <Button
-                variant={heldItem.available ? 'danger' : 'lime'}
-                size="md"
-                onClick={() => toggleItemAvailability(heldItem.id, !heldItem.available)}
-              >
-                {heldItem.available ? 'Tandai habis' : 'Tandai tersedia'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Sheet>
 
       {/* Toast Notifikasi Feedback Status */}
       {toastMessage && (

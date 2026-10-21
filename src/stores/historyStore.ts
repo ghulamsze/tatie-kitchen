@@ -12,6 +12,19 @@ export type DateRangePreset = 'hari-ini' | 'kemarin' | '7-hari' | '30-hari' | 's
 // Riwayat transaksi default dikosongkan sesuai permintaan
 export const SEED_HISTORY_ORDERS: HistoryOrderWithItems[] = [];
 
+const loadSavedOrders = (): HistoryOrderWithItems[] => {
+  try {
+    const raw = localStorage.getItem('tk_order_history');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return SEED_HISTORY_ORDERS;
+};
+
 interface HistoryState {
   orders: HistoryOrderWithItems[];
   selectedRange: DateRangePreset;
@@ -24,7 +37,7 @@ interface HistoryState {
 }
 
 export const useHistoryStore = create<HistoryState>((set) => ({
-  orders: SEED_HISTORY_ORDERS,
+  orders: loadSavedOrders(),
   selectedRange: 'hari-ini',
   selectedOrder: null,
 
@@ -32,9 +45,15 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   setSelectedOrder: (order) => set({ selectedOrder: order }),
 
   addOrder: (order, items) => {
-    set((state) => ({
-      orders: [{ order, items }, ...state.orders],
-    }));
+    set((state) => {
+      const updated = [{ order, items }, ...state.orders];
+      try {
+        localStorage.setItem('tk_order_history', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return { orders: updated };
+    });
   },
 
   fetchOrders: async (shopId) => {
