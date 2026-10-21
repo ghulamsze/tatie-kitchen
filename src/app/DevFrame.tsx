@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { DeviceInfo, setDeviceOverride } from '../lib/device/detect.ts';
 
 export interface DevFrameProps {
@@ -19,13 +19,8 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
   useEffect(() => {
     if (!isBetaFrameEnabled) return;
 
-    // Blokir scroll browser global saat DevFrame aktif
-  useEffect(() => {
-    if (!isBetaFrameEnabled) return;
-    const blockWheel = (e: WheelEvent) => e.preventDefault();
-    document.addEventListener('wheel', blockWheel, { passive: false });
-    return () => document.removeEventListener('wheel', blockWheel);
-  }, [isBetaFrameEnabled]);
+  
+
   const handleResize = () => {
       // 1024 x 640 ditambah margin padding
       const availableWidth = window.innerWidth - 32;

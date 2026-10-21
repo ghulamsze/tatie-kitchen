@@ -1,20 +1,4 @@
-/* ===== GLOBAL SCROLL LOCK — tidak ada scroll browser sama sekali ===== */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;          /* Hapus semua scroll kiri/kanan/atas/bawah */
-  overscroll-behavior: none; /* Cegah pull-to-refresh dan overscroll */
-  touch-action: none;        /* Matikan native touch scroll */
-}
-
-#root {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-/* Font Plus Jakarta Sans lokal (npm @fontsource/plus-jakarta-sans) */
+ï»¿/* Font Plus Jakarta Sans lokal (npm @fontsource/plus-jakarta-sans) */
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
 @import "@fontsource/plus-jakarta-sans/800.css";
