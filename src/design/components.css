@@ -1,0 +1,347 @@
+/* ==========================================================================
+   TATIE KITCHEN COMPONENT STYLES
+   Semua ukuran, warna, radius, dan jarak WAJIB kelipatan 4 dan token design.md.
+   ========================================================================== */
+
+/* ===== 1. TOMBOL (BUTTONS) ===== */
+.tk-btn-lime {
+  height: var(--c-lg);
+  padding: 0 24px;
+  min-width: 112px;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 8px 20px rgb(var(--sh) / 0.25);
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.tk-btn-lime:active {
+  transform: scale(0.98);
+}
+
+.tk-btn-lime:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tk-btn-lime:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Tombol Sekunder / Datar */
+.tk-btn-flat {
+  height: var(--c-lg);
+  padding: 0 24px;
+  min-width: 112px;
+  border-radius: var(--r-md);
+  background: var(--ctl);
+  border: 1px solid var(--ctl-line);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: background 0.1s ease, transform 0.1s ease;
+}
+
+.tk-btn-flat:active {
+  transform: scale(0.98);
+}
+
+.tk-btn-flat:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tk-btn-flat:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Ukuran Tombol Sedang (48px) */
+.tk-btn-md {
+  height: var(--c-md);
+}
+
+/* Tombol Bahaya (Tanpa fill, border danger) */
+.tk-btn-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+/* ===== 2. CHIP ===== */
+.tk-chip {
+  height: var(--c-sm);
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  background: var(--chip-bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.tk-chip.active,
+.tk-chip.lime {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.tk-chip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== 3. PANEL GLASS (FROSTED ACRYLIC) ===== */
+.tk-panel {
+  padding: 24px;
+  border-radius: var(--r-lg);
+  color: var(--ink);
+}
+
+/* ===== 4. OVERLAY & SHEET (LIQUID GLASS) ===== */
+.tk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--ov);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tk-sheet {
+  position: absolute;
+  z-index: 101;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px));
+  padding: 24px;
+  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Dialog Tengah */
+.tk-dialog {
+  position: relative;
+  z-index: 101;
+  width: min(440px, calc(100% - 32px));
+  padding: 24px;
+  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tk-dialog.w-wide {
+  width: min(640px, calc(100% - 32px));
+}
+
+/* ===== 5. TOAST (LIQUID GLASS) ===== */
+.tk-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 12px 24px;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  animation: tk-toast-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes tk-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.tk-toast-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-xs);
+  line-height: var(--l-xs);
+  font-weight: 800;
+  flex: none;
+}
+
+.tk-toast-icon.danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* ===== 6. KOLOM ISIAN (INPUT FIELD) ===== */
+.tk-field {
+  height: var(--c-md);
+  border-radius: var(--r-md);
+  border: 1px solid var(--ctl-line);
+  background: var(--ctl);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tk-field::placeholder {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.tk-field:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent);
+}
+
+.tk-field.error {
+  border-color: var(--danger);
+}
+
+/* ===== 7. BARIS PILIHAN (OPTION ROW) ===== */
+.tk-option {
+  height: var(--c-md);
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  background: var(--ctl);
+  border: 1px solid var(--ctl-line);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+.tk-option.active {
+  background: var(--sel);
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+.tk-option:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== 8. NAVBAR PIL (TABLET BOTTOM) ===== */
+.tk-navbar {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border-radius: var(--r-pill);
+  z-index: 50;
+}
+
+.tk-navbar-item {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.tk-navbar-item.active {
+  background: rgb(var(--w) / 0.3);
+  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.6);
+  font-weight: 800;
+}
+
+.tk-navbar-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== 9. NO INTERNET COMPONENT ===== */
+.tk-no-internet-banner {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--danger) 30%, rgb(var(--tint) / 0.6));
+  border: 1px solid color-mix(in srgb, var(--danger) 60%, transparent);
+  color: var(--ink);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgb(var(--sh) / 0.3);
+}
+
+.tk-no-internet-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 40%, transparent);
+}

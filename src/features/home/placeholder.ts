@@ -1,0 +1,2 @@
+// Placeholder feature home
+export {};

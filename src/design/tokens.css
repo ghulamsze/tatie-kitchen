@@ -1,0 +1,490 @@
+/* Font Plus Jakarta Sans lokal (npm @fontsource/plus-jakarta-sans) */
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
+
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+
+  /* 1. TEKS: Hanya 7 pasangan ukuran/line-height (px): 12/16, 14/20, 16/24, 20/28, 32/40, 44/52, 64/72. Bobot: 500, 700, 800 */
+  --t-xs: 12px;
+  --l-xs: 16px;
+  --t-sm: 14px;
+  --l-sm: 20px;
+  --t-md: 16px;
+  --l-md: 24px;
+  --t-lg: 20px;
+  --l-lg: 28px;
+  --t-xl: 32px;
+  --l-xl: 40px;
+  --t-2xl: 44px;
+  --l-2xl: 52px;
+  --t-3xl: 64px;
+  --l-3xl: 72px;
+
+  /* 2. BENTUK: radius 12 / 16 / 24 / 32 / pil */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 9999px;
+
+  /* 3. KONTROL TINGGI TETAP */
+  --c-sm: 40px;
+  --c-md: 48px;
+  --c-lg: 56px;
+
+  /* 4. BASE PALETTE: Bawaan netflix (gelap) */
+  --bg: #141112;
+  --fg: #f2eeee;
+  --mut: #bfb3b4;
+  --scr-bg: #171314;
+  --b1: rgba(190, 45, 52, 0.45);
+  --b2: #4a0d12;
+  --b3: rgba(140, 32, 38, 0.5);
+  --ink: #f4efef;
+  --ink-2: #ebe3e3;
+  --ink-3: #bfb3b4;
+  --w: 255 255 255;
+  --hl: 255 255 255;
+  --sh: 6 3 4;
+  --tint: 24 20 21;
+  --a-tint: 0.4;
+  --accent: #d92b33;
+  --on-accent: #ffffff;
+  --accent-ink: #ff7377;
+  --ring: #ff7377;
+  --danger: #ffb4a8;
+
+  --fl-bg: rgba(22, 18, 19, 0.74);
+  --ov: rgba(8, 5, 6, 0.55);
+  --mc-bg: #261d1f;
+  --chip-bg: rgba(0, 0, 0, 0.3);
+  --solid: rgb(36 30 31 / 0.96);
+  --edge: rgb(255 255 255 / 0.18);
+  --ctl: rgb(255 255 255 / 0.16);
+  --ctl-line: rgb(255 255 255 / 0.3);
+  --sel: rgb(255 255 255 / 0.28);
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ===== MODE TERANG NETFLIX (bawaan netflix terang) ===== */
+:root[data-theme="light"],
+:root[data-palette="netflix"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f2f1;
+  --fg: #1c1516;
+  --mut: #5e4e50;
+  --scr-bg: #efecea;
+  --b1: rgba(230, 120, 125, 0.6);
+  --b2: #e3b3b5;
+  --b3: rgba(215, 100, 105, 0.5);
+  --ink: #1c1516;
+  --ink-2: #3b2e30;
+  --ink-3: #5e4e50;
+  --w: 50 30 32;
+  --sh: 70 40 42;
+  --tint: 255 255 255;
+  --a-tint: 0.52;
+  --accent: #d92b33;
+  --on-accent: #ffffff;
+  --accent-ink: #b3121a;
+  --ring: #b3121a;
+  --danger: #b3261e;
+  --fl-bg: rgba(255, 255, 255, 0.58);
+  --ov: rgba(239, 236, 234, 0.55);
+  --mc-bg: #e6dedd;
+  --chip-bg: rgba(255, 255, 255, 0.62);
+  --solid: rgb(252 250 250 / 0.97);
+  --edge: rgb(255 255 255 / 0.8);
+  --ctl: rgb(255 255 255 / 0.72);
+  --ctl-line: rgb(50 30 32 / 0.22);
+  --sel: rgb(255 255 255 / 0.9);
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .3 0 0 0 0 .2 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ===== PALET: NETFLIX GELAP ===== */
+:root[data-palette="netflix"]:not([data-theme="light"]) {
+  --bg: #141112;
+  --fg: #f2eeee;
+  --mut: #bfb3b4;
+  --scr-bg: #171314;
+  --b1: rgba(190, 45, 52, 0.45);
+  --b2: #4a0d12;
+  --b3: rgba(140, 32, 38, 0.5);
+  --ink: #f4efef;
+  --ink-2: #ebe3e3;
+  --ink-3: #bfb3b4;
+  --tint: 24 20 21;
+  --sh: 6 3 4;
+  --fl-bg: rgba(22, 18, 19, 0.74);
+  --ov: rgba(8, 5, 6, 0.55);
+  --mc-bg: #261d1f;
+  --solid: rgb(36 30 31 / 0.96);
+  --accent: #d92b33;
+  --on-accent: #ffffff;
+  --accent-ink: #ff7377;
+  --ring: #ff7377;
+}
+
+/* ===== PALET: MONO (MINIMAL HITAM PUTIH) ===== */
+:root[data-palette="mono"]:not([data-theme="light"]) {
+  --bg: #0b0b0c;
+  --fg: #f5f5f5;
+  --mut: #a8a8ad;
+  --scr-bg: #0f0f10;
+  --b1: rgba(255, 255, 255, 0.07);
+  --b2: #1b1b1d;
+  --b3: rgba(255, 255, 255, 0.05);
+  --ink: #f5f5f5;
+  --ink-2: #e4e4e6;
+  --ink-3: #a8a8ad;
+  --tint: 22 22 24;
+  --sh: 0 0 0;
+  --fl-bg: rgba(20, 20, 22, 0.74);
+  --ov: rgba(0, 0, 0, 0.55);
+  --mc-bg: #1c1c1e;
+  --solid: rgb(34 34 36 / 0.96);
+  --accent: #f5f5f5;
+  --on-accent: #0f0f10;
+  --accent-ink: #f5f5f5;
+  --ring: #ffffff;
+}
+
+:root[data-palette="mono"][data-theme="light"] {
+  --bg: #f6f6f6;
+  --fg: #111112;
+  --mut: #5a5a5f;
+  --scr-bg: #f1f1f2;
+  --b1: rgba(0, 0, 0, 0.05);
+  --b2: #e6e6e8;
+  --b3: rgba(0, 0, 0, 0.04);
+  --ink: #111112;
+  --ink-2: #333336;
+  --ink-3: #5a5a5f;
+  --w: 20 20 24;
+  --sh: 30 30 34;
+  --ov: rgba(241, 241, 242, 0.55);
+  --mc-bg: #e6e6e8;
+  --solid: rgb(255 255 255 / 0.97);
+  --accent: #111112;
+  --on-accent: #ffffff;
+  --accent-ink: #111112;
+  --ring: #111112;
+  --ctl-line: rgb(20 20 24 / 0.2);
+}
+
+/* ===== PALET: HIJAU ===== */
+:root[data-palette="hijau"]:not([data-theme="light"]) {
+  --bg: #04201f;
+  --fg: #f1fff6;
+  --mut: #a9d9c4;
+  --scr-bg: #04201f;
+  --b1: rgba(182, 243, 106, 0.72);
+  --b2: #0fa38f;
+  --b3: rgba(46, 211, 160, 0.75);
+  --ink: #ffffff;
+  --ink-2: #e6ffd0;
+  --ink-3: #bfe8d2;
+  --tint: 8 24 30;
+  --sh: 2 15 15;
+  --accent: #c6f36a;
+  --on-accent: #0c2a1c;
+  --accent-ink: #c6f36a;
+  --ring: #c6f36a;
+  --fl-bg: rgba(4, 32, 31, 0.72);
+  --ov: rgba(2, 15, 15, 0.5);
+  --mc-bg: #0a2f2c;
+  --solid: rgb(10 45 45 / 0.96);
+}
+
+:root[data-palette="hijau"][data-theme="light"] {
+  --bg: #eef6f1;
+  --fg: #0c2a1c;
+  --mut: #3f6654;
+  --scr-bg: #e7f3ec;
+  --b1: rgba(190, 240, 100, 0.85);
+  --b2: #7fd6c2;
+  --b3: rgba(110, 210, 165, 0.75);
+  --ink: #0c2a1c;
+  --ink-2: #2c5340;
+  --ink-3: #3f6654;
+  --w: 20 70 48;
+  --sh: 30 80 55;
+  --accent: #c6f36a;
+  --on-accent: #0c2a1c;
+  --accent-ink: #17653a;
+  --ring: #17653a;
+  --fl-bg: rgba(255, 255, 255, 0.58);
+  --ov: rgba(230, 243, 236, 0.55);
+  --mc-bg: #dcefe5;
+  --solid: rgb(250 253 251 / 0.97);
+  --ctl-line: rgb(20 70 48 / 0.22);
+}
+
+/* ===== PALET: SAMUDRA ===== */
+:root[data-palette="samudra"]:not([data-theme="light"]) {
+  --bg: #051428;
+  --fg: #eef6ff;
+  --mut: #a9c8e8;
+  --scr-bg: #061a33;
+  --b1: rgba(94, 200, 255, 0.7);
+  --b2: #1565d8;
+  --b3: rgba(40, 170, 230, 0.7);
+  --ink: #ffffff;
+  --ink-2: #dcecff;
+  --ink-3: #b4cdea;
+  --tint: 8 20 40;
+  --sh: 2 8 20;
+  --fl-bg: rgba(4, 18, 40, 0.72);
+  --ov: rgba(2, 8, 20, 0.5);
+  --mc-bg: #0a2547;
+  --solid: rgb(10 30 60 / 0.96);
+  --accent: #ffd166;
+  --on-accent: #2a1c00;
+  --accent-ink: #ffd166;
+  --ring: #ffd166;
+}
+
+:root[data-palette="samudra"][data-theme="light"] {
+  --bg: #eaf2fb;
+  --fg: #0a2342;
+  --mut: #3d5f86;
+  --scr-bg: #e4eefa;
+  --b1: rgba(130, 205, 255, 0.85);
+  --b2: #7fb2f2;
+  --b3: rgba(110, 190, 235, 0.7);
+  --ink: #0a2342;
+  --ink-2: #26456b;
+  --ink-3: #3d5f86;
+  --w: 20 50 90;
+  --sh: 20 50 100;
+  --ov: rgba(228, 238, 250, 0.55);
+  --mc-bg: #d6e6f7;
+  --solid: rgb(250 252 255 / 0.97);
+  --accent: #ffd166;
+  --on-accent: #2a1c00;
+  --accent-ink: #7a5000;
+  --ring: #7a5000;
+  --ctl-line: rgb(20 50 90 / 0.22);
+}
+
+/* ===== PALET: SENJA ===== */
+:root[data-palette="senja"]:not([data-theme="light"]) {
+  --bg: #1f0b0e;
+  --fg: #fff3ee;
+  --mut: #e8b9ae;
+  --scr-bg: #2a0f12;
+  --b1: rgba(255, 176, 96, 0.75);
+  --b2: #d4472a;
+  --b3: rgba(255, 110, 120, 0.7);
+  --ink: #ffffff;
+  --ink-2: #ffe6dc;
+  --ink-3: #f0c4b8;
+  --tint: 40 12 16;
+  --sh: 20 4 6;
+  --fl-bg: rgba(36, 10, 14, 0.72);
+  --ov: rgba(20, 4, 6, 0.5);
+  --mc-bg: #3a1418;
+  --solid: rgb(60 20 24 / 0.96);
+  --accent: #8af0cf;
+  --on-accent: #052a20;
+  --accent-ink: #8af0cf;
+  --ring: #8af0cf;
+}
+
+:root[data-palette="senja"][data-theme="light"] {
+  --bg: #fbf0eb;
+  --fg: #3a130f;
+  --mut: #7a3f33;
+  --scr-bg: #f8e9e2;
+  --b1: rgba(255, 196, 120, 0.85);
+  --b2: #f2a58d;
+  --b3: rgba(255, 150, 140, 0.7);
+  --ink: #3a130f;
+  --ink-2: #5c2a22;
+  --ink-3: #7a3f33;
+  --w: 90 35 28;
+  --sh: 110 50 40;
+  --ov: rgba(250, 232, 226, 0.55);
+  --mc-bg: #f3d9d0;
+  --solid: rgb(255 250 248 / 0.97);
+  --accent: #8af0cf;
+  --on-accent: #052a20;
+  --accent-ink: #0b6b52;
+  --ring: #0b6b52;
+  --ctl-line: rgb(90 35 28 / 0.22);
+}
+
+/* ===== PALET: BLUSH ===== */
+:root[data-palette="blush"]:not([data-theme="light"]) {
+  --bg: #1d1015;
+  --fg: #fbeef1;
+  --mut: #e0b4c0;
+  --scr-bg: #24121a;
+  --ink: #fff3f6;
+  --b1: rgba(240, 140, 170, 0.55);
+  --b2: #7a2c48;
+  --b3: rgba(200, 100, 140, 0.5);
+  --ink-2: #fbe3ea;
+  --ink-3: #e0b4c0;
+  --tint: 36 14 22;
+  --sh: 16 4 8;
+  --fl-bg: rgba(32, 12, 20, 0.72);
+  --ov: rgba(16, 4, 8, 0.5);
+  --mc-bg: #3a1624;
+  --solid: rgb(52 22 34 / 0.96);
+  --accent: #f4a3b7;
+  --on-accent: #3a0f1b;
+  --accent-ink: #f4a3b7;
+  --ring: #f4a3b7;
+}
+
+:root[data-palette="blush"][data-theme="light"] {
+  --bg: #fbeff1;
+  --fg: #4a1d28;
+  --mut: #85485a;
+  --scr-bg: #f9e6ea;
+  --b1: rgba(250, 190, 205, 0.85);
+  --b2: #f0b3c2;
+  --b3: rgba(240, 160, 185, 0.65);
+  --ink: #4a1d28;
+  --ink-2: #66303d;
+  --ink-3: #85485a;
+  --w: 110 40 60;
+  --sh: 140 60 80;
+  --ov: rgba(249, 230, 234, 0.55);
+  --mc-bg: #f4d6dd;
+  --solid: rgb(255 250 251 / 0.97);
+  --accent: #f08ca4;
+  --on-accent: #3a0f1b;
+  --accent-ink: #a3304f;
+  --ring: #a3304f;
+  --ctl-line: rgb(110 40 60 / 0.22);
+}
+
+/* Light mode swatch border styling */
+:root[data-theme="light"] .swb {
+  --a: #ffffff !important;
+}
+
+/* ===== RESET & DASAR ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== LATAR LAYAR (SCR) ===== */
+.scr {
+  position: relative;
+  background: var(--scr-bg);
+  color: var(--ink);
+  overflow: hidden;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+}
+
+.scr::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(circle at 14% 10%, var(--b1) 0, transparent 26%),
+              radial-gradient(ellipse at 55% 92%, var(--b2) 0, transparent 55%),
+              radial-gradient(ellipse at 95% 78%, var(--b3) 0, transparent 42%);
+  filter: blur(26px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scr > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== MATERIAL 1: LIQUID GLASS (hanya lapisan melayang: navbar, sheet, toast, tag harga) ===== */
+.g-liquid {
+  isolation: isolate;
+  background: linear-gradient(135deg, rgb(var(--hl) / 0.36), rgb(var(--hl) / 0.08) 55%, rgb(var(--hl) / 0.2)),
+              rgb(var(--tint) / calc(var(--a-tint) - 0.14));
+  -webkit-backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  border: 1px solid rgb(var(--hl) / 0.55);
+  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.75),
+              inset 0 -1px 0 rgb(var(--hl) / 0.14),
+              inset 0 0 20px rgb(var(--hl) / 0.14),
+              0 16px 40px rgb(var(--sh) / 0.3);
+  color: var(--ink);
+}
+
+.g-liquid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 18% 0, rgb(var(--hl) / 0.5), transparent 38%),
+              linear-gradient(90deg, rgb(var(--hl) / 0.16), transparent 40%, rgb(var(--hl) / 0.12));
+}
+
+/* ===== MATERIAL 2: FROSTED ACRYLIC (panel konten) ===== */
+.g-acrylic {
+  color: var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--noise),
+              linear-gradient(180deg, rgb(var(--hl) / 0.14), rgb(var(--hl) / 0.03)),
+              rgb(var(--tint) / var(--a-tint));
+  -webkit-backdrop-filter: blur(32px) saturate(130%);
+  backdrop-filter: blur(32px) saturate(130%);
+  border: 1px solid var(--edge);
+  box-shadow: inset 0 1px 0 rgb(var(--hl) / 0.2), 0 8px 24px rgb(var(--sh) / 0.24);
+}
+
+/* KARTU AKSEN HIGHLIGHT */
+.g-acrylic.hi {
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: var(--noise),
+              linear-gradient(160deg, color-mix(in srgb, var(--accent) 28%, transparent), rgb(var(--hl) / 0.04) 72%),
+              rgb(var(--tint) / var(--a-tint));
+}
+
+/* ===== MATERIAL 3: KONTROL DAN BARIS DATAR (fill tanpa blur) ===== */
+.ctl-flat {
+  background: var(--ctl);
+  border: 1px solid var(--ctl-line);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+/* ===== PREFERS-REDUCED-TRANSPARENCY FALLBACK ===== */
+@media (prefers-reduced-transparency: reduce) {
+  .g-liquid,
+  .g-acrylic,
+  .ctl-flat {
+    background: var(--solid) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* ===== PREFERS-REDUCED-MOTION FALLBACK ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
