@@ -51,9 +51,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const handleKeypadPress = (val: string | number) => {
     if (val === 'Hapus') {
       setTableInput((prev) => (prev.length > 1 && prev !== 'x' ? prev.slice(0, -1) : 'x'));
-    } else if (val === 'OK') {
-      const finalNo = tableInput === 'x' ? 'x' : tableInput;
-      setTableNo(finalNo);
     } else {
       setTableInput((prev) => (prev === 'x' ? String(val) : (prev.length < 3 ? `${prev}${val}` : prev)));
     }
@@ -217,7 +214,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         </div>
 
         <div className="tk-keypad-grid">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'Hapus', 0, 'OK'].map((key) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((key) => (
             <button
               key={key}
               type="button"
@@ -226,6 +223,19 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               {key}
             </button>
           ))}
+          <div style={{ height: '52px' }} aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => handleKeypadPress(0)}
+          >
+            0
+          </button>
+          <button
+            type="button"
+            onClick={() => handleKeypadPress('Hapus')}
+          >
+            Hapus
+          </button>
         </div>
       </div>
 
@@ -288,27 +298,32 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               ))}
             </div>
 
-            {/* Input Nominal Manual jika uang bukan kelipatan 5 atau nominal khusus */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
-                Input manual uang diterima:
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="tk-input"
-                placeholder="Contoh: 23000"
-                value={manualCashInput}
-                onChange={handleManualCashChange}
-                style={{
-                  height: '42px',
-                  padding: '0 14px',
-                  fontSize: 'var(--t-md)',
-                  fontWeight: 700,
-                  borderColor: isManualCash ? 'var(--ring)' : 'var(--ctl-line)',
-                }}
-              />
-            </div>
+            {/* Kolom Input Nominal Manual (Ukuran 52px disesuaikan dengan kolom lain) */}
+            <input
+              type="text"
+              inputMode="numeric"
+              className="tk-input"
+              placeholder="Input manual uang diterima..."
+              value={manualCashInput}
+              onFocus={() => {
+                setIsManualCash(true);
+              }}
+              onClick={() => {
+                setIsManualCash(true);
+              }}
+              onChange={handleManualCashChange}
+              style={{
+                height: '52px',
+                padding: '0 16px',
+                fontSize: 'var(--t-md)',
+                fontWeight: 700,
+                borderRadius: 'var(--r-md)',
+                borderColor: isManualCash ? 'var(--ring)' : 'var(--ctl-line)',
+                boxShadow: isManualCash ? '0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent)' : 'none',
+                boxSizing: 'border-box',
+                width: '100%',
+              }}
+            />
 
             {/* Kolom Kembalian */}
             <div className="tk-field" style={{ height: '52px', fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>

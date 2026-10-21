@@ -185,17 +185,8 @@ export function useSwipeNav({
     }
 
     const currentT = tRef.current;
-    const v = velocityRef.current; // px per ms
-
-    let targetIndex: number;
-    // Flick threshold ~ 0.35 px/ms
-    if (v > 0.35) {
-      targetIndex = Math.min(tabs.length - 1, Math.floor(currentT) + 1);
-    } else if (v < -0.35) {
-      targetIndex = Math.max(0, Math.ceil(currentT) - 1);
-    } else {
-      targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(currentT)));
-    }
+    // Berhenti berdasarkan tab terdekat di mana user terakhir berhenti hold
+    const targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(currentT)));
 
     animateTo(targetIndex);
   }, [animateTo, tabs.length]);
@@ -273,16 +264,8 @@ export function useSwipeNav({
     if (!isHorizontalSwipeRef.current) return;
 
     const currentT = tRef.current;
-    const v = velocityRef.current;
-
-    let targetIndex: number;
-    if (v > 0.35) {
-      targetIndex = Math.max(0, Math.ceil(currentT) - 1);
-    } else if (v < -0.35) {
-      targetIndex = Math.min(tabs.length - 1, Math.floor(currentT) + 1);
-    } else {
-      targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(currentT)));
-    }
+    // Berhenti berdasarkan tab terdekat di mana user terakhir berhenti hold
+    const targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(currentT)));
 
     animateTo(targetIndex);
   }, [animateTo, tabs.length]);
