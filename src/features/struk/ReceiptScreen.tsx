@@ -1,0 +1,249 @@
+import React, { useRef, useState } from 'react';
+import { toPng } from 'html-to-image';
+import { useCartStore } from '../../stores/cartStore.ts';
+import { useCashierStore } from '../../stores/cashierStore.ts';
+import { formatRupiah, formatDate, formatTime } from '../../lib/format/formatters.ts';
+import { Button } from '../../design/components/Button.tsx';
+import { Toast } from '../../design/components/Toast.tsx';
+
+export interface ReceiptScreenProps {
+  onNewOrder: () => void;
+}
+
+export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
+  const { lastOrder, lastOrderItems, notes } = useCartStore();
+  const { activeCashier } = useCashierStore();
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Fallback data jika dibuka tanpa transaksi baru
+  const orderDate = lastOrder?.created_at ? new Date(lastOrder.created_at) : new Date();
+  const orderId = lastOrder?.id || 'ord-sample123';
+  const tableNo = lastOrder?.table_no || '4';
+  const total = lastOrder?.total_idr || 0;
+  const cashReceived = lastOrder?.cash_received_idr || total;
+  const change = lastOrder?.change_idr || 0;
+  const cashierName = activeCashier?.name || 'Robertus Amaresi';
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // 1. Bagikan Struk via Web Share API atau salin teks
+  const handleShare = async () => {
+    const linesSummary = lastOrderItems
+      .map((item) => `${item.qty}x ${item.name_snapshot} (${formatRupiah(item.price_snapshot_idr * item.qty)})`)
+      .join('\n');
+
+    const shareText = `*Tati’e Kitchen*\nJl. Tamalate 2 No. 8, Makassar\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Struk Tati’e Kitchen - Meja ${tableNo}`,
+          text: shareText,
+        });
+        showToast('Struk berhasil dibagikan');
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError') {
+          await navigator.clipboard.writeText(shareText);
+          showToast('Ringkasan struk disalin ke clipboard');
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      showToast('Ringkasan struk disalin ke clipboard');
+    }
+  };
+
+  // 2. Unduh Struk sebagai berkas PNG
+  const handleDownloadPng = async () => {
+    if (!receiptRef.current) return;
+    try {
+      setIsDownloading(true);
+      const dataUrl = await toPng(receiptRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = `struk-${orderId}.png`;
+      link.href = dataUrl;
+      link.click();
+      showToast('Struk berhasil diunduh sebagai gambar PNG');
+    } catch {
+      showToast('Gagal mengunduh gambar struk');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <div
+      className="scr"
+      style={{
+        width: '1024px',
+        height: '640px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '40px',
+        padding: '24px 32px 84px 32px',
+        boxSizing: 'border-box',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Kolom Kiri: Kartu Struk Monospace (#fbfaf5) */}
+      <div
+        ref={receiptRef}
+        className="tk-receipt-card"
+        style={{
+          boxSizing: 'border-box',
+          maxHeight: '520px',
+          overflowY: 'auto',
+        }}
+      >
+        <div className="center-bold" style={{ fontSize: '16px', marginBottom: '2px' }}>
+          Tati’e Kitchen
+        </div>
+        <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666' }}>
+          Jl. Tamalate 2 No. 8, Makassar
+        </div>
+
+        <hr />
+
+        <div className="row-between" style={{ fontSize: '12px' }}>
+          <span>Waktu:</span>
+          <span>{formatDate(orderDate)} {formatTime(orderDate)}</span>
+        </div>
+        <div className="row-between" style={{ fontSize: '12px' }}>
+          <span>Kasir:</span>
+          <span>{cashierName}</span>
+        </div>
+        <div className="row-between" style={{ fontSize: '12px' }}>
+          <span>Meja:</span>
+          <span>{tableNo}</span>
+        </div>
+        <div className="row-between" style={{ fontSize: '12px' }}>
+          <span>No. Struk:</span>
+          <span>{orderId.substring(0, 14)}</span>
+        </div>
+
+        <hr />
+
+        {/* Daftar Item Pesanan */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0' }}>
+          {lastOrderItems.length > 0 ? (
+            lastOrderItems.map((item) => (
+              <div key={item.id} className="row-between">
+                <span>
+                  {item.qty}x {item.name_snapshot}
+                </span>
+                <span>{formatRupiah(item.price_snapshot_idr * item.qty)}</span>
+              </div>
+            ))
+          ) : (
+            <div className="row-between">
+              <span>1x Nasi Goreng Telur</span>
+              <span>{formatRupiah(20000)}</span>
+            </div>
+          )}
+        </div>
+
+        {notes && (
+          <div style={{ fontSize: '11px', color: '#555555', marginTop: '4px', fontStyle: 'italic' }}>
+            Catatan: {notes}
+          </div>
+        )}
+
+        <hr />
+
+        <div className="row-between" style={{ fontWeight: 700 }}>
+          <span>Total:</span>
+          <span>{formatRupiah(total || 20000)}</span>
+        </div>
+        <div className="row-between">
+          <span>Tunai:</span>
+          <span>{formatRupiah(cashReceived || 50000)}</span>
+        </div>
+        <div className="row-between" style={{ fontWeight: 700 }}>
+          <span>Kembalian:</span>
+          <span>{formatRupiah(change || 30000)}</span>
+        </div>
+
+        <hr />
+
+        <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666', marginTop: '6px' }}>
+          Terima kasih atas kunjungan Anda!
+        </div>
+      </div>
+
+      {/* Kolom Kanan: Panel Konfirmasi, Unduh, Bagikan, & Pesanan Baru */}
+      <div
+        className="g-acrylic"
+        style={{
+          width: '360px',
+          padding: '28px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '16px',
+          boxSizing: 'border-box',
+          borderRadius: 'var(--r-xl)',
+        }}
+      >
+        <div className="tk-receipt-status-icon">
+          ✓
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', fontWeight: 800 }}>
+            Pembayaran berhasil
+          </h3>
+          <p style={{ margin: '6px 0 0', color: 'var(--ink-2)', fontSize: 'var(--t-sm)' }}>
+            Kembalian {formatRupiah(change)}
+          </p>
+        </div>
+
+        {/* Tombol Bagikan Struk & Unduh PNG */}
+        <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '8px' }}>
+          <Button
+            variant="flat"
+            size="md"
+            onClick={handleShare}
+            style={{ flex: 1, fontSize: 'var(--t-sm)' }}
+          >
+            Bagikan
+          </Button>
+          <Button
+            variant="flat"
+            size="md"
+            onClick={handleDownloadPng}
+            disabled={isDownloading}
+            style={{ flex: 1, fontSize: 'var(--t-sm)' }}
+          >
+            {isDownloading ? 'Menyimpan...' : 'Unduh PNG'}
+          </Button>
+        </div>
+
+        {/* Exactly ONE lime button per screen */}
+        <Button
+          variant="lime"
+          onClick={onNewOrder}
+          style={{ width: '100%', height: '52px', marginTop: '12px' }}
+        >
+          Pesanan baru
+        </Button>
+      </div>
+
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 120 }}>
+          <Toast message={toastMessage} />
+        </div>
+      )}
+    </div>
+  );
+};

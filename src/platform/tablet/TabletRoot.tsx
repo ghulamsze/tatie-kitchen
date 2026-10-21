@@ -3,15 +3,21 @@ import { IntroScreen } from '../../features/intro/IntroScreen.tsx';
 import { SelectCashierScreen } from '../../features/profil/SelectCashierScreen.tsx';
 import { AccountScreen } from '../../features/akun/AccountScreen.tsx';
 import { DeviceSetupModal } from '../../features/auth/DeviceSetupModal.tsx';
+import { HomeScreen } from '../../features/home/HomeScreen.tsx';
+import { CustomerMenuView } from '../../features/menu-lengkap/CustomerMenuView.tsx';
+import { PaymentScreen } from '../../features/bayar/PaymentScreen.tsx';
+import { ReceiptScreen } from '../../features/struk/ReceiptScreen.tsx';
+import { HistoryScreen } from '../../features/riwayat/HistoryScreen.tsx';
 import { NavbarPill, NavItem } from '../../design/components/NavbarPill.tsx';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 
-export type TabletScreen = 'intro' | 'select-cashier' | NavItem;
+export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
 export const TabletRoot: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<TabletScreen>('intro');
   const [isDeviceSetupOpen, setIsDeviceSetupOpen] = useState(false);
+  const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
 
   const handleIntroFinish = () => {
@@ -52,7 +58,28 @@ export const TabletRoot: React.FC = () => {
     );
   }
 
-  // 3. Layar Utama Tablet (Home, Riwayat, Akun) dengan Navbar Pil
+  // 3. Layar Bayar Tunai & Keypad Meja
+  if (currentScreen === 'payment') {
+    return (
+      <PaymentScreen
+        onSuccess={() => setCurrentScreen('receipt')}
+        onCancel={() => setCurrentScreen('Home')}
+      />
+    );
+  }
+
+  // 4. Layar Struk & Bukti Bayar
+  if (currentScreen === 'receipt') {
+    return (
+      <ReceiptScreen
+        onNewOrder={() => setCurrentScreen('Home')}
+      />
+    );
+  }
+
+  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Navbar Pil Melayang
+  const showNavbar = currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun';
+
   return (
     <div
       style={{
@@ -69,98 +96,29 @@ export const TabletRoot: React.FC = () => {
       )}
 
       {currentScreen === 'Home' && (
-        <div
-          className="scr"
-          style={{
-            width: '1024px',
-            height: '640px',
-            padding: '24px',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '56px' }}>
-            <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800 }}>
-              Tati’e Kitchen
-            </h2>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div
-                className="ctl-flat"
-                style={{
-                  height: '48px',
-                  padding: '0 20px',
-                  borderRadius: 'var(--r-md)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: 'var(--t-sm)',
-                  fontWeight: 700,
-                }}
-              >
-                Kasir: {activeCashier?.name || 'Robertus Amaresi'}
-              </div>
-            </div>
-          </div>
-          <div
-            className="g-acrylic"
-            style={{
-              margin: 'auto',
-              padding: '40px',
-              textAlign: 'center',
-              maxWidth: '560px',
-            }}
-          >
-            <h3 style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800, margin: '0 0 12px' }}>
-              Layar Home Kasir (Fase 5)
-            </h3>
-            <p style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', margin: 0 }}>
-              Katalog kartu menu masonry, Golden Triangle menu lengkap pembeli, keranjang pesanan, dan perhitungan transaksi server-side akan aktif penuh pada Fase 5.
-            </p>
-          </div>
-        </div>
+        <HomeScreen
+          onOpenCustomerMenu={() => setIsCustomerMenuOpen(true)}
+          onProceedToPayment={() => setCurrentScreen('payment')}
+          onChangeCashier={handleChangeCashier}
+        />
       )}
 
       {currentScreen === 'Riwayat' && (
-        <div
-          className="scr"
-          style={{
-            width: '1024px',
-            height: '640px',
-            padding: '24px',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '56px' }}>
-            <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800 }}>
-              Riwayat Transaksi
-            </h2>
-          </div>
-          <div
-            className="g-acrylic"
-            style={{
-              margin: 'auto',
-              padding: '40px',
-              textAlign: 'center',
-              maxWidth: '560px',
-            }}
-          >
-            <h3 style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800, margin: '0 0 12px' }}>
-              Layar Riwayat & Filter Rentang Waktu (Fase 5)
-            </h3>
-            <p style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', margin: 0 }}>
-              Daftar transaksi harian, rincian meja, cetak struk ulang, dan sheet filter rentang waktu akan aktif penuh pada Fase 5.
-            </p>
-          </div>
-        </div>
+        <HistoryScreen />
+      )}
+
+      {/* Overlay Menu Lengkap Pembeli (Golden Triangle) */}
+      {isCustomerMenuOpen && (
+        <CustomerMenuView onClose={() => setIsCustomerMenuOpen(false)} />
       )}
 
       {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet */}
-      <NavbarPill
-        activeItem={currentScreen as NavItem}
-        onSelect={(item) => setCurrentScreen(item)}
-      />
+      {showNavbar && (
+        <NavbarPill
+          activeItem={currentScreen as NavItem}
+          onSelect={(item) => setCurrentScreen(item)}
+        />
+      )}
     </div>
   );
 };

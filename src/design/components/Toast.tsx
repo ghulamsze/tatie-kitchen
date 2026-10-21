@@ -2,13 +2,13 @@ import React from 'react';
 
 export interface ToastProps {
   message: string;
-  visible: boolean;
+  visible?: boolean;
   type?: 'success' | 'danger';
 }
 
 export const Toast: React.FC<ToastProps> = ({
   message,
-  visible,
+  visible = true,
   type = 'success',
 }) => {
   if (!visible) return null;

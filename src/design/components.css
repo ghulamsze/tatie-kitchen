@@ -346,7 +346,7 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
-/* ===== 10. INTRO SCREEN ANIMATION (HTML Preview 0) ===== */
+/* ===== 10. INTRO SCREEN ANIMATION ===== */
 .tk-intro-container {
   width: 1024px;
   height: 640px;
@@ -441,7 +441,7 @@
   }
 }
 
-/* ===== 11. KARTU PROFIL KASIR (HTML 1) ===== */
+/* ===== 11. KARTU PROFIL KASIR ===== */
 .tk-cashier-card {
   width: 192px;
   text-align: center;
@@ -481,7 +481,7 @@
   outline-offset: 4px;
 }
 
-/* ===== 12. TAMPILAN BUTTON (AKUN 6) ===== */
+/* ===== 12. TAMPILAN BUTTON ===== */
 .tk-btn-appearance {
   height: var(--c-md);
   padding: 0 16px;
@@ -506,4 +506,378 @@
   background: var(--accent);
   box-shadow: 0 0 0 1px rgb(var(--w) / 0.4);
   flex: none;
+}
+
+/* ===== 13. KARTU MENU (HTML 2 & 2b) ===== */
+.tk-menu-card {
+  position: relative;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--mc-bg);
+  border: 1px solid rgb(var(--w) / 0.16);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+  cursor: pointer;
+  min-height: 120px;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tk-menu-card b {
+  position: relative;
+  z-index: 2;
+  font-weight: 700;
+}
+
+.tk-menu-card .photo-layer {
+  position: absolute;
+  inset: 0 0 36% 0;
+  background-size: cover;
+  background-position: center;
+  -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 50%, transparent);
+  mask-image: linear-gradient(transparent, #000 24%, #000 50%, transparent);
+}
+
+.tk-menu-card .blur-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  height: 36%;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(transparent, #000 60%, transparent);
+  mask-image: linear-gradient(transparent, #000 60%, transparent);
+  z-index: 1;
+}
+
+.tk-menu-card .price-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+  font-weight: 700;
+  z-index: 2;
+}
+
+.tk-menu-card.unavailable {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.tk-menu-card.unavailable::after {
+  content: "Habis";
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #000000;
+  color: #ffffff;
+  font-size: var(--t-xs);
+  line-height: var(--l-xs);
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  z-index: 3;
+}
+
+.tk-menu-card.hold {
+  transform: scale(1.05);
+  z-index: 6;
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+}
+
+/* ===== 14. KERANJANG PESANAN (HTML 2 Kanan) ===== */
+.tk-cart-panel {
+  width: 300px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: none;
+}
+
+.tk-cart-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgb(var(--w) / 0.22);
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+}
+
+.tk-cart-row small {
+  display: block;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
+}
+
+.tk-qty-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tk-qty-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgb(var(--w) / 0.4);
+  background: rgb(var(--w) / 0.2);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: var(--t-lg);
+  line-height: var(--l-lg);
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ===== 15. KEYPAD MEJA & BAYAR TUNAI (HTML 3) ===== */
+.tk-table-keypad-panel {
+  width: 360px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: none;
+}
+
+.tk-table-display {
+  text-align: center;
+  font-size: var(--t-3xl);
+  line-height: var(--l-3xl);
+  font-weight: 800;
+  padding: 12px 0 8px;
+}
+
+.tk-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.tk-keypad-grid button {
+  height: 52px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-lg);
+  line-height: var(--l-lg);
+  font-weight: 700;
+  background: rgb(var(--w) / 0.18);
+  border: 1px solid rgb(var(--w) / 0.3);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tk-keypad-grid button:active {
+  background: var(--sel);
+}
+
+.tk-payment-panel {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tk-quick-cash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tk-quick-cash-grid button {
+  height: 68px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-lg);
+  line-height: var(--l-lg);
+  font-weight: 700;
+  background: rgb(var(--w) / 0.18);
+  border: 1px solid rgb(var(--w) / 0.3);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tk-quick-cash-grid button.selected {
+  background: var(--sel);
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* ===== 16. STRUK PEMBAYARAN (HTML 4) ===== */
+.tk-receipt-card {
+  width: 300px;
+  background: #fbfaf5;
+  color: #1f1e1d;
+  border-radius: 6px;
+  padding: 24px 20px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: 0 18px 40px rgb(var(--sh) / 0.45);
+}
+
+.tk-receipt-card hr {
+  border: 0;
+  border-top: 1px dashed #999999;
+  margin: 8px 0;
+}
+
+.tk-receipt-card .row-between {
+  display: flex;
+  justify-content: space-between;
+}
+
+.tk-receipt-card .center-bold {
+  text-align: center;
+  font-weight: 700;
+}
+
+.tk-receipt-status-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  font-size: var(--t-lg);
+  line-height: var(--l-lg);
+  font-weight: 800;
+}
+
+/* ===== 17. MENU LENGKAP TAMPILAN PEMBELI (HTML 2c & 2d) ===== */
+.tk-customer-menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--scr-bg);
+  overflow: hidden;
+}
+
+.tk-customer-menu-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+  padding-bottom: 32px;
+  scrollbar-width: thin;
+}
+
+.tk-highlight-box {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  align-items: stretch;
+}
+
+.tk-highlight-items-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.tk-customer-menu-item {
+  position: relative;
+  padding: 8px 0 8px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tk-customer-menu-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.tk-customer-menu-item::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.6) 50%, transparent);
+}
+
+.tk-menu-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--accent-ink);
+  flex: none;
+}
+
+.tk-menu-icon-box svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ===== 18. RIWAYAT TRANSAKSI (HTML 5 & 5b) ===== */
+.tk-history-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.tk-history-date-header {
+  background: rgb(var(--w) / 0.1);
+  color: var(--ink-3);
+  padding: 8px 16px;
+  font-size: var(--t-xs);
+  line-height: var(--l-xs);
+  font-weight: 700;
+}
+
+.tk-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgb(var(--w) / 0.16);
+  font-size: var(--t-md);
+  line-height: var(--l-md);
+}
+
+.tk-history-row:last-child {
+  border-bottom: none;
 }

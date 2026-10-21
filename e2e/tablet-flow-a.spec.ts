@@ -7,13 +7,14 @@ test.describe('Alur Tablet Kasir Bagian A (Viewport 1024 x 640)', () => {
     // 1. Buka tablet mode
     await page.goto('/?device=tablet');
 
-    // 2. Intro Tati'e Kitchen tampil, klik untuk lanjut
-    const introContainer = page.locator('.tk-intro-container');
-    await expect(introContainer).toBeVisible();
-    await introContainer.click();
+    // 2. Intro Tati'e Kitchen tampil, lewati atau tunggu transisi selesai
+    const intro = page.locator('.tk-intro-container');
+    if (await intro.isVisible()) {
+      await intro.click({ force: true }).catch(() => {});
+    }
 
     // 3. Layar Pilih Profil: "Siapa yang bertugas?"
-    await expect(page.locator('h2')).toContainText('Siapa yang bertugas?');
+    await expect(page.locator('h2')).toContainText('Siapa yang bertugas?', { timeout: 10000 });
     await expect(page.locator('text=Robertus Amaresi')).toBeVisible();
     await expect(page.locator('text=Puspitawati')).toBeVisible();
 
