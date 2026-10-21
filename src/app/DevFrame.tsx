@@ -19,7 +19,14 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
   useEffect(() => {
     if (!isBetaFrameEnabled) return;
 
-    const handleResize = () => {
+    // Blokir scroll browser global saat DevFrame aktif
+  useEffect(() => {
+    if (!isBetaFrameEnabled) return;
+    const blockWheel = (e: WheelEvent) => e.preventDefault();
+    document.addEventListener('wheel', blockWheel, { passive: false });
+    return () => document.removeEventListener('wheel', blockWheel);
+  }, [isBetaFrameEnabled]);
+  const handleResize = () => {
       // 1024 x 640 ditambah margin padding
       const availableWidth = window.innerWidth - 32;
       const availableHeight = window.innerHeight - 84; // Menyisakan ruang untuk bilah info simulasi

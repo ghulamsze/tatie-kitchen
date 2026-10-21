@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+﻿import { useRef, useState, useEffect, useCallback } from 'react';
 import { NavItem } from '../../design/components/NavbarPill.tsx';
 
 export interface UseSwipeNavOptions {
@@ -120,6 +120,45 @@ export function useSwipeNav({
     }
   }, [activeTab, tabs, animateTo]);
 
+
+  // Scroll mouse horizontal (deltaX) atau shift+scroll (deltaY) ganti tab tanpa perlu tenaga lebih
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let wheelCooldown = false;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Jika target adalah elemen yang bisa scroll vertikal, abaikan
+      const target = e.target as HTMLElement;
+      const scrollable = target.closest<HTMLElement>(
+        '.tk-order-cart-items, .tk-category-nav, .tk-full-menu-content'
+      );
+      if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) return;
+
+      // Ambil delta horizontal (trackpad 2-jari atau shift+scroll)
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(delta) < 8) return; // Abaikan noise kecil
+
+      // Blokir scroll browser (kiri/kanan/atas/bawah)
+      e.preventDefault();
+
+      // Cooldown 300ms agar tidak berpindah 2 tab sekaligus
+      if (wheelCooldown) return;
+      wheelCooldown = true;
+      setTimeout(() => { wheelCooldown = false; }, 300);
+
+      const currIdx = activeIndexRef.current;
+      if (delta > 0) {
+        animateTo(Math.min(tabs.length - 1, currIdx + 1));
+      } else {
+        animateTo(Math.max(0, currIdx - 1));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [animateTo, tabs.length]);
   // Temukan tab diskrit (0, 1, atau 2) dari koordinat horizontal clientX di navbar
   const getTabIndexFromClientX = useCallback((clientX: number): number => {
     if (!navbarRef.current) return tRef.current;
@@ -233,9 +272,9 @@ export function useSwipeNav({
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // 10px dead zone sebelum drag horizontal mulai
+    // 6px dead zone — lebih ringan sebelum drag horizontal mulai
     if (!hasDecidedDirectionRef.current) {
-      if (absDx <= 10 && absDy <= 10) {
+      if (absDx <= 6 && absDy <= 6) {
         return;
       }
 
@@ -314,15 +353,15 @@ export function useSwipeNav({
     }, 120);
 
     // Kriteria ganti halaman:
-    // Drag melewati 40% lebar layar (min 120px) ATAU fast flick (> 0.8 px/ms DAN >= 60px). Jika tidak, snap back.
+    // Drag melewati 20% lebar layar (min 60px) ATAU flick ringan (> 0.4 px/ms DAN >= 30px).
     const totalDx = e.clientX - startXRef.current;
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
     const containerWidth = containerRef.current?.clientWidth || 1024;
-    const threshold40 = Math.max(120, containerWidth * 0.4);
+    const threshold20 = Math.max(60, containerWidth * 0.20);
 
-    const isFlick = velocity > 0.8 && Math.abs(totalDx) >= 60;
-    const isLongSwipe = Math.abs(totalDx) >= threshold40;
+    const isFlick = velocity > 0.4 && Math.abs(totalDx) >= 30;
+    const isLongSwipe = Math.abs(totalDx) >= threshold20;
 
     const currIdx = activeIndexRef.current;
     let targetIndex = currIdx;
