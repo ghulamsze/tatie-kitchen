@@ -1347,19 +1347,7 @@ body.tk-modal-open .tk-navbar,
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 10px;
-  margin-bottom: 4px;
-  position: relative;
-}
-
-.tk-menu-group-header::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.55) 50%, transparent);
+  padding-bottom: 6px;
 }
 
 .tk-menu-group-title {
@@ -1478,84 +1466,89 @@ body.tk-modal-open .tk-navbar,
   background-size: cover;
 }
 
-/* ===== 21. OPTIMALISASI MODE TERANG (NYAMAN DI MATA / SOOTHING EYE COMFORT) ===== */
+/* ===== 21. OPTIMALISASI MODE TERANG (STANDAR LIGHT MODE BERSIH & MODERN) ===== */
+:root[data-theme="light"] .scr {
+  background: #f1f5f9;
+}
+
+:root[data-theme="light"] .scr::before {
+  opacity: 0.35;
+}
+
 :root[data-theme="light"] .g-acrylic {
-  background: rgb(255 255 255 / 0.85);
-  border: 1px solid rgb(var(--sh) / 0.12);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
-              0 6px 20px rgb(var(--sh) / 0.05);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.03);
 }
 
 :root[data-theme="light"] .g-acrylic.hi {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.94)) 0%, rgba(255, 255, 255, 0.88) 100%);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, rgb(var(--sh) / 0.14));
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
-              0 6px 20px rgb(var(--sh) / 0.08);
+  background: #ffffff;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 30%, rgba(15, 23, 42, 0.1));
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 8%, rgba(15, 23, 42, 0.04));
 }
 
 :root[data-theme="light"] .g-liquid {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.8) 100%);
-  border: 1px solid rgb(var(--sh) / 0.12);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
-              0 8px 24px rgb(var(--sh) / 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
 :root[data-theme="light"] .g-liquid::before {
-  background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 45%),
-              linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 100%);
+  display: none;
 }
 
 :root[data-theme="light"] .tk-navbar {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgb(var(--sh) / 0.14);
-  box-shadow: 0 8px 30px rgb(var(--sh) / 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
   contain: paint;
 }
 
 :root[data-theme="light"] .tk-nav-elastic-indicator {
   background: var(--accent);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 :root[data-theme="light"] .tk-navbar-item {
-  color: var(--mut);
+  color: #64748b;
 }
 
 :root[data-theme="light"] .tk-navbar-item.active {
-  color: var(--on-accent);
+  color: #ffffff;
   text-shadow: none !important;
 }
 
 :root[data-theme="light"] .tk-keypad-grid button,
 :root[data-theme="light"] .tk-quick-cash-grid button {
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgb(var(--sh) / 0.12);
-  color: var(--ink);
-  box-shadow: 0 2px 6px rgb(var(--sh) / 0.04);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 :root[data-theme="light"] .tk-keypad-grid button:active,
 :root[data-theme="light"] .tk-quick-cash-grid button:active {
-  background: rgb(var(--sh) / 0.08);
+  background: #f1f5f9;
 }
 
 :root[data-theme="light"] .tk-menu-card {
-  box-shadow: 0 3px 12px rgb(var(--sh) / 0.08), 0 1px 3px rgb(var(--sh) / 0.04);
-  border: 1px solid rgb(var(--sh) / 0.1);
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 :root[data-theme="light"] .tk-menu-card .price-tag {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   color: var(--ink);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
 }
 
 :root[data-theme="light"] .tk-chip {
-  background: rgb(var(--sh) / 0.06);
-  border: 1px solid rgb(var(--sh) / 0.1);
-  color: var(--ink);
+  background: #e2e8f0;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: #334155;
 }
 
 :root[data-theme="light"] .tk-chip.active,
@@ -1566,24 +1559,38 @@ body.tk-modal-open .tk-navbar,
 }
 
 :root[data-theme="light"] .tk-btn-flat {
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgb(var(--sh) / 0.14);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
   color: var(--ink);
-  box-shadow: 0 1px 3px rgb(var(--sh) / 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 :root[data-theme="light"] .tk-btn-flat:active {
-  background: rgb(var(--sh) / 0.08);
+  background: #f1f5f9;
 }
 
 :root[data-theme="light"] .tk-input {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgb(var(--sh) / 0.16);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.16);
   color: var(--ink);
 }
 
 :root[data-theme="light"] .tk-history-row {
-  border-bottom: 1px solid rgb(var(--sh) / 0.08);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme="light"] .tk-customer-menu-overlay {
+  background: rgba(248, 250, 252, 0.98);
+}
+
+:root[data-theme="light"] .tk-menu-group-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme="light"] .tk-customer-menu-item::after {
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 50%, transparent);
 }
 
 
