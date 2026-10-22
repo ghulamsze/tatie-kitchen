@@ -345,22 +345,6 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               />
               <div className="blur-layer" />
               <b style={{ color: '#ffffff' }}>Nasi Goreng Telur</b>
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '10px',
-                  right: '10px',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  fontSize: 'var(--t-xs)',
-                  fontWeight: 800,
-                  padding: '2px 8px',
-                  borderRadius: 'var(--r-pill)',
-                  zIndex: 4,
-                }}
-              >
-                Andalan
-              </span>
             </div>
 
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>

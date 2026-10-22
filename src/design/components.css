@@ -1265,16 +1265,6 @@ body.tk-modal-open .tk-navbar,
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
-.tk-customer-menu-item::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.6) 50%, transparent);
-}
-
 .tk-menu-icon-box {
   width: 40px;
   height: 40px;
@@ -1587,10 +1577,6 @@ body.tk-modal-open .tk-navbar,
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-}
-
-:root[data-theme="light"] .tk-customer-menu-item::after {
-  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 50%, transparent);
 }
 
 
