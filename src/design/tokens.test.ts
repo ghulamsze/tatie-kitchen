@@ -64,4 +64,40 @@ describe('Design Tokens & System Audit', () => {
     expect(cssContent).toContain('@media (prefers-reduced-transparency: reduce)');
     expect(cssContent).toContain('@media (prefers-reduced-motion: reduce)');
   });
+
+  it('semua 6 palet harus mendefinisikan override --bg, --accent, dan --accent-ink pada mode gelap dan terang', () => {
+    const cssContent = fs.readFileSync(path.resolve(__dirname, 'tokens.css'), 'utf-8');
+    const palettes = ['netflix', 'mono', 'hijau', 'samudra', 'senja', 'blush'];
+
+    palettes.forEach((p) => {
+      // Cek definisi palet di css
+      expect(cssContent).toContain(`data-palette="${p}"`);
+
+      // Cek keberadaan token esensial per palet gelap
+      const darkBlockRegex = new RegExp(`:root\\[data-palette="${p}"\\]:not\\(\\[data-theme="light"\\]\\)[\\s\\S]*?\\}`);
+      const darkMatch = cssContent.match(darkBlockRegex);
+      expect(darkMatch, `Blok palet gelap untuk ${p} harus ada di tokens.css`).not.toBeNull();
+      if (darkMatch) {
+        expect(darkMatch[0]).toContain('--bg:');
+        expect(darkMatch[0]).toContain('--accent:');
+        expect(darkMatch[0]).toContain('--accent-ink:');
+      }
+
+      // Cek keberadaan token esensial palet terang
+      if (p !== 'netflix') {
+        const lightBlockRegex = new RegExp(`:root\\[data-palette="${p}"\\]\\[data-theme="light"\\][\\s\\S]*?\\}`);
+        const lightMatch = cssContent.match(lightBlockRegex);
+        expect(lightMatch, `Blok palet terang untuk ${p} harus ada di tokens.css`).not.toBeNull();
+        if (lightMatch) {
+          expect(lightMatch[0]).toContain('--bg:');
+          expect(lightMatch[0]).toContain('--accent:');
+          expect(lightMatch[0]).toContain('--accent-ink:');
+        }
+      } else {
+        // Netflix terang didefinisikan pada blok :root dasar
+        expect(cssContent).toContain('--accent: #d92b33;');
+        expect(cssContent).toContain('--accent-ink: #b3121a;');
+      }
+    });
+  });
 });

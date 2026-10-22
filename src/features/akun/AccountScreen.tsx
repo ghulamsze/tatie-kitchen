@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
+import { usePrinterStore } from '../../stores/printerStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
+import { PrinterSheet } from './PrinterSheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
 
 export interface AccountScreenProps {
@@ -9,7 +11,9 @@ export interface AccountScreenProps {
 
 export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier }) => {
   const { activeCashier, shiftStartTime } = useCashierStore();
+  const { isConnected } = usePrinterStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const [isPrinterOpen, setIsPrinterOpen] = useState(false);
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
   const getInitials = (name: string): string => {
@@ -40,7 +44,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '16px',
+          gap: '14px',
           textAlign: 'center',
         }}
       >
@@ -71,19 +75,38 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
           </span>
         </div>
 
-        {/* Tombol Tampilan */}
-        <button
-          type="button"
-          className="tk-btn-appearance"
-          onClick={() => setIsAppearanceOpen(true)}
-          aria-haspopup="dialog"
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <i className="tk-dot-color" />
-            <span>Tampilan</span>
-          </span>
-          <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
-        </button>
+        {/* Tombol Tampilan & Tombol Printer */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+          <button
+            type="button"
+            className="tk-btn-appearance"
+            onClick={() => setIsAppearanceOpen(true)}
+            aria-haspopup="dialog"
+            style={{ flex: 1 }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <i className="tk-dot-color" />
+              <span>Tampilan</span>
+            </span>
+            <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
+          </button>
+
+          <button
+            type="button"
+            className="tk-btn-appearance"
+            onClick={() => setIsPrinterOpen(true)}
+            aria-haspopup="dialog"
+            style={{ flex: 1 }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px' }}>🖨️</span>
+              <span style={{ color: isConnected ? 'var(--accent-ink)' : 'inherit' }}>
+                {isConnected ? 'Printer OK' : 'Printer'}
+              </span>
+            </span>
+            <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
+          </button>
+        </div>
 
         {/* Tombol Ganti Kasir */}
         <Button
@@ -93,12 +116,23 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
         >
           Ganti kasir
         </Button>
+
+        {/* Versi Aplikasi */}
+        <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', marginTop: '2px' }}>
+          Tati’e Kitchen v0.2.0 (Tablet Beta)
+        </span>
       </div>
 
       {/* Sheet Tampilan Tema dan Warna */}
       <AppearanceSheet
         isOpen={isAppearanceOpen}
         onClose={() => setIsAppearanceOpen(false)}
+      />
+
+      {/* Sheet Pengaturan Printer Thermal Bluetooth */}
+      <PrinterSheet
+        isOpen={isPrinterOpen}
+        onClose={() => setIsPrinterOpen(false)}
       />
     </div>
   );

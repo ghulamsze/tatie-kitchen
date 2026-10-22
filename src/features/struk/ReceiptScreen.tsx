@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
+import { usePrinterStore } from '../../stores/printerStore.ts';
 import { formatRupiah, formatDate, formatTime, formatQueueNo } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
@@ -14,12 +15,14 @@ export interface ReceiptScreenProps {
 export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const { lastOrder, lastOrderItems, notes } = useCartStore();
   const { activeCashier } = useCashierStore();
+  const { autoPrint, isPrinting, printOrderReceipt, lastPrintResult } = usePrinterStore();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const hasAutoPrintedRef = useRef(false);
 
   // Putar audio assets/audio/payment_check.mp3 saat struk dimuat (didukung debounce)
-  React.useEffect(() => {
+  useEffect(() => {
     playPaymentSound();
   }, []);
 
@@ -85,6 +88,32 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
       setIsDownloading(false);
     }
   };
+
+  // 3. Cetak Struk via Printer Thermal Bluetooth VSC MP-58X
+  const handlePrintReceipt = async () => {
+    if (!lastOrder) {
+      showToast('Tidak ada transaksi aktif untuk dicetak');
+      return;
+    }
+    const success = await printOrderReceipt(lastOrder, lastOrderItems, cashierName, notes);
+    if (success) {
+      showToast(`Struk antrian #${formatQueueNo(queueNo)} berhasil dicetak!`);
+    } else {
+      showToast(lastPrintResult?.message || 'Gagal mengirim perintah cetak');
+    }
+  };
+
+  // Cetak otomatis jika fitur auto-print diaktifkan
+  useEffect(() => {
+    if (!hasAutoPrintedRef.current && autoPrint && lastOrder) {
+      hasAutoPrintedRef.current = true;
+      printOrderReceipt(lastOrder, lastOrderItems, cashierName, notes).then((ok) => {
+        if (ok) {
+          showToast(`Struk antrian #${formatQueueNo(queueNo)} otomatis dicetak`);
+        }
+      });
+    }
+  }, [autoPrint, lastOrder, lastOrderItems, cashierName, notes, queueNo, printOrderReceipt]);
 
   return (
     <div
@@ -250,13 +279,22 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           </div>
         </div>
 
-        {/* Tombol Bagikan Struk & Unduh PNG */}
-        <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '8px' }}>
+        {/* Tombol Cetak Struk, Bagikan Struk & Unduh PNG */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: '6px' }}>
+          <Button
+            variant="flat"
+            size="md"
+            onClick={handlePrintReceipt}
+            disabled={isPrinting}
+            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
+          >
+            {isPrinting ? 'Mencetak...' : 'Cetak'}
+          </Button>
           <Button
             variant="flat"
             size="md"
             onClick={handleShare}
-            style={{ flex: 1, fontSize: 'var(--t-sm)' }}
+            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
           >
             Bagikan
           </Button>
@@ -265,9 +303,9 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
             size="md"
             onClick={handleDownloadPng}
             disabled={isDownloading}
-            style={{ flex: 1, fontSize: 'var(--t-sm)' }}
+            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
           >
-            {isDownloading ? 'Menyimpan...' : 'Unduh PNG'}
+            {isDownloading ? 'Menyimpan...' : 'Unduh'}
           </Button>
         </div>
 

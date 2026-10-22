@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
-import { formatRupiah } from '../../lib/format/formatters.ts';
+import { formatRupiah, getShopTodayDateStr } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase/client.ts';
 import { Order, OrderItem } from '../../lib/supabase/types.ts';
@@ -21,6 +21,7 @@ export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCancel }) => {
   const { lines, tableNo, setTableNo, cashReceived, setCashReceived, calculateTotal, clearCart, setLastOrder } = useCartStore();
   const { activeCashier } = useCashierStore();
+  const [isQrisZoomed, setIsQrisZoomed] = useState(false);
 
   const total = calculateTotal();
   // Default meja selalu '...' dengan warna abu-abu
@@ -168,9 +169,9 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         }
       }
 
-      // Fallback pencatatan transaksi lokal dengan penghitung antrian harian
+      // Fallback pencatatan transaksi lokal dengan penghitung antrian harian (reset 00:00 WITA)
       const existingOrders = useHistoryStore.getState().orders;
-      const todayDateStr = new Date().toISOString().split('T')[0];
+      const todayDateStr = getShopTodayDateStr();
       const maxLocalQueue = existingOrders
         .filter((o) => o.order.business_date === todayDateStr || o.order.created_at.startsWith(todayDateStr))
         .reduce((max, o) => Math.max(max, o.order.queue_no || 0), 0);
@@ -392,32 +393,48 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
-              padding: '16px',
+              gap: '10px',
+              padding: '12px',
               background: 'rgba(255, 255, 255, 0.04)',
               borderRadius: 'var(--r-md)',
               border: '1px solid var(--ctl-line)',
             }}
           >
-            <div style={{ width: '130px', height: '130px', background: '#ffffff', borderRadius: '12px', padding: '10px', display: 'grid', placeItems: 'center' }}>
-              <svg viewBox="0 0 100 100" width="110" height="110">
-                <rect x="0" y="0" width="30" height="30" fill="#000" />
-                <rect x="5" y="5" width="20" height="20" fill="#fff" />
-                <rect x="10" y="10" width="10" height="10" fill="#000" />
-                <rect x="70" y="0" width="30" height="30" fill="#000" />
-                <rect x="75" y="5" width="20" height="20" fill="#fff" />
-                <rect x="80" y="10" width="10" height="10" fill="#000" />
-                <rect x="0" y="70" width="30" height="30" fill="#000" />
-                <rect x="5" y="75" width="20" height="20" fill="#fff" />
-                <rect x="10" y="80" width="10" height="10" fill="#000" />
-                <rect x="40" y="10" width="10" height="20" fill="#000" />
-                <rect x="55" y="25" width="10" height="15" fill="#000" />
-                <rect x="40" y="45" width="25" height="10" fill="#000" />
-                <rect x="70" y="60" width="20" height="10" fill="#000" />
-                <rect x="45" y="70" width="15" height="20" fill="#000" />
-              </svg>
+            <div
+              onClick={() => setIsQrisZoomed(true)}
+              style={{
+                background: '#ffffff',
+                borderRadius: 'var(--r-md)',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease',
+              }}
+              title="Ketuk untuk memperbesar QRIS"
+            >
+              <img
+                src="/assets/images/qris-clean.png"
+                alt="QRIS Tatis Cafe dan Resto"
+                style={{
+                  maxHeight: '148px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  borderRadius: '4px',
+                  display: 'block',
+                }}
+              />
             </div>
-            <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>Scan QRIS Tati’e Kitchen</b>
+            <div style={{ textAlign: 'center' }}>
+              <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', display: 'block' }}>
+                TATIS CAFE DAN RESTO, TLN
+              </b>
+              <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
+                NMID: ID1026489183222 • Ketuk untuk perbesar
+              </span>
+            </div>
           </div>
         ) : (
           <div
@@ -434,10 +451,26 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             }}
           >
             <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)' }}>Rekening Transfer Bank:</b>
-            <div style={{ background: 'var(--ctl)', padding: '12px 16px', borderRadius: 'var(--r-md)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)' }}>BCA (Bank Central Asia)</span>
-              <b style={{ fontSize: 'var(--t-lg)', letterSpacing: '0.05em' }}>7890-1234-56</b>
-              <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>a.n. Tati’e Kitchen Makassar</span>
+            <div
+              style={{
+                background: 'var(--ctl)',
+                padding: '14px 18px',
+                borderRadius: 'var(--r-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                border: '1px solid var(--ctl-line)',
+              }}
+            >
+              <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
+                Bank Kaltimtara
+              </span>
+              <b style={{ fontSize: 'var(--t-xl)', letterSpacing: '0.06em', color: 'var(--accent-ink)' }}>
+                1747037252
+              </b>
+              <span style={{ fontSize: 'var(--t-sm)', color: 'var(--ink-1)', fontWeight: 700 }}>
+                a.n. Hartati Jahri
+              </span>
             </div>
           </div>
         )}
@@ -467,6 +500,55 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           </span>
         )}
       </div>
+
+      {/* Modal Zoom QRIS untuk kemudahan pemindaian pembeli */}
+      {isQrisZoomed && (
+        <div
+          onClick={() => setIsQrisZoomed(false)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 150,
+            background: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            padding: '24px',
+            cursor: 'pointer',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              padding: '16px',
+              borderRadius: 'var(--r-lg)',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              maxHeight: '480px',
+            }}
+          >
+            <img
+              src="/assets/images/qris-clean.png"
+              alt="QRIS Tatis Cafe dan Resto"
+              style={{
+                maxHeight: '400px',
+                maxWidth: '90vw',
+                objectFit: 'contain',
+                borderRadius: '8px',
+              }}
+            />
+          </div>
+          <Button variant="flat" size="md" onClick={() => setIsQrisZoomed(false)}>
+            Tutup Tampilan QRIS
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

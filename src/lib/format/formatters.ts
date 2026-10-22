@@ -32,6 +32,18 @@ export function getShopTimezone(): string {
 }
 
 /**
+ * Mendapatkan tanggal hari ini dalam format YYYY-MM-DD sesuai zona waktu toko (WITA)
+ * Memastikan rollover nomor antrian terjadi tepat pukul 00:00 WITA.
+ */
+export function getShopTodayDateStr(date = new Date()): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: getShopTimezone() }).format(date);
+  } catch {
+    return date.toISOString().split('T')[0];
+  }
+}
+
+/**
  * Mendapatkan zona waktu lokal perangkat secara otomatis
  */
 export function getAutoTimezone(fallback = getShopTimezone()): string {

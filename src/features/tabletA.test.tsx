@@ -28,6 +28,17 @@ describe('Layar Tablet Bagian A (Fase 4)', () => {
       fireEvent.click(screen.getByLabelText('Intro Tati’e Kitchen, ketuk untuk melanjutkan'));
       expect(handleFinish).toHaveBeenCalledTimes(1);
     });
+
+    it('harus memanggil onFinish secara otomatis via timer', () => {
+      vi.useFakeTimers();
+      const handleFinish = vi.fn();
+      render(<IntroScreen onFinish={handleFinish} />);
+
+      expect(handleFinish).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1300);
+      expect(handleFinish).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+    });
   });
 
   describe('SelectCashierScreen & AddCashierDialog', () => {

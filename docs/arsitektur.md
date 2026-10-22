@@ -18,6 +18,23 @@ Fase sekarang: tablet kasir (beta, disimulasikan di laptop). Urutan perangkat: t
 
 Versi paket: pakai versi stabil terbaru saat dipasang, catat di package.json, jangan pakai versi beta.
 
+### Informasi Bisnis, Akun Admin, & Rekening Pembayaran
+
+1. **Akun Pemilik / Admin (Untuk Login Backoffice Laptop):**
+   - Admin 1: `ghulamsze@gmail.com`
+   - Admin 2: `robertusamaresi@gmail.com` (Pemilik Usaha / Kasir Utama)
+   - *Catatan Tablet:* Perangkat tablet kasir POS **tidak membutuhkan login**; langsung membuka selektor kasir / POS untuk operasional cepat.
+
+2. **Rekening Resmi Pembayaran Non-Tunai:**
+   - Bank: **Bank Kaltimtara**
+   - No. Rekening: **1747037252**
+   - Atas Nama: **Hartati Jahri**
+
+3. **QRIS Resmi:**
+   - Merchant: **TATIS CAFE DAN RESTO, TLN**
+   - NMID: **ID1026489183222**
+   - Berkas Aset Bersih (tanpa frame luar biru): `/assets/images/qris-clean.png`
+
 ## 2. Struktur folder
 
 ```
