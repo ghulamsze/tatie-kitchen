@@ -137,7 +137,7 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
   });
 
   describe('3. CustomerMenuView (Golden Triangle Tampilan Pembeli)', () => {
-    it('harus merender kotak sorot Terlaris dengan 7 menu default', () => {
+    it('harus merender kotak sorot Terlaris dengan 7 menu default dan satu tombol icon tutup', () => {
       const handleClose = vi.fn();
       render(<CustomerMenuView onClose={handleClose} />);
 
@@ -146,7 +146,11 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
       expect(screen.getAllByText('Nasi Goreng Telur').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Nasi Ayam Penyet').length).toBeGreaterThanOrEqual(1);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Tutup' }));
+      // Pastikan tidak ada tombol teks 'Kembali' redundan, melainkan satu tombol icon saja
+      expect(screen.queryByText('Kembali')).not.toBeInTheDocument();
+      const closeBtn = screen.getByRole('button', { name: 'Tutup' });
+      expect(closeBtn).toBeInTheDocument();
+      fireEvent.click(closeBtn);
       expect(handleClose).toHaveBeenCalled();
     });
   });

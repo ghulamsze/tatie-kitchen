@@ -214,11 +214,6 @@ export const TabletRoot: React.FC = () => {
         <AccountScreen onChangeCashier={handleChangeCashier} />
       </SwipePager>
 
-      {/* Overlay Menu Lengkap Pembeli (Golden Triangle) */}
-      {isCustomerMenuOpen && (
-        <CustomerMenuView onClose={() => setIsCustomerMenuOpen(false)} />
-      )}
-
       {/* Navbar Pil Melayang di Bagian Bawah Layar Tablet dengan Single Progress Value t */}
       {showNavbar && (
         <NavbarPill
@@ -234,6 +229,14 @@ export const TabletRoot: React.FC = () => {
           isBlocked={isModalActive}
         />
       )}
+
+      {/* Overlay Menu Lengkap Pembeli (Golden Triangle) */}
+      {isCustomerMenuOpen && (
+        <CustomerMenuView onClose={() => setIsCustomerMenuOpen(false)} />
+      )}
+
+      {/* Portal Container untuk Dialog & Sheet agar overlay menutupi Navbar */}
+      <div id="tk-portal-root" style={{ position: 'absolute', inset: 0, zIndex: 120, pointerEvents: 'none' }} />
 
       {/* Sheet Ubah Status Menu di Level Root agar Navbar Tertutup Blur & Terblokir */}
       <Sheet

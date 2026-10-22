@@ -5,7 +5,7 @@ import { formatTime } from '../lib/format/formatters.ts';
 import { logError } from '../lib/logger/logger.ts';
 
 // Data kasir awal acuan dari seed / HTML
-const DEFAULT_CASHIERS: Cashier[] = [
+export const DEFAULT_CASHIERS: Cashier[] = [
   {
     id: 'c-001',
     shop_id: 'shop-001',
@@ -22,12 +22,32 @@ const DEFAULT_CASHIERS: Cashier[] = [
   },
 ];
 
+export const IMMUTABLE_CASHIER_IDS = ['c-001', 'c-002', 'c-1', 'c-2'];
+
+export const isImmutableCashier = (id: string, name?: string): boolean => {
+  if (IMMUTABLE_CASHIER_IDS.includes(id)) return true;
+  if (name) {
+    const trimmed = name.trim().toLowerCase();
+    if (trimmed === 'robertus amaresi' || trimmed === 'puspitawati') return true;
+  }
+  return false;
+};
+
+const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023';
+
 const loadSavedCashiers = (): Cashier[] => {
   try {
-    const raw = localStorage.getItem('tk_cashiers');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    if (typeof localStorage !== 'undefined') {
+      if (!localStorage.getItem(CASHIER_RESET_KEY)) {
+        localStorage.setItem('tk_cashiers', JSON.stringify(DEFAULT_CASHIERS));
+        localStorage.setItem(CASHIER_RESET_KEY, 'true');
+        return DEFAULT_CASHIERS;
+      }
+      const raw = localStorage.getItem('tk_cashiers');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     }
   } catch (err) {
     logError('cashierStore:loadSavedCashiers', err);
@@ -44,7 +64,9 @@ interface CashierState {
   setActiveCashier: (cashier: Cashier | null) => void;
   addNewCashier: (name: string, shopId?: string) => Promise<Cashier>;
   removeCashier: (id: string) => Promise<void>;
+  resetToDefaultCashiers: () => void;
 }
+
 
 export const useCashierStore = create<CashierState>((set) => ({
   cashiers: loadSavedCashiers(),
@@ -137,6 +159,13 @@ export const useCashierStore = create<CashierState>((set) => ({
   },
 
   removeCashier: async (id: string) => {
+    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak dapat dihapus
+    const currentList = useCashierStore.getState().cashiers;
+    const target = currentList.find((c) => c.id === id);
+    if (isImmutableCashier(id, target?.name)) {
+      return;
+    }
+
     if (isSupabaseConfigured()) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,4 +195,19 @@ export const useCashierStore = create<CashierState>((set) => ({
       };
     });
   },
+
+  resetToDefaultCashiers: () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('tk_cashiers', JSON.stringify(DEFAULT_CASHIERS));
+      }
+    } catch (err) {
+      logError('cashierStore:resetToDefaultCashiers', err);
+    }
+    set({
+      cashiers: DEFAULT_CASHIERS,
+      activeCashier: DEFAULT_CASHIERS[0],
+    });
+  },
+
 }));

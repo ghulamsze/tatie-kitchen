@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface DialogProps {
   isOpen: boolean;
@@ -17,10 +18,28 @@ export const Dialog: React.FC<DialogProps> = ({
   wide = false,
   children,
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('tk-modal-open');
+      document.querySelector('.tk-tablet-root')?.classList.add('tk-has-modal');
+    }
+    return () => {
+      document.body.classList.remove('tk-modal-open');
+      document.querySelector('.tk-tablet-root')?.classList.remove('tk-has-modal');
+    };
+  }, [isOpen]);
+
+
   if (!isOpen) return null;
 
-  return (
-    <div className="tk-overlay" onClick={onClose}>
+  const content = (
+    <div className="tk-overlay" onClick={onClose} style={{ pointerEvents: 'auto' }}>
       <div
         className={`g-liquid tk-dialog ${wide ? 'w-wide' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -39,4 +58,11 @@ export const Dialog: React.FC<DialogProps> = ({
       </div>
     </div>
   );
+
+  const portalTarget = mounted && typeof document !== 'undefined'
+    ? (document.getElementById('tk-portal-root') || document.body)
+    : null;
+
+  return portalTarget ? createPortal(content, portalTarget) : content;
 };
+

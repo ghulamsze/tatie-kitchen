@@ -76,6 +76,15 @@ describe('Layar Tablet Bagian A (Fase 4)', () => {
 
       expect(handleAdd).toHaveBeenCalledWith('Budi Santoso');
     });
+
+    it('Robertus Amaresi dan Puspitawati tidak dapat dihapus melalui removeCashier', async () => {
+      const store = useCashierStore.getState();
+      await store.removeCashier('c-1');
+      await store.removeCashier('c-2');
+      expect(useCashierStore.getState().cashiers).toHaveLength(2);
+      expect(useCashierStore.getState().cashiers.map((c) => c.name)).toContain('Robertus Amaresi');
+      expect(useCashierStore.getState().cashiers.map((c) => c.name)).toContain('Puspitawati');
+    });
   });
 
   describe('AccountScreen & AppearanceSheet', () => {

@@ -47,7 +47,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setTimeout(() => {
       clearCart();
       setIsClearing(false);
-    }, 280);
+    }, 550);
   };
 
   const handleMinusQty = (itemId: string, currentQty: number) => {
@@ -56,11 +56,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       setTimeout(() => {
         updateQty(itemId, -1);
         setRemovingItemId(null);
-      }, 280);
+      }, 550);
     } else {
       updateQty(itemId, -1);
     }
   };
+
 
   const categories = [
     { key: 'Semua', label: 'Semua' },
@@ -328,7 +329,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     key={line.item.id}
                     className={`tk-cart-row ${isThanosSnap ? 'tk-thanos-snap-out' : 'tk-cart-item-in'}`}
                   >
+                    {isThanosSnap && (
+                      <div className="tk-thanos-dust-cloud" aria-hidden="true">
+                        {[...Array(14)].map((_, i) => {
+                          const top = 10 + ((i * 17) % 75);
+                          const left = 15 + ((i * 23) % 70);
+                          const size = 2 + (i % 3);
+                          const dx = 25 + ((i * 13) % 40);
+                          const dy = -12 - ((i * 9) % 30);
+                          const isEmber = i % 4 === 0;
+                          const bg = isEmber ? 'rgba(255, 140, 50, 0.95)' : 'rgba(215, 215, 215, 0.85)';
+                          return (
+                            <span
+                              key={i}
+                              className="tk-dust-speck"
+                              style={{
+                                top: `${top}%`,
+                                left: `${left}%`,
+                                width: `${size}px`,
+                                height: `${size}px`,
+                                backgroundColor: bg,
+                                boxShadow: isEmber ? '0 0 5px rgba(255, 130, 0, 0.9)' : 'none',
+                                // @ts-expect-error CSS custom properties
+                                '--dx': `${dx}px`,
+                                '--dy': `${dy}px`,
+                                animationDelay: `${(i % 5) * 35}ms`,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+
                       <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {line.item.name}
                       </b>

@@ -13,12 +13,22 @@ export type DateRangePreset = 'hari-ini' | 'kemarin' | '7-hari' | '30-hari' | 's
 // Riwayat transaksi default dikosongkan sesuai permintaan
 export const SEED_HISTORY_ORDERS: HistoryOrderWithItems[] = [];
 
+const HISTORY_RESET_KEY = 'tk_history_reset_20261023';
+
 const loadSavedOrders = (): HistoryOrderWithItems[] => {
   try {
-    const raw = localStorage.getItem('tk_order_history');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+    // Lakukan reset satu kali untuk menghapus data riwayat transaksi lama
+    if (typeof localStorage !== 'undefined') {
+      if (!localStorage.getItem(HISTORY_RESET_KEY)) {
+        localStorage.removeItem('tk_order_history');
+        localStorage.setItem(HISTORY_RESET_KEY, 'true');
+        return [];
+      }
+      const raw = localStorage.getItem('tk_order_history');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
     }
   } catch (err) {
     logError('historyStore:loadSavedOrders', err);
@@ -34,6 +44,7 @@ interface HistoryState {
   setRange: (range: DateRangePreset) => void;
   setSelectedOrder: (order: HistoryOrderWithItems | null) => void;
   addOrder: (order: Order, items: OrderItem[]) => void;
+  clearHistory: () => void;
   fetchOrders: (shopId?: string) => Promise<void>;
 }
 
@@ -44,6 +55,17 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
   setRange: (range) => set({ selectedRange: range }),
   setSelectedOrder: (order) => set({ selectedOrder: order }),
+
+  clearHistory: () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('tk_order_history');
+      }
+    } catch (err) {
+      logError('historyStore:clearHistory', err);
+    }
+    set({ orders: [], selectedOrder: null });
+  },
 
   addOrder: (order, items) => {
     set((state) => {

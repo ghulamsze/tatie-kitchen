@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCashierStore } from '../../stores/cashierStore.ts';
+import { useCashierStore, isImmutableCashier } from '../../stores/cashierStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 import { AddCashierDialog } from './AddCashierDialog.tsx';
 import { DeleteCashierDialog } from './DeleteCashierDialog.tsx';
@@ -28,6 +28,10 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
 
   const handlePointerDown = (cashier: Cashier) => {
     didTriggerHoldRef.current = false;
+    // Dua kasir default tidak dapat dihapus
+    if (isImmutableCashier(cashier.id, cashier.name)) {
+      return;
+    }
     holdTimerRef.current = setTimeout(() => {
       didTriggerHoldRef.current = true;
       setCashierToDelete(cashier);

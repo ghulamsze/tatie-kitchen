@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useMenuStore, TOP_SELLERS_DEFAULT } from '../../stores/menuStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
-import { Button } from '../../design/components/Button.tsx';
 
 export interface CustomerMenuViewProps {
   onClose: () => void;
@@ -269,20 +268,45 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
 
   return (
     <div className="scr tk-customer-menu-overlay" role="dialog" aria-modal="true" aria-label="Menu Lengkap Pembeli">
-      {/* Top Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '52px', flex: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Button variant="flat" size="md" onClick={onClose} style={{ height: '44px', padding: '0 18px', gap: '8px' }}>
-            <span>←</span>
-            <span>Kembali</span>
-          </Button>
-          <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, color: 'var(--ink)' }}>
-            Menu Tati’e Kitchen
-          </h2>
-        </div>
-        <Button variant="flat" size="md" onClick={onClose} style={{ minWidth: '100px', height: '44px' }}>
-          Tutup
-        </Button>
+      {/* Top Bar - Satu tombol icon saja tanpa teks */}
+      <div style={{ display: 'flex', alignItems: 'center', minHeight: '52px', flex: 'none', gap: '16px' }}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="g-liquid tk-menu-back-icon-btn"
+          aria-label="Tutup"
+          title="Tutup menu"
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: 'var(--r-pill)',
+            display: 'grid',
+            placeItems: 'center',
+            cursor: 'pointer',
+            border: '1px solid var(--ctl-line)',
+            color: 'var(--ink)',
+            background: 'color-mix(in srgb, var(--acrylic) 85%, transparent)',
+            padding: 0,
+            flex: 'none',
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, color: 'var(--ink)' }}>
+          Menu Tati’e Kitchen
+        </h2>
       </div>
 
       {/* Chip Kategori Filter */}

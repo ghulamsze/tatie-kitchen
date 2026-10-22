@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, Button } from '../../design/components/index.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
+import { isImmutableCashier } from '../../stores/cashierStore.ts';
 
 export interface DeleteCashierDialogProps {
   cashier: Cashier | null;
@@ -17,7 +18,8 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  if (!cashier) return null;
+  if (!cashier || isImmutableCashier(cashier.id, cashier.name)) return null;
+
 
   const handleDelete = async () => {
     try {
