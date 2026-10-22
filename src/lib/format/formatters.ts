@@ -14,9 +14,17 @@ export function formatRupiah(amount: number): string {
 }
 
 /**
+ * Mendapatkan zona waktu resmi toko: WITA (Asia/Makassar)
+ * Sesuai keputusan desain dan instruksi pemilik.
+ */
+export function getShopTimezone(): string {
+  return 'Asia/Makassar';
+}
+
+/**
  * Mendapatkan zona waktu lokal perangkat secara otomatis
  */
-export function getAutoTimezone(fallback = 'Asia/Makassar'): string {
+export function getAutoTimezone(fallback = getShopTimezone()): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback;
   } catch {
@@ -27,7 +35,7 @@ export function getAutoTimezone(fallback = 'Asia/Makassar'): string {
 /**
  * Singkatan zona waktu (WITA, WIB, WIT, dll)
  */
-export function getTimezoneAbbr(timeZone = getAutoTimezone()): string {
+export function getTimezoneAbbr(timeZone = getShopTimezone()): string {
   if (timeZone === 'Asia/Makassar' || timeZone === 'Asia/Ujung_Pandang') return 'WITA';
   if (timeZone === 'Asia/Jakarta' || timeZone === 'Asia/Pontianak') return 'WIB';
   if (timeZone === 'Asia/Jayapura') return 'WIT';
@@ -45,9 +53,9 @@ export function getTimezoneAbbr(timeZone = getAutoTimezone()): string {
 }
 
 /**
- * Format jam transaksi: contoh 10.01 WITA (pemisah titik, diikuti singkatan zona waktu otomatis)
+ * Format jam transaksi: contoh 10.01 WITA (pemisah titik, diikuti singkatan zona waktu resmi toko)
  */
-export function formatTime(date: Date | string = new Date(), timeZone = getAutoTimezone()): string {
+export function formatTime(date: Date | string = new Date(), timeZone = getShopTimezone()): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   try {
     const timeStr = new Intl.DateTimeFormat('id-ID', {
@@ -67,7 +75,7 @@ export function formatTime(date: Date | string = new Date(), timeZone = getAutoT
 /**
  * Format tanggal pendek: contoh 21 Okt 2026
  */
-export function formatDate(date: Date | string = new Date(), timeZone = getAutoTimezone()): string {
+export function formatDate(date: Date | string = new Date(), timeZone = getShopTimezone()): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   try {
     return new Intl.DateTimeFormat('id-ID', {
@@ -80,3 +88,22 @@ export function formatDate(date: Date | string = new Date(), timeZone = getAutoT
     return '';
   }
 }
+
+/**
+ * Menghitung timestamp awal hari (00:00:00) pada zona waktu toko (WITA)
+ */
+export function getStartOfDayInShopTimezone(date = new Date(), timeZone = getShopTimezone()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+
+  return new Date(`${year}-${month}-${day}T00:00:00+08:00`).getTime();
+}
+

@@ -14,6 +14,7 @@ export interface PaymentScreenProps {
 
 import { getQuickCashOptions } from './quickCash.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
+import { generateUUID } from '../../lib/uuid.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
@@ -112,7 +113,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       setIsSubmitting(true);
       setErrorMessage('');
 
-      const orderId = 'ord-' + Math.random().toString(36).substring(2, 10);
+      const orderId = generateUUID();
       const cashierId = activeCashier?.id || 'c-001';
       const shopId = activeCashier?.shop_id || 'shop-001';
 
@@ -147,7 +148,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           if (!error && data) {
             recordedOrder = data as Order;
             recordedItems = lines.map((l) => ({
-              id: 'oi-' + Math.random().toString(36).substring(2, 7),
+              id: generateUUID(),
               order_id: recordedOrder.id,
               menu_item_id: l.item.id,
               name_snapshot: l.item.name,
@@ -182,7 +183,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       };
 
       recordedItems = lines.map((l) => ({
-        id: 'oi-' + Math.random().toString(36).substring(2, 7),
+        id: generateUUID(),
         order_id: orderId,
         menu_item_id: l.item.id,
         name_snapshot: l.item.name,
@@ -432,8 +433,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           </div>
         )}
 
+        {paymentMethod === 'tunai' && !isCashSufficient && (
+          <span style={{ color: 'var(--danger)', fontSize: 'var(--t-sm)', fontWeight: 700, textAlign: 'center' }}>
+            Uang yang diterima kurang dari total
+          </span>
+        )}
         {errorMessage && (
-          <span style={{ color: 'var(--danger)', fontSize: 'var(--t-sm)', fontWeight: 700 }}>
+          <span style={{ color: 'var(--danger)', fontSize: 'var(--t-sm)', fontWeight: 700, textAlign: 'center' }}>
             {errorMessage}
           </span>
         )}

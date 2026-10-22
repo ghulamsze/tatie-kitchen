@@ -257,7 +257,10 @@ export const TabletRoot: React.FC = () => {
               <Button
                 variant={heldItem.available ? 'danger' : 'lime'}
                 size="md"
-                onClick={() => toggleItemAvailability(heldItem.id, !heldItem.available)}
+                onClick={() => {
+                  toggleItemAvailability(heldItem.id, !heldItem.available);
+                  setHeldItem(null);
+                }}
               >
                 {heldItem.available ? 'Tandai habis' : 'Tandai tersedia'}
               </Button>

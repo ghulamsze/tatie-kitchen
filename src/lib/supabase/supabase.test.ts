@@ -76,4 +76,30 @@ describe('Supabase Skema & Seed Data Audit', () => {
     expect(supabase).toBeDefined();
     expect(typeof isSupabaseConfigured).toBe('function');
   });
+
+  describe('Kebijakan RLS & Hak Akses Peran Device vs Owner', () => {
+    const sql = fs.readFileSync(schemaPath, 'utf-8');
+
+    it('kebijakan RLS memblokir modifikasi langsung menu_items untuk peran non-owner', () => {
+      // Kebijakan RLS harus membatasi mutasi menu_items hanya ke is_owner
+      expect(sql).toMatch(/create policy "Menu items: hanya owner yang bisa ubah harga atau hapus"[\s\S]*using \(public\.is_owner\(shop_id\)\)/);
+    });
+
+    it('RPC set_item_availability mengizinkan anggota toko (termasuk kasir/device) mengubah status ketersediaan', () => {
+      // Fungsi set_item_availability memeriksa is_member, bukan is_owner
+      expect(sql).toContain('create or replace function public.set_item_availability');
+      expect(sql).toContain('if not public.is_member(v_shop_id) then');
+    });
+
+    it('RPC create_order menjamin idempotensi: ID order duplikat mengembalikan pesanan yang ada', () => {
+      expect(sql).toContain('select * into v_existing from public.orders where id = v_id;');
+      expect(sql).toContain('if found then\n    return v_existing;');
+    });
+
+    it('RPC create_order menghitung total harga di sisi server (server-side calculation)', () => {
+      expect(sql).toContain("v_total := v_total + (v_menu.price_idr * v_item.qty);");
+      expect(sql).toContain("v_change := v_cash_received - v_total;");
+    });
+  });
 });
+

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useHistoryStore, DateRangePreset, HistoryOrderWithItems } from '../../stores/historyStore.ts';
-import { formatRupiah, formatDate, formatTime } from '../../lib/format/formatters.ts';
+import { formatRupiah, formatDate, formatTime, getStartOfDayInShopTimezone } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Sheet } from '../../design/components/Sheet.tsx';
 
@@ -17,10 +17,9 @@ export const HistoryScreen: React.FC = () => {
     'semua': 'Semua waktu',
   };
 
-  // Filter transaksi berdasarkan rentang tanggal terpilih
+  // Filter transaksi berdasarkan rentang tanggal terpilih pada zona waktu WITA
   const filteredOrders = useMemo(() => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfToday = getStartOfDayInShopTimezone();
     const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
     const sevenDaysAgo = startOfToday - 7 * 24 * 60 * 60 * 1000;
     const thirtyDaysAgo = startOfToday - 30 * 24 * 60 * 60 * 1000;

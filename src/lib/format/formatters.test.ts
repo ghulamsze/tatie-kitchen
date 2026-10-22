@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatRupiah, formatTime, formatDate, getAutoTimezone, getTimezoneAbbr } from './formatters.ts';
+import { formatRupiah, formatTime, formatDate, getAutoTimezone, getTimezoneAbbr, getShopTimezone, getStartOfDayInShopTimezone } from './formatters.ts';
 
 describe('Formatters Utility', () => {
   describe('formatRupiah', () => {
@@ -39,5 +39,18 @@ describe('Formatters Utility', () => {
       const formatted = formatDate(testDate, 'Asia/Makassar');
       expect(formatted).toBe('21 Okt 2026');
     });
+
+    it('harus mengembalikan zona waktu toko resmi Asia/Makassar', () => {
+      expect(getShopTimezone()).toBe('Asia/Makassar');
+      expect(getTimezoneAbbr()).toBe('WITA');
+    });
+
+    it('harus menghitung midnight awal hari (00:00:00) pada zona waktu toko', () => {
+      const testDate = new Date('2026-10-21T15:30:00+08:00');
+      const startOfDay = getStartOfDayInShopTimezone(testDate);
+      const expected = new Date('2026-10-21T00:00:00+08:00').getTime();
+      expect(startOfDay).toBe(expected);
+    });
   });
 });
+

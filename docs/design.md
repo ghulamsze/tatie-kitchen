@@ -313,11 +313,11 @@ Layout: padding 20px 24px 84px 24px. Flex column.
 Header: judul --t-xl + btn flat "Rentang" h40px.
 Panel g-acrylic, overflow-y auto, radius --r-lg. Grouped per tanggal.
 Preset: Hari ini, Kemarin, 7 hari, 30 hari, Semua waktu.
-Pilih tanggal kustom belum diimplementasi. Filter pakai timezone device bukan toko.
+Pilih tanggal kustom belum diimplementasi. Filter tanggal konsisten memakai zona waktu toko WITA (getStartOfDayInShopTimezone).
 Klik baris: sheet rincian struk.
 
 ### 10.8 Akun (src/features/akun/AccountScreen.tsx)
-Layout: center, padding-bottom 92px (pelanggaran: bukan kelipatan 4).
+Layout: center, padding-bottom 88px (sudah diperbaiki: kelipatan 4).
 Panel acrylic 420px, padding 36px 44px.
 Avatar liquid glass 112x112px, radius --r-xl, font --t-xl, bobot 800.
 Nama --t-lg + jam bertugas --t-sm. Btn Tampilan (AppearanceSheet). Btn flat Ganti kasir.
@@ -329,10 +329,9 @@ AppearanceSheet: overlay liquid glass, mode Sistem/Terang/Gelap, swatch 6 palet,
 
 - Teks: bahasa Indonesia baku (PUEBI), singkat.
 - Uang: Rp80.000 - Rp langsung angka, titik ribuan, tanpa spasi. Integer rupiah di DB.
-- Jam: 10.01 WITA - titik pemisah, zona waktu dari Intl.DateTimeFormat().resolvedOptions().timeZone
-  (fallback Asia/Makassar = WITA). Fungsi formatTime() di src/lib/format/formatters.ts.
-- Tanggal: 21 Okt 2026 via Intl.DateTimeFormat('id-ID', {day, month:'short', year}).
-- Filter "Hari ini"/"Kemarin": memakai timezone device bukan toko - risiko inkonsistensi.
+- Jam: 10.01 WITA - titik pemisah, zona waktu resmi toko Asia/Makassar (WITA) via getShopTimezone() di src/lib/format/formatters.ts.
+- Tanggal: 21 Okt 2026 via Intl.DateTimeFormat('id-ID', {day, month:'short', year, timeZone: 'Asia/Makassar'}).
+- Filter "Hari ini"/"Kemarin": konsisten memakai getStartOfDayInShopTimezone() (WITA, UTC+8) - inkonsistensi sudah diperbaiki.
 
 ---
 
