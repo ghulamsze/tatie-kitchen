@@ -1,16 +1,15 @@
 /**
  * SnapDust - Thanos Snap Particle Disintegration & Reconstitution Engine
  *
- * Mengubah elemen HTML apa pun menjadi partikel debu halus sinematik (Float32Array)
- * dengan gelombang pemecahan kiri-ke-kanan, hembusan angin, turbulensi acak,
- * efek suara debu (Web Audio API), dan animasi balik (restore).
+ * Mengubah elemen HTML apa pun menjadi desau debu abu halus sinematik
+ * tanpa mengubah elemen menjadi piksel kotak (mencegah efek 8-bit / 32-bit).
  *
- * Dioptimalkan untuk tablet & layar HiDPI:
- * - Anti 8-bit: Menggunakan subpixel antialiasing, canvas DPR scaling, dan partikel sirkular (bukan kotak piksel)
- * - Durasi ringkas & responsif (~700ms)
- * - Sound effect desis debu halus sintetis tanpa file eksternal
- * - Hormati prefers-reduced-motion
- * - Tanpa memory leak
+ * Cara Kerja Non-32-Bit:
+ * 1. Elemen asli dipertahankan dalam resolusi vektor murni (tanpa dither piksel).
+ * 2. Menggunakan CSS clipPath yang mengikis elemen secara dinamis dari kiri ke kanan.
+ * 3. Di garis depan gelombang pengikisan, canvas overlay menghasilkan awan partikel debu halus
+ *    organik yang melayang ke kanan atas dengan turbulensi angin alami.
+ * 4. Efek suara desis debu sintetis (Web Audio API) dimainkan secara bersamaan.
  */
 
 export interface SnapDustOptions {
@@ -20,20 +19,20 @@ export interface SnapDustOptions {
   wind?: { x: number; y: number };
 }
 
+interface AshParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  alpha: number;
+  decay: number;
+  color: string;
+  wobbleOffset: number;
+}
+
 interface ParticleState {
-  count: number;
-  startX: Float32Array;
-  startY: Float32Array;
-  currX: Float32Array;
-  currY: Float32Array;
-  radius: Float32Array;
-  vx: Float32Array;
-  vy: Float32Array;
-  delay: Float32Array;
-  r: Uint8Array;
-  g: Uint8Array;
-  b: Uint8Array;
-  a: Float32Array;
+  particles: AshParticle[];
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   rect: DOMRect;
@@ -41,46 +40,8 @@ interface ParticleState {
   animFrameId?: number;
 }
 
-declare global {
-  interface Window {
-    html2canvas?: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
-  }
-}
-
-// Memuat html2canvas secara aman dari CDN atau window global
-function loadHtml2Canvas(): Promise<(element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>> {
-  if (typeof window !== 'undefined' && window.html2canvas) {
-    return Promise.resolve(window.html2canvas);
-  }
-  return new Promise((resolve, reject) => {
-    if (typeof document === 'undefined') {
-      return reject(new Error('HTML2Canvas requires DOM environment'));
-    }
-    const existing = document.querySelector('script[src*="html2canvas"]');
-    if (existing) {
-      if (window.html2canvas) return resolve(window.html2canvas);
-      existing.addEventListener('load', () => {
-        if (window.html2canvas) resolve(window.html2canvas);
-        else reject(new Error('html2canvas failed to initialize'));
-      });
-      existing.addEventListener('error', (err) => reject(err));
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    script.crossOrigin = 'anonymous';
-    script.onload = () => {
-      if (window.html2canvas) resolve(window.html2canvas);
-      else reject(new Error('html2canvas loaded but window.html2canvas not found'));
-    };
-    script.onerror = (e) => reject(e);
-    document.head.appendChild(script);
-  });
-}
-
 /**
- * Memainkan efek suara desis debu halus (crumbling ash whoosh) sintetis
- * menggunakan Web Audio API murni tanpa perlu mengunduh file eksternal.
+ * Memainkan efek suara desis debu halus sintetis (Web Audio API murni)
  */
 function playDustSound(): void {
   try {
@@ -89,35 +50,31 @@ function playDustSound(): void {
     if (!AudioContextClass) return;
 
     const ctx = new AudioContextClass();
-    const duration = 0.52;
+    const duration = 0.45;
     const bufferSize = Math.floor(ctx.sampleRate * duration);
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const channelData = buffer.getChannelData(0);
 
-    // Sintesis noise debu lembut (pink/brown noise + sedikit butiran mikro)
     let lastNoise = 0.0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
-      lastNoise = (lastNoise + 0.06 * white) / 1.06;
-      // Butiran mikro debu sesekali
-      const microCrackle = Math.random() > 0.98 ? (Math.random() - 0.5) * 0.35 : 0;
-      channelData[i] = lastNoise * 2.2 + microCrackle;
+      lastNoise = (lastNoise + 0.05 * white) / 1.05;
+      const microCrackle = Math.random() > 0.985 ? (Math.random() - 0.5) * 0.3 : 0;
+      channelData[i] = lastNoise * 2.0 + microCrackle;
     }
 
     const noiseSource = ctx.createBufferSource();
     noiseSource.buffer = buffer;
 
-    // Filter bandpass menyapu turun (simulasi desau debu beterbangan ditiup angin)
     const bandpass = ctx.createBiquadFilter();
     bandpass.type = 'bandpass';
-    bandpass.frequency.setValueAtTime(1600, ctx.currentTime);
-    bandpass.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + duration);
-    bandpass.Q.setValueAtTime(1.8, ctx.currentTime);
+    bandpass.frequency.setValueAtTime(1400, ctx.currentTime);
+    bandpass.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + duration);
+    bandpass.Q.setValueAtTime(1.9, ctx.currentTime);
 
-    // Envelope volume: attack cepat, decay eksponensial lembut
     const gainNode = ctx.createGain();
     gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 0.03);
+    gainNode.gain.linearRampToValueAtTime(0.14, ctx.currentTime + 0.025);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
 
     noiseSource.connect(bandpass);
@@ -129,42 +86,46 @@ function playDustSound(): void {
       ctx.close().catch(() => {});
     };
   } catch {
-    // Abaikan jika audio tidak diizinkan atau terblokir kebijakan browser
+    // Fail silently
   }
 }
 
 const elementStates = new Map<HTMLElement, ParticleState>();
-const originalVisibility = new Map<HTMLElement, string>();
+const originalStyles = new Map<HTMLElement, { visibility: string; clipPath: string }>();
+
+// Palet warna partikel abu alami bernuansa hangat Tati'e Kitchen
+const ASH_COLORS = [
+  'rgba(255, 255, 255, 0.95)',
+  'rgba(255, 240, 225, 0.88)',
+  'rgba(248, 113, 113, 0.85)',
+  'rgba(251, 146, 60, 0.82)',
+  'rgba(226, 232, 240, 0.75)',
+  'rgba(203, 213, 225, 0.65)',
+];
 
 export class SnapDust {
   /**
-   * Menghancurkan elemen HTML menjadi partikel debu melayang (Thanos Snap)
+   * Menghancurkan elemen HTML menjadi partikel debu halus sinematik (tanpa pixelated 32-bit)
    */
   static async disintegrate(el: HTMLElement, opts?: SnapDustOptions): Promise<void> {
     if (!el) return;
 
-    // Hormati preferensi reduced-motion: fallback fade sederhana
+    // Hormati preferensi reduced-motion
     const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) {
       return new Promise<void>((resolve) => {
-        if (!originalVisibility.has(el)) {
-          originalVisibility.set(el, el.style.visibility);
-        }
-        el.style.transition = 'opacity 250ms ease, filter 250ms ease';
+        el.style.transition = 'opacity 200ms ease';
         el.style.opacity = '0';
-        el.style.filter = 'blur(4px)';
         setTimeout(() => {
           el.style.visibility = 'hidden';
           resolve();
-        }, 250);
+        }, 200);
       });
     }
 
-    // Durasi cepat & partikel halus non 8-bit
-    const particleSize = opts?.particleSize ?? 1.8;
-    const duration = opts?.duration ?? 720;
+    const duration = opts?.duration ?? 480;
     const direction = opts?.direction ?? 'ltr';
-    const wind = opts?.wind ?? { x: 1.3, y: -0.5 };
+    const wind = opts?.wind ?? { x: 1.4, y: -0.5 };
 
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
@@ -172,114 +133,26 @@ export class SnapDust {
       return;
     }
 
-    // Mainkan sound effect debu halus secara instan
+    // Suara desau debu seketika
     playDustSound();
 
     const dpr = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1;
 
-    // 1. Render elemen ke canvas resolusi tajam
-    let sourceCanvas: HTMLCanvasElement;
-    try {
-      const html2canvas = await loadHtml2Canvas();
-      sourceCanvas = await html2canvas(el, {
-        backgroundColor: null,
-        scale: dpr,
-        logging: false,
-        useCORS: true,
+    // Simpan style asli
+    if (!originalStyles.has(el)) {
+      originalStyles.set(el, {
+        visibility: el.style.visibility,
+        clipPath: el.style.clipPath,
       });
-    } catch {
-      el.style.visibility = 'hidden';
-      return;
     }
 
-    const sWidth = sourceCanvas.width;
-    const sHeight = sourceCanvas.height;
-    const sCtx = sourceCanvas.getContext('2d');
-    if (!sCtx) {
-      el.style.visibility = 'hidden';
-      return;
-    }
-
-    const imgData = sCtx.getImageData(0, 0, sWidth, sHeight);
-    const data = imgData.data;
-
-    // 2. Sampling partikel halus non 8-bit (densitas tinggi, maksimal 22.000 partikel)
-    const sampleStep = Math.max(1, Math.round(particleSize * dpr));
-    const maxParticles = 22000;
-    let pCount = 0;
-
-    for (let y = 0; y < sHeight; y += sampleStep) {
-      for (let x = 0; x < sWidth; x += sampleStep) {
-        const idx = (y * sWidth + x) * 4;
-        if (data[idx + 3] > 18) {
-          pCount++;
-          if (pCount >= maxParticles) break;
-        }
-      }
-      if (pCount >= maxParticles) break;
-    }
-
-    if (pCount === 0) {
-      el.style.visibility = 'hidden';
-      return;
-    }
-
-    const startX = new Float32Array(pCount);
-    const startY = new Float32Array(pCount);
-    const currX = new Float32Array(pCount);
-    const currY = new Float32Array(pCount);
-    const radius = new Float32Array(pCount);
-    const vx = new Float32Array(pCount);
-    const vy = new Float32Array(pCount);
-    const delay = new Float32Array(pCount);
-    const rArr = new Uint8Array(pCount);
-    const gArr = new Uint8Array(pCount);
-    const bArr = new Uint8Array(pCount);
-    const aArr = new Float32Array(pCount);
-
-    let i = 0;
-    for (let y = 0; y < sHeight && i < pCount; y += sampleStep) {
-      for (let x = 0; x < sWidth && i < pCount; x += sampleStep) {
-        const idx = (y * sWidth + x) * 4;
-        const alpha = data[idx + 3];
-        if (alpha > 18) {
-          // Konversi dari canvas scale kembali ke CSS logical pixels dengan sedikit random subpixel jitter
-          const logicalX = (x / dpr) + (Math.random() - 0.5) * 0.8;
-          const logicalY = (y / dpr) + (Math.random() - 0.5) * 0.8;
-
-          startX[i] = logicalX;
-          startY[i] = logicalY;
-          currX[i] = logicalX;
-          currY[i] = logicalY;
-          // Radius bervariasi 0.7px s.d. 1.5px untuk tekstur debu halus alami (bukan balok 8-bit)
-          radius[i] = (0.75 + Math.random() * 0.85);
-
-          rArr[i] = data[idx];
-          gArr[i] = data[idx + 1];
-          bArr[i] = data[idx + 2];
-          aArr[i] = alpha / 255;
-
-          // Gelombang hancur cepat dari kiri ke kanan (atau sebaliknya)
-          const normX = direction === 'ltr' ? (logicalX / rect.width) : (1 - logicalX / rect.width);
-          // Penyebaran gelombang ringkas: 0 s.d. 0.32 durasi total
-          delay[i] = Math.max(0, Math.min(0.35, normX * 0.28 + (Math.random() - 0.5) * 0.05));
-
-          // Vektor hembusan angin + dispersi natural
-          vx[i] = (wind.x * 0.9) + (Math.random() * 0.9 - 0.2);
-          vy[i] = (wind.y * 0.9) - (Math.random() * 0.7);
-
-          i++;
-        }
-      }
-    }
-
-    // 3. Tampilkan canvas overlay beresolusi tinggi (HiDPI) di atas elemen
-    const overlayCanvas = document.createElement('canvas');
-    const extraRight = Math.max(120, rect.width * 0.8);
-    const extraTop = Math.max(80, rect.height * 0.8);
+    // Canvas overlay untuk partikel debu
+    const extraRight = Math.max(140, rect.width * 0.9);
+    const extraTop = Math.max(70, rect.height * 0.8);
     const cWidth = rect.width + extraRight;
     const cHeight = rect.height + extraTop;
 
+    const overlayCanvas = document.createElement('canvas');
     overlayCanvas.width = cWidth * dpr;
     overlayCanvas.height = cHeight * dpr;
     overlayCanvas.style.position = 'fixed';
@@ -294,85 +167,87 @@ export class SnapDust {
     const oCtx = overlayCanvas.getContext('2d')!;
     oCtx.scale(dpr, dpr);
 
-    // Simpan visibilitas asli dan sembunyikan elemen
-    if (!originalVisibility.has(el)) {
-      originalVisibility.set(el, el.style.visibility);
-    }
-    el.style.visibility = 'hidden';
+    const particles: AshParticle[] = [];
 
-    // 4. Animasi requestAnimationFrame
     const state: ParticleState = {
-      count: i,
-      startX,
-      startY,
-      currX,
-      currY,
-      radius,
-      vx,
-      vy,
-      delay,
-      r: rArr,
-      g: gArr,
-      b: bArr,
-      a: aArr,
+      particles,
       canvas: overlayCanvas,
       ctx: oCtx,
       rect,
-      opts: { particleSize, duration, direction, wind },
+      opts: { particleSize: opts?.particleSize ?? 1.6, duration, direction, wind },
     };
     elementStates.set(el, state);
 
     return new Promise<void>((resolve) => {
       const startTime = performance.now();
 
-      function renderFrame(now: number) {
+      function render(now: number) {
         const elapsed = now - startTime;
-        const globalP = Math.min(1, elapsed / duration);
+        const p = Math.min(1, elapsed / duration);
 
-        oCtx.clearRect(0, 0, cWidth, cHeight);
+        // 1. Kikis elemen asli dengan clipPath dinamis (teks tetap vektor murni & tajam)
+        const cutPercent = Math.min(100, Math.max(0, p * 112));
+        if (direction === 'ltr') {
+          // Menyusut dari kiri ke kanan
+          el.style.clipPath = `polygon(${cutPercent}% 0%, 100% 0%, 100% 100%, ${Math.max(0, cutPercent - 5)}% 100%)`;
+        } else {
+          // Menyusut dari kanan ke kiri
+          el.style.clipPath = `polygon(0% 0%, ${100 - cutPercent}% 0%, ${Math.min(100, 100 - cutPercent + 5)}% 100%, 0% 100%)`;
+        }
 
-        let activeCount = 0;
-        for (let p = 0; p < state.count; p++) {
-          const pDelay = state.delay[p];
-          if (globalP < pDelay) {
-            // Belum hancur: partikel diam di posisi awal (lingkaran anti-aliased halus)
-            oCtx.fillStyle = `rgba(${state.r[p]},${state.g[p]},${state.b[p]},${state.a[p]})`;
-            oCtx.beginPath();
-            oCtx.arc(state.startX[p], state.startY[p] + extraTop, state.radius[p], 0, Math.PI * 2);
-            oCtx.fill();
-            activeCount++;
-          } else {
-            // Sedang berdebu: melayang cepat dengan turbulensi angin dan mengecil
-            const localP = (globalP - pDelay) / (1 - pDelay);
-            const pLife = Math.min(1, Math.max(0, localP));
+        // 2. Lahirkan partikel debu baru di ujung garis pengikisan
+        if (p < 0.94) {
+          const edgeX = direction === 'ltr'
+            ? (rect.width * (cutPercent / 100))
+            : (rect.width * (1 - cutPercent / 100));
 
-            // Turbulensi halus dan hembusan angin
-            const turbulenceX = Math.sin(pLife * 10 + p * 0.1) * 14 * pLife;
-            const turbulenceY = Math.cos(pLife * 9 + p * 0.1) * 10 * pLife;
+          const particlesToSpawn = 18;
+          for (let s = 0; s < particlesToSpawn; s++) {
+            const spawnY = extraTop + Math.random() * rect.height;
+            const spawnX = edgeX + (Math.random() - 0.5) * 8;
+            const colorIdx = Math.floor(Math.random() * ASH_COLORS.length);
 
-            const moveDist = pLife * 125;
-            const px = state.startX[p] + state.vx[p] * moveDist + turbulenceX;
-            const py = state.startY[p] + extraTop + state.vy[p] * moveDist + turbulenceY;
-
-            // Memudar secara bertahap dan ukuran partikel mengecil
-            const alpha = state.a[p] * Math.max(0, 1 - Math.pow(pLife, 1.3));
-            if (alpha > 0.015) {
-              state.currX[p] = px;
-              state.currY[p] = py;
-              oCtx.fillStyle = `rgba(${state.r[p]},${state.g[p]},${state.b[p]},${alpha})`;
-              const r = Math.max(0.4, state.radius[p] * (1 - pLife * 0.45));
-              oCtx.beginPath();
-              oCtx.arc(px, py, r, 0, Math.PI * 2);
-              oCtx.fill();
-              activeCount++;
-            }
+            particles.push({
+              x: spawnX,
+              y: spawnY,
+              vx: (wind.x * (0.9 + Math.random() * 1.5)),
+              vy: (wind.y * (0.8 + Math.random() * 1.4)) + (Math.random() - 0.5) * 0.8,
+              radius: 0.75 + Math.random() * 1.35,
+              alpha: 0.95,
+              decay: 0.024 + Math.random() * 0.02,
+              color: ASH_COLORS[colorIdx],
+              wobbleOffset: Math.random() * 100,
+            });
           }
         }
 
-        if (globalP < 1 && activeCount > 0) {
-          state.animFrameId = requestAnimationFrame(renderFrame);
+        // 3. Gambar dan perbarui partikel di canvas overlay
+        oCtx.clearRect(0, 0, cWidth, cHeight);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const pt = particles[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy + Math.sin(now * 0.01 + pt.wobbleOffset) * 0.45;
+          pt.alpha -= pt.decay;
+          pt.radius = Math.max(0.3, pt.radius * 0.985);
+
+          if (pt.alpha <= 0.02) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          oCtx.fillStyle = pt.color.replace(/[\d.]+\)$/, `${pt.alpha.toFixed(3)})`);
+          oCtx.beginPath();
+          oCtx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+          oCtx.fill();
+        }
+
+        if (p < 1 || particles.length > 0) {
+          state.animFrameId = requestAnimationFrame(render);
         } else {
-          // Bersihkan canvas dan resolve Promise setelah selesai
+          // Selesai: bersihkan
+          el.style.visibility = 'hidden';
+          el.style.clipPath = '';
           if (overlayCanvas.parentNode) {
             overlayCanvas.parentNode.removeChild(overlayCanvas);
           }
@@ -381,94 +256,31 @@ export class SnapDust {
         }
       }
 
-      state.animFrameId = requestAnimationFrame(renderFrame);
+      state.animFrameId = requestAnimationFrame(render);
     });
   }
 
   /**
-   * Menyusun ulang debu kembali menjadi elemen utuh semula secara cepat
+   * Menyusun ulang debu kembali menjadi elemen semula
    */
   static async restore(el: HTMLElement): Promise<void> {
     if (!el) return;
 
-    // Fallback reduced motion
-    const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) {
-      el.style.opacity = '1';
-      el.style.filter = 'none';
-      el.style.visibility = originalVisibility.get(el) || '';
-      originalVisibility.delete(el);
-      return;
-    }
+    const saved = originalStyles.get(el);
+    el.style.visibility = saved?.visibility || '';
+    el.style.clipPath = '';
+    el.style.opacity = '1';
 
     const state = elementStates.get(el);
-    if (!state) {
-      el.style.visibility = originalVisibility.get(el) || '';
-      el.style.opacity = '1';
-      el.style.filter = 'none';
-      originalVisibility.delete(el);
-      return;
-    }
-
-    const pState = state;
-
-    if (pState.animFrameId) {
-      cancelAnimationFrame(pState.animFrameId);
-    }
-
-    if (!pState.canvas.parentNode) {
-      document.body.appendChild(pState.canvas);
-    }
-
-    const extraTop = Math.max(80, pState.rect.height * 0.8);
-    const duration = 460;
-    const startTime = performance.now();
-    const cWidth = pState.canvas.width;
-    const cHeight = pState.canvas.height;
-    const oCtx = pState.ctx;
-
-    const scatterX = new Float32Array(pState.currX);
-    const scatterY = new Float32Array(pState.currY);
-
-    return new Promise<void>((resolve) => {
-      function renderRestore(now: number) {
-        const elapsed = now - startTime;
-        const p = Math.min(1, elapsed / duration);
-        // Ease-out cubic
-        const ease = 1 - Math.pow(1 - p, 3);
-
-        oCtx.clearRect(0, 0, cWidth, cHeight);
-
-        for (let i = 0; i < pState.count; i++) {
-          const destX = pState.startX[i];
-          const destY = pState.startY[i] + extraTop;
-
-          const curX = scatterX[i] + (destX - scatterX[i]) * ease;
-          const curY = scatterY[i] + (destY - scatterY[i]) * ease;
-
-          const alpha = Math.min(pState.a[i], 0.2 + ease * 0.8 * pState.a[i]);
-          oCtx.fillStyle = `rgba(${pState.r[i]},${pState.g[i]},${pState.b[i]},${alpha})`;
-          oCtx.beginPath();
-          oCtx.arc(curX, curY, pState.radius[i], 0, Math.PI * 2);
-          oCtx.fill();
-        }
-
-        if (p < 1) {
-          requestAnimationFrame(renderRestore);
-        } else {
-          if (pState.canvas.parentNode) {
-            pState.canvas.parentNode.removeChild(pState.canvas);
-          }
-          el.style.visibility = originalVisibility.get(el) || '';
-          el.style.opacity = '1';
-          el.style.filter = 'none';
-          elementStates.delete(el);
-          originalVisibility.delete(el);
-          resolve();
-        }
+    if (state) {
+      if (state.animFrameId) {
+        cancelAnimationFrame(state.animFrameId);
       }
-
-      requestAnimationFrame(renderRestore);
-    });
+      if (state.canvas.parentNode) {
+        state.canvas.parentNode.removeChild(state.canvas);
+      }
+      elementStates.delete(el);
+    }
+    originalStyles.delete(el);
   }
 }

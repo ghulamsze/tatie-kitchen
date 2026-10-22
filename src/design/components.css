@@ -1347,7 +1347,19 @@ body.tk-modal-open .tk-navbar,
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 6px;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.tk-menu-group-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.55) 50%, transparent);
 }
 
 .tk-menu-group-title {
@@ -1361,7 +1373,7 @@ body.tk-modal-open .tk-navbar,
 .tk-menu-group-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 2px;
   flex: 1;
 }
 
@@ -1373,20 +1385,6 @@ body.tk-modal-open .tk-navbar,
   position: relative;
   transition: opacity 0.15s ease;
   gap: 12px;
-}
-
-.tk-menu-group-row::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--w) / 0.5) 50%, transparent);
-}
-
-.tk-menu-group-row:last-child::after {
-  display: none;
 }
 
 .tk-menu-group-item-head {

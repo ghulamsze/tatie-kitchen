@@ -43,17 +43,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setNotes,
   } = useCartStore();
 
+  const cartContainerRef = useRef<HTMLDivElement>(null);
+
+  const isItemFarBelow = (itemId: string, el: HTMLElement): boolean => {
+    // 1. Jika pesanan banyak (> 4 item) dan posisi item di urutan bawah (index >= 3)
+    if (lines.length > 4) {
+      const idx = lines.findIndex((l) => l.item.id === itemId);
+      if (idx >= 3) return true;
+    }
+    // 2. Jika elemen berada di luar atau di dekat batas bawah area scroll keranjang
+    if (cartContainerRef.current) {
+      const elRect = el.getBoundingClientRect();
+      const containerRect = cartContainerRef.current.getBoundingClientRect();
+      if (elRect.bottom > containerRect.bottom - 16 || elRect.top < containerRect.top) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleClearCart = async () => {
     if (lines.length === 0) return;
+    // Jika pesanan banyak (> 4 item), hindari animasi snapdust berat dan bersihkan langsung
+    if (lines.length > 4) {
+      clearCart();
+      return;
+    }
     setIsClearing(true);
     const promises = lines.map((line) => {
       const el = rowRefs.current.get(line.item.id);
-      if (el) {
+      if (el && !isItemFarBelow(line.item.id, el)) {
         return SnapDust.disintegrate(el, {
-          particleSize: 1.8,
-          duration: 650,
+          duration: 480,
           direction: 'ltr',
-          wind: { x: 1.3, y: -0.5 },
+          wind: { x: 1.4, y: -0.5 },
         });
       }
       return Promise.resolve();
@@ -66,12 +89,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleMinusQty = async (itemId: string, currentQty: number) => {
     if (currentQty <= 1) {
       const el = rowRefs.current.get(itemId);
-      if (el) {
+      // Hindari snapdust jika pesanan di bawah banget atau pesanan banyak
+      if (el && !isItemFarBelow(itemId, el)) {
         await SnapDust.disintegrate(el, {
-          particleSize: 1.8,
-          duration: 650,
+          duration: 480,
           direction: 'ltr',
-          wind: { x: 1.3, y: -0.5 },
+          wind: { x: 1.4, y: -0.5 },
         });
       }
       updateQty(itemId, -1);
@@ -310,6 +333,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
           {/* Daftar Item Keranjang */}
           <div
+            ref={cartContainerRef}
             style={{
               flex: 1,
               minHeight: 0,
