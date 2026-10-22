@@ -944,6 +944,13 @@ body.tk-modal-open .tk-navbar,
   gap: 12px;
 }
 
+.tk-keypad-grid.rejecting button {
+  animation: tk-shake-reject 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  color: #ff3b30 !important;
+  border-color: rgba(255, 59, 48, 0.6) !important;
+  box-shadow: 0 0 12px rgba(255, 59, 48, 0.25) !important;
+}
+
 .tk-keypad-grid button {
   height: 52px;
   border-radius: var(--r-md);
@@ -1202,15 +1209,32 @@ body.tk-modal-open .tk-navbar,
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  columns: 3 280px;
-  column-gap: 16px;
-  padding-bottom: 32px;
-  scrollbar-width: thin;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 40px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tk-customer-menu-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.tk-menu-groups-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tk-highlight-box {
-  column-span: all;
-  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 4px;
   display: flex;
   gap: 20px;
   padding: 20px;

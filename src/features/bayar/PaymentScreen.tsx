@@ -288,7 +288,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           {tableInput}
         </div>
 
-        <div className="tk-keypad-grid">
+        <div className={`tk-keypad-grid ${isRejecting ? 'rejecting' : ''}`}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((key) => (
             <button
               key={key}
@@ -368,8 +368,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         </div>
 
         <div>
-          <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)' }}>Total tagihan</span>
-          <div style={{ fontSize: 'var(--t-2xl)', lineHeight: 'var(--l-2xl)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
+          <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-xs)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Total tagihan
+          </span>
+          <div style={{ fontSize: 'var(--t-2xl)', lineHeight: 'var(--l-2xl)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--ink)', marginTop: '2px' }}>
             {formatRupiah(total)}
           </div>
         </div>
@@ -385,13 +387,18 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                   type="button"
                   className={!isManualActive && selectedQuickCash === opt.amount ? 'selected' : ''}
                   onClick={() => handleSelectCash(opt.amount)}
+                  style={{
+                    height: '52px',
+                    fontSize: '15px',
+                    fontWeight: 700,
+                  }}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
 
-            {/* Kolom Input Nominal Manual (Ukuran sama persis dengan tombol lain: height 68px, radius var(--r-md), width 100%) */}
+            {/* Kolom Input Nominal Manual */}
             <input
               type="text"
               inputMode="numeric"
@@ -406,10 +413,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               }}
               onChange={handleManualCashChange}
               style={{
-                height: '68px',
+                height: '52px',
                 padding: '0 16px',
-                fontSize: 'var(--t-lg)',
-                fontWeight: 700,
+                fontSize: '15px',
+                fontWeight: 600,
                 borderRadius: 'var(--r-md)',
                 borderColor: isManualActive ? 'var(--ring)' : 'var(--ctl-line)',
                 boxShadow: isManualActive ? '0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent)' : 'none',
@@ -419,9 +426,9 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             />
 
             {/* Kolom Kembalian */}
-            <div className="tk-field" style={{ height: '52px', fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>
-              <span>Kembalian</span>
-              <b style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', color: isCashSufficient ? 'var(--accent-ink)' : 'var(--danger)' }}>
+            <div className="tk-field" style={{ height: '52px', padding: '0 16px', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: 'var(--t-sm)', color: 'var(--ink-2)', fontWeight: 600 }}>Kembalian</span>
+              <b style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', color: isCashSufficient ? 'var(--accent-ink)' : 'var(--danger)', fontWeight: 800 }}>
                 {formatRupiah(change)}
               </b>
             </div>

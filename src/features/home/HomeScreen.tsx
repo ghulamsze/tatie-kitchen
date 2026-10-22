@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { MenuCard } from './MenuCard.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
+import { SnapDust } from '../../lib/effects/snapDust.ts';
 
 export interface HomeScreenProps {
   onOpenCustomerMenu: () => void;
@@ -18,8 +19,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onChangeCashier: _onChangeCashier,
 }) => {
   const [isClearing, setIsClearing] = useState(false);
-  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
-  const touchStartXRef = React.useRef<number | null>(null);
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const touchStartXRef = useRef<number | null>(null);
 
   const {
     items,
@@ -42,21 +43,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setNotes,
   } = useCartStore();
 
-  const handleClearCart = () => {
+  const handleClearCart = async () => {
+    if (lines.length === 0) return;
     setIsClearing(true);
-    setTimeout(() => {
-      clearCart();
-      setIsClearing(false);
-    }, 550);
+    const promises = lines.map((line) => {
+      const el = rowRefs.current.get(line.item.id);
+      if (el) {
+        return SnapDust.disintegrate(el, {
+          particleSize: 3,
+          duration: 1000,
+          direction: 'ltr',
+          wind: { x: 1.2, y: -0.6 },
+        });
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(promises);
+    clearCart();
+    setIsClearing(false);
   };
 
-  const handleMinusQty = (itemId: string, currentQty: number) => {
+  const handleMinusQty = async (itemId: string, currentQty: number) => {
     if (currentQty <= 1) {
-      setRemovingItemId(itemId);
-      setTimeout(() => {
-        updateQty(itemId, -1);
-        setRemovingItemId(null);
-      }, 550);
+      const el = rowRefs.current.get(itemId);
+      if (el) {
+        await SnapDust.disintegrate(el, {
+          particleSize: 3,
+          duration: 900,
+          direction: 'ltr',
+          wind: { x: 1.2, y: -0.6 },
+        });
+      }
+      updateQty(itemId, -1);
     } else {
       updateQty(itemId, -1);
     }
@@ -322,44 +340,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </small>
               </div>
             ) : (
-              lines.map((line) => {
-                const isThanosSnap = isClearing || removingItemId === line.item.id;
-                return (
-                  <div
-                    key={line.item.id}
-                    className={`tk-cart-row ${isThanosSnap ? 'tk-thanos-snap-out' : 'tk-cart-item-in'}`}
-                  >
-                    {isThanosSnap && (
-                      <div className="tk-thanos-dust-cloud" aria-hidden="true">
-                        {[...Array(14)].map((_, i) => {
-                          const top = 10 + ((i * 17) % 75);
-                          const left = 15 + ((i * 23) % 70);
-                          const size = 2 + (i % 3);
-                          const dx = 25 + ((i * 13) % 40);
-                          const dy = -12 - ((i * 9) % 30);
-                          const isEmber = i % 4 === 0;
-                          const bg = isEmber ? 'rgba(255, 140, 50, 0.95)' : 'rgba(215, 215, 215, 0.85)';
-                          return (
-                            <span
-                              key={i}
-                              className="tk-dust-speck"
-                              style={{
-                                top: `${top}%`,
-                                left: `${left}%`,
-                                width: `${size}px`,
-                                height: `${size}px`,
-                                backgroundColor: bg,
-                                boxShadow: isEmber ? '0 0 5px rgba(255, 130, 0, 0.9)' : 'none',
-                                // @ts-expect-error CSS custom properties
-                                '--dx': `${dx}px`,
-                                '--dy': `${dy}px`,
-                                animationDelay: `${(i % 5) * 35}ms`,
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
+              lines.map((line) => (
+                <div
+                  key={line.item.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(line.item.id, el);
+                    else rowRefs.current.delete(line.item.id);
+                  }}
+                  className="tk-cart-row tk-cart-item-in"
+                >
                     <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
 
                       <b style={{ display: 'block', fontSize: 'var(--t-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -393,8 +382,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </button>
                     </div>
                   </div>
-                );
-              })
+                ))
             )}
           </div>
 

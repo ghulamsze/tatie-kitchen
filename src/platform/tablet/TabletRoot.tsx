@@ -151,7 +151,7 @@ export const TabletRoot: React.FC = () => {
   }
 
   // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Seamless Drag-to-Switch
-  const showNavbar = currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun';
+  const showNavbar = (currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun') && !isCustomerMenuOpen;
   const isModalActive = Boolean(heldItem) || isCustomerMenuOpen;
 
   return (

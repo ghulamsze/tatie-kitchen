@@ -225,6 +225,8 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
 
   const isRealtimeMoving = activeDragging || Math.abs(effectiveProgress - activeIndex) > 0.005;
 
+  const [isPressed, setIsPressed] = useState(false);
+
   return (
     <nav
       ref={(el) => {
@@ -239,17 +241,31 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       }}
       className={`g-liquid tk-navbar ${isBlocked ? 'blocked' : ''}`}
       aria-label="Navigasi Utama"
-      onPointerDown={externalOnPointerDown || handleInternalPointerDown}
+      onPointerDown={(e) => {
+        setIsPressed(true);
+        if (externalOnPointerDown) externalOnPointerDown(e);
+        else handleInternalPointerDown(e);
+      }}
       onPointerMove={externalOnPointerMove || handleInternalPointerMove}
-      onPointerUp={externalOnPointerUp || handleInternalPointerUp}
-      onPointerCancel={externalOnPointerCancel || externalOnPointerUp || handleInternalPointerUp}
+      onPointerUp={(e) => {
+        setIsPressed(false);
+        if (externalOnPointerUp) externalOnPointerUp(e);
+        else handleInternalPointerUp(e);
+      }}
+      onPointerCancel={(e) => {
+        setIsPressed(false);
+        if (externalOnPointerCancel) externalOnPointerCancel(e);
+        else if (externalOnPointerUp) externalOnPointerUp(e);
+        else handleInternalPointerUp(e);
+      }}
       style={{
         touchAction: 'none',
         cursor: isBlocked ? 'default' : (activeDragging ? 'grabbing' : 'pointer'),
         pointerEvents: isBlocked ? 'none' : 'auto',
         filter: isBlocked ? 'blur(3px)' : 'none',
         opacity: isBlocked ? 0.45 : 1,
-        transition: 'opacity 0.25s ease, filter 0.25s ease',
+        transform: `translateX(-50%) scale(${isPressed ? 0.96 : 1})`,
+        transition: 'opacity 0.25s ease, filter 0.25s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)',
         overflow: 'hidden',
       }}
     >
@@ -273,6 +289,9 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
         const diff = Math.abs(effectiveProgress - idx);
         const weight = Math.max(0, 1 - diff);
         const isCurrentActive = activeItem === item;
+        const baseOpacity = 0.65 + weight * 0.35;
+        const finalOpacity = isPressed ? baseOpacity * 0.72 : baseOpacity;
+        const scale = 1 + weight * 0.16;
 
         return (
           <button
@@ -283,8 +302,11 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
             type="button"
             className={`tk-navbar-item ${isCurrentActive ? 'active' : ''}`}
             style={{
-              opacity: 0.65 + weight * 0.35,
+              opacity: finalOpacity,
               fontWeight: 700,
+              transform: `scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease',
             }}
             onClick={() => {
               if (!isBlocked) onSelect(item);

@@ -4,6 +4,7 @@ import { usePrinterStore } from '../../stores/printerStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
+import { SnapDustDemo } from '../demo/SnapDustDemo.tsx';
 
 export interface AccountScreenProps {
   onChangeCashier: () => void;
@@ -14,6 +15,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
   const { isConnected } = usePrinterStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isPrinterOpen, setIsPrinterOpen] = useState(false);
+  const [isSnapDemoOpen, setIsSnapDemoOpen] = useState(false);
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
   const getInitials = (name: string): string => {
@@ -117,6 +119,15 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
           Ganti kasir
         </Button>
 
+        {/* Tombol Demo Thanos Snap (Debu) */}
+        <Button
+          variant="flat"
+          onClick={() => setIsSnapDemoOpen(true)}
+          style={{ width: '100%', borderColor: 'rgba(168, 85, 247, 0.4)', color: 'var(--accent-ink)' }}
+        >
+          ⚡ Demo Thanos Snap (Debu)
+        </Button>
+
         {/* Versi Aplikasi */}
         <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', marginTop: '2px' }}>
           Tati’e Kitchen v{import.meta.env.VITE_APP_VERSION || '0.2.0'} (Tablet Beta)
@@ -134,6 +145,11 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
         isOpen={isPrinterOpen}
         onClose={() => setIsPrinterOpen(false)}
       />
+
+      {/* Demo Thanos Snap Particle Engine */}
+      {isSnapDemoOpen && (
+        <SnapDustDemo onClose={() => setIsSnapDemoOpen(false)} />
+      )}
     </div>
   );
 };

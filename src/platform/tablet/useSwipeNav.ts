@@ -167,35 +167,20 @@ export function useSwipeNav({
     return () => container.removeEventListener('wheel', handleWheel);
   }, [animateTo, tabs.length]);
   // Temukan tab diskrit (0, 1, atau 2) dari koordinat horizontal clientX di navbar
-  const getTabIndexFromClientX = useCallback((clientX: number): number => {
+  // Hitung progress kontinu t (0..2) dari koordinat horizontal clientX di navbar
+  const getContinuousProgressFromClientX = useCallback((clientX: number): number => {
     if (!navbarRef.current) return tRef.current;
-    const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
-    if (!buttons || buttons.length === 0) return tRef.current;
-
-    for (let i = 0; i < buttons.length; i++) {
-      const rect = buttons[i].getBoundingClientRect();
-      if (clientX >= rect.left && clientX <= rect.right) {
-        return i;
-      }
-    }
-
-    // Jika di luar batas, cari tombol terdekat
-    let closestIdx = 0;
-    let minDistance = Infinity;
-    buttons.forEach((btn, idx) => {
-      const rect = btn.getBoundingClientRect();
-      const center = rect.left + rect.width / 2;
-      const dist = Math.abs(clientX - center);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIdx = idx;
-      }
-    });
-
-    return Math.max(0, Math.min(tabs.length - 1, closestIdx));
+    const rect = navbarRef.current.getBoundingClientRect();
+    const padding = 4;
+    const innerWidth = rect.width - padding * 2;
+    if (innerWidth <= 0) return tRef.current;
+    const relativeX = clientX - rect.left - padding;
+    // Map posisi sentuhan relatif terhadap lebar dalam navbar ke skala progress tab
+    const p = (relativeX / innerWidth) * (tabs.length - 1);
+    return Math.max(0, Math.min(tabs.length - 1, p));
   }, [tabs.length]);
 
-  // Interaksi pada navbar: memilih dan menahan tab secara solid tanpa bergeser liar
+  // Interaksi pada navbar: bergerak mulus mengikuti sentuhan jari 1:1
   const handleNavbarPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     cancelOngoingAnimation();
 
@@ -209,17 +194,15 @@ export function useSwipeNav({
     dragSourceRef.current = 'navbar';
     setIsDragging(true);
 
-    const targetIdx = getTabIndexFromClientX(e.clientX);
-    animateTo(targetIdx);
-  }, [cancelOngoingAnimation, getTabIndexFromClientX, animateTo]);
+    const progressT = getContinuousProgressFromClientX(e.clientX);
+    applyT(progressT, true);
+  }, [cancelOngoingAnimation, getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
-    const targetIdx = getTabIndexFromClientX(e.clientX);
-    if (Math.round(tRef.current) !== targetIdx) {
-      animateTo(targetIdx);
-    }
-  }, [getTabIndexFromClientX, animateTo]);
+    const progressT = getContinuousProgressFromClientX(e.clientX);
+    applyT(progressT, true);
+  }, [getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
@@ -233,9 +216,10 @@ export function useSwipeNav({
       // ignore
     }
 
-    const targetIdx = getTabIndexFromClientX(e.clientX);
+    // Meluncur halus (smooth snap) ke tab terdekat yang dipilih
+    const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
     animateTo(targetIdx);
-  }, [getTabIndexFromClientX, animateTo]);
+  }, [tabs.length, animateTo]);
 
   // Pointer events untuk swipe halaman layar (Pager)
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
