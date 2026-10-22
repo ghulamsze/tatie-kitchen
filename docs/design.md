@@ -227,12 +227,18 @@ Grid keypad 3x4: h 52px, radius --r-md, font --t-lg.
 Grid 2 kolom, gap 12px. Tombol: h 68px, radius --r-md, font --t-lg.
 Terpilih: bg --sel, border --ring, shadow inset.
 
-### 9.16 Struk (.tk-receipt-card)
+### 9.16 Struk (.tk-receipt-card) & Nomor Antrian
 Width 300px, bg #fbfaf5 hardcoded, warna #1f1e1d hardcoded.
 Font: ui-monospace (disengaja untuk efek kertas thermal). Font-size 14px (bukan token). Radius 6px (bukan token).
 Mesin struk: ::before 320x10px, gradien hitam.
 Animasi: tk-receipt-feed-out 0.85s cubic-bezier(0.2,0.8,0.25,1).
 Ikon centang 56px: tk-check-circle + tk-check-draw.
+
+Nomor Antrian pada Layar Struk:
+- Pada kartu struk fisik: blok terpusat di bawah header, label 'NOMOR ANTRIAN' (10px, letter-spacing 0.08em, bobot 700, warna #666666) dan angka format 3 digit (formatQueueNo, e.g. 001) ukuran 32px, bobot 900, warna #111111.
+- Pada panel konfirmasi kanan (acrylic): container bg var(--card-sub), border var(--border), radius var(--r-md), padding 12px 20px, label font --t-xs warna var(--ink-2), dan angka font --t-3xl/--l-3xl, bobot 900, warna var(--accent-ink).
+- Teks bagikan (Web Share): menyertakan baris '*NOMOR ANTRIAN: 001*'.
+- Unduh berkas PNG: otomatis menangkap blok nomor antrian beresolusi tinggi (pixelRatio 2).
 
 ### 9.17 Menu Lengkap Pembeli
 .tk-customer-menu-overlay: position absolute; inset 0; z-index 80; bg var(--scr-bg).
@@ -241,11 +247,14 @@ Kotak highlight (.tk-highlight-box): grid-column 1/-1, gap 20px, padding 20px.
 Item menu (.tk-customer-menu-item): bullet berlian clip-path polygon, garis bawah gradient.
 Kotak ikon (.tk-menu-icon-box): 40x40px, radius --r-sm(12px), bg color-mix(accent 24%, transparent).
 
-### 9.18 Riwayat
+### 9.18 Riwayat Transaksi & Badge Antrian
 Header tanggal (.tk-history-date-header): bg rgb(var(--w)/0.1), warna --ink-3, padding 8px 16px,
   font --t-xs/--l-xs, bobot 700.
 Baris (.tk-history-row): padding 12px 16px, border-bottom 1px solid rgb(var(--w)/0.16),
-  font --t-md/--l-md. Badge meja: liquid glass, radius --r-sm, padding 2px 8px.
+  font --t-md/--l-md.
+Badge Nomor Antrian:
+- Pada baris transaksi: badge .g-liquid, radius var(--r-sm), padding 2px 8px, font --t-xs, bobot 900, warna var(--accent-ink) (format: #001). Di samping badge nomor meja dan potongan UUID pesanan.
+- Pada sheet rincian transaksi: blok nomor antrian terpusat dengan angka 26px, bobot 900, warna #111111.
 
 ### 9.19 Swipe Pager
 .tk-swipe-pager-container: overflow hidden; touch-action pan-y.

@@ -168,7 +168,14 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         }
       }
 
-      // Fallback pencatatan transaksi lokal
+      // Fallback pencatatan transaksi lokal dengan penghitung antrian harian
+      const existingOrders = useHistoryStore.getState().orders;
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      const maxLocalQueue = existingOrders
+        .filter((o) => o.order.business_date === todayDateStr || o.order.created_at.startsWith(todayDateStr))
+        .reduce((max, o) => Math.max(max, o.order.queue_no || 0), 0);
+      const nextQueueNo = maxLocalQueue + 1;
+
       recordedOrder = {
         id: orderId,
         shop_id: shopId,
@@ -179,6 +186,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         cash_received_idr: effectiveCash,
         change_idr: change,
         status: 'paid',
+        queue_no: nextQueueNo,
+        business_date: todayDateStr,
         created_at: new Date().toISOString(),
       };
 

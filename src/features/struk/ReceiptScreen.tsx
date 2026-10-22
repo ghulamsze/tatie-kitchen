@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
-import { formatRupiah, formatDate, formatTime } from '../../lib/format/formatters.ts';
+import { formatRupiah, formatDate, formatTime, formatQueueNo } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
@@ -27,6 +27,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const orderDate = lastOrder?.created_at ? new Date(lastOrder.created_at) : new Date();
   const orderId = lastOrder?.id || 'ord-sample123';
   const tableNo = lastOrder?.table_no || '4';
+  const queueNo = lastOrder?.queue_no || 1;
   const total = lastOrder?.total_idr || 0;
   const cashReceived = lastOrder?.cash_received_idr || total;
   const change = lastOrder?.change_idr || 0;
@@ -43,7 +44,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
       .map((item) => `${item.qty}x ${item.name_snapshot} (${formatRupiah(item.price_snapshot_idr * item.qty)})`)
       .join('\n');
 
-    const shareText = `*Tati’e Kitchen*\nJl. Tamalate 2 No. 8, Makassar\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
+    const shareText = `*Tati’e Kitchen*\nJl. Tamalate 2 No. 8, Makassar\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
 
     if (navigator.share) {
       try {
@@ -117,6 +118,18 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
         </div>
         <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666' }}>
           Jl. Tamalate 2 No. 8, Makassar
+        </div>
+
+        <hr />
+
+        {/* Tampilan Nomor Antrian Menonjol pada Struk Fisik */}
+        <div style={{ textAlign: 'center', padding: '6px 0 2px 0' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '0.08em', color: '#666666', fontWeight: 700 }}>
+            NOMOR ANTRIAN
+          </div>
+          <div style={{ fontSize: '32px', fontWeight: 900, lineHeight: 1.1, color: '#111111', margin: '2px 0' }}>
+            {formatQueueNo(queueNo)}
+          </div>
         </div>
 
         <hr />
@@ -215,6 +228,26 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           <p style={{ margin: '6px 0 0', color: 'var(--ink-2)', fontSize: 'var(--t-sm)' }}>
             Kembalian {formatRupiah(change)}
           </p>
+        </div>
+
+        {/* Kotak Nomor Antrian Menonjol */}
+        <div
+          style={{
+            background: 'var(--card-sub)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)',
+            padding: '12px 20px',
+            textAlign: 'center',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 700, letterSpacing: '0.05em' }}>
+            NOMOR ANTRIAN
+          </div>
+          <div style={{ fontSize: 'var(--t-3xl)', lineHeight: 'var(--l-3xl)', fontWeight: 900, color: 'var(--accent-ink)', marginTop: '2px' }}>
+            {formatQueueNo(queueNo)}
+          </div>
         </div>
 
         {/* Tombol Bagikan Struk & Unduh PNG */}

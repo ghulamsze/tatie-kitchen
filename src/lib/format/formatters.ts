@@ -14,6 +14,16 @@ export function formatRupiah(amount: number): string {
 }
 
 /**
+ * Format nomor antrian: minimal 3 digit (contoh: 001, 012, 100, 1000).
+ */
+export function formatQueueNo(queueNo: number | null | undefined): string {
+  if (!queueNo || isNaN(queueNo) || queueNo <= 0) {
+    return '001';
+  }
+  return queueNo < 1000 ? String(queueNo).padStart(3, '0') : String(queueNo);
+}
+
+/**
  * Mendapatkan zona waktu resmi toko: WITA (Asia/Makassar)
  * Sesuai keputusan desain dan instruksi pemilik.
  */

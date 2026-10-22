@@ -13,6 +13,7 @@ export interface Shop {
   id: string;
   name: string;
   timezone: string;
+  queue_reset_time?: string;
   created_at: string;
 }
 
@@ -63,6 +64,8 @@ export interface Order {
   cash_received_idr: number;
   change_idr: number;
   status: string;
+  queue_no?: number | null;
+  business_date?: string | null;
   created_at: string;
 }
 

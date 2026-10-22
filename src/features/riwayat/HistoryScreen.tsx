@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useHistoryStore, DateRangePreset, HistoryOrderWithItems } from '../../stores/historyStore.ts';
-import { formatRupiah, formatDate, formatTime, getStartOfDayInShopTimezone } from '../../lib/format/formatters.ts';
+import { formatRupiah, formatDate, formatTime, getStartOfDayInShopTimezone, formatQueueNo } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Sheet } from '../../design/components/Sheet.tsx';
 
@@ -149,7 +149,7 @@ export const HistoryScreen: React.FC = () => {
                     tabIndex={0}
                     style={{ cursor: 'pointer' }}
                   >
-                    {/* Info Meja & Ringkasan Item */}
+                    {/* Info Meja, Antrian & Ringkasan Item */}
                     <div style={{ flex: 1, minWidth: 0, paddingRight: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span
@@ -157,8 +157,18 @@ export const HistoryScreen: React.FC = () => {
                           style={{
                             padding: '2px 8px',
                             borderRadius: 'var(--r-sm)',
-                            fontWeight: 800,
+                            fontWeight: 900,
                             fontSize: 'var(--t-xs)',
+                            color: 'var(--accent-ink)',
+                          }}
+                        >
+                          #{formatQueueNo(order.queue_no || 1)}
+                        </span>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 'var(--t-xs)',
+                            color: 'var(--ink-1)',
                           }}
                         >
                           Meja {order.table_no || '-'}
@@ -276,7 +286,15 @@ export const HistoryScreen: React.FC = () => {
               }}
             >
               <div className="center-bold">Tati’e Kitchen</div>
-              <div className="row-between" style={{ fontSize: '12px', marginTop: '8px' }}>
+              <div style={{ textAlign: 'center', padding: '6px 0 2px 0' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '0.08em', color: '#666666', fontWeight: 700 }}>
+                  NOMOR ANTRIAN
+                </div>
+                <div style={{ fontSize: '26px', fontWeight: 900, lineHeight: 1.1, color: '#111111', margin: '2px 0' }}>
+                  {formatQueueNo(selectedOrder.order.queue_no || 1)}
+                </div>
+              </div>
+              <div className="row-between" style={{ fontSize: '12px', marginTop: '6px' }}>
                 <span>No: #{selectedOrder.order.id.substring(0, 10)}</span>
                 <span>Meja {selectedOrder.order.table_no}</span>
               </div>
