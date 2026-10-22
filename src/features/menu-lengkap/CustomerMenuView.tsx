@@ -270,11 +270,17 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
   return (
     <div className="scr tk-customer-menu-overlay" role="dialog" aria-modal="true" aria-label="Menu Lengkap Pembeli">
       {/* Top Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '56px', flex: 'none' }}>
-        <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, color: 'var(--ink)' }}>
-          Menu Tati’e Kitchen
-        </h2>
-        <Button variant="flat" size="md" onClick={onClose} style={{ minWidth: '112px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '52px', flex: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Button variant="flat" size="md" onClick={onClose} style={{ height: '44px', padding: '0 18px', gap: '8px' }}>
+            <span>←</span>
+            <span>Kembali</span>
+          </Button>
+          <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, color: 'var(--ink)' }}>
+            Menu Tati’e Kitchen
+          </h2>
+        </div>
+        <Button variant="flat" size="md" onClick={onClose} style={{ minWidth: '100px', height: '44px' }}>
           Tutup
         </Button>
       </div>
@@ -298,12 +304,13 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
       <div className="tk-customer-menu-grid">
         {/* Golden Triangle: Kotak Sorot Terlaris (Hanya jika kategori 'semua') */}
         {selectedCategory === 'semua' && (
-          <div className="g-acrylic hi tk-highlight-box">
+          <div className="g-acrylic hi tk-highlight-box" style={{ borderRadius: 'var(--r-lg)' }}>
             <div
               className="tk-menu-card"
               style={{
                 flex: '0 0 200px',
                 minHeight: '168px',
+                borderRadius: 'var(--r-md)',
               }}
             >
               <div
@@ -314,6 +321,22 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               />
               <div className="blur-layer" />
               <b style={{ color: '#ffffff' }}>Nasi Goreng Telur</b>
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  background: 'var(--accent)',
+                  color: 'var(--on-accent)',
+                  fontSize: 'var(--t-xs)',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: 'var(--r-pill)',
+                  zIndex: 4,
+                }}
+              >
+                Andalan
+              </span>
             </div>
 
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>

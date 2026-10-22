@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Order, OrderItem } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
+import { logError } from '../lib/logger/logger.ts';
 
 export interface HistoryOrderWithItems {
   order: Order;
@@ -19,8 +20,8 @@ const loadSavedOrders = (): HistoryOrderWithItems[] => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    logError('historyStore:loadSavedOrders', err);
   }
   return SEED_HISTORY_ORDERS;
 };
@@ -49,8 +50,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       const updated = [{ order, items }, ...state.orders];
       try {
         localStorage.setItem('tk_order_history', JSON.stringify(updated));
-      } catch {
-        // ignore
+      } catch (err) {
+        logError('historyStore:addOrder_persist', err);
       }
       return { orders: updated };
     });
@@ -70,7 +71,9 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       }
 
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (error) {
+        logError('historyStore:fetchOrders_query', error);
+      } else if (data && data.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapped: HistoryOrderWithItems[] = data.map((d: any) => ({
           order: {
@@ -90,8 +93,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
         set({ orders: mapped });
       }
-    } catch {
-      // Pertahankan data lokal
+    } catch (err) {
+      logError('historyStore:fetchOrders_exception', err);
     }
   },
 }));

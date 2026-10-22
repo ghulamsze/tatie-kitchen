@@ -72,3 +72,22 @@ Hasil berkas rilis akan berada di:
 - **Plugin Native:**
   - `@capacitor/device`: Deteksi informasi perangkat keras tablet.
   - `@capacitor/share`: Membuka dialog berbagi struk bawaan Android.
+  - `BluetoothPrinterPlugin` (Custom Java SPP RFCOMM): Driver langsung Bluetooth Thermal Printer (VSC MP-58X / ESC/POS 58mm).
+
+---
+
+## 5. Menghubungkan Printer Thermal Bluetooth (VSC MP-58X)
+1. Nyalakan printer thermal VSC MP-58X.
+2. Buka **Pengaturan Bluetooth** tablet Android fisik, cari dan pasangkan (*pair*) dengan printer (biasanya nama perangkat `MP-58X` atau `Printer001`, PIN standar `0000` atau `1234`).
+3. Buka aplikasi Tati’e Kitchen di tablet -> masuk ke tab **Akun** -> ketuk **Printer Thermal**.
+4. Pilih printer dari daftar perangkat Bluetooth yang terpasang, lalu ketuk **Uji Cetak**.
+5. Centang **Cetak Struk Otomatis** agar setiap transaksi berhasil langsung mencetak struk kasir dengan nomor antrean harian tebal.
+
+---
+
+## 6. Sinkronisasi Database & Mode Offline (Outbox)
+- Jika tablet kehilangan koneksi internet atau Wi-Fi lambat:
+  - Transaksi kasir tetap berjalan lancar dan nomor antrean berlanjut secara berurutan.
+  - Pesanan otomatis disimpan ke antrean sinkronisasi lokal (`syncQueueStore`).
+  - Begitu tablet tersambung kembali ke internet, sistem secara otomatis mengirimkan seluruh pesanan yang tertunda ke Supabase tanpa perlu campur tangan kasir.
+

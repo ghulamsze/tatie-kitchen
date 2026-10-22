@@ -119,7 +119,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
 
         {/* Versi Aplikasi */}
         <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', marginTop: '2px' }}>
-          Tati’e Kitchen v0.2.0 (Tablet Beta)
+          Tati’e Kitchen v{import.meta.env.VITE_APP_VERSION || '0.2.0'} (Tablet Beta)
         </span>
       </div>
 

@@ -1188,11 +1188,13 @@
 
 .tk-menu-group-row {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid var(--ctl-line);
   position: relative;
   transition: opacity 0.15s ease;
+  gap: 8px;
 }
 
 .tk-menu-group-row:last-child {
@@ -1203,6 +1205,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .tk-menu-group-bullet {
@@ -1214,19 +1218,23 @@
 }
 
 .tk-menu-group-item-name {
-  font-size: var(--t-md);
-  line-height: var(--l-md);
+  font-size: var(--t-sm);
+  line-height: var(--l-sm);
   font-weight: 700;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tk-menu-group-item-price {
   font-size: var(--t-sm);
   line-height: var(--l-sm);
-  font-weight: 700;
-  color: var(--ink-2);
-  padding-left: 14px;
-  margin-top: 2px;
+  font-weight: 800;
+  color: var(--accent-ink);
+  flex: none;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* ===== 20. HORIZONTAL SWIPE PAGER (CONTINUOUS PROGRESS T & SEAMLESS BG) ===== */

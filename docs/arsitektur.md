@@ -255,14 +255,17 @@ Daftar uji:
 
 ## 11. Peta jalan (belum dikerjakan)
 
-1. Laptop: web admin pemilik (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu), lalu bungkus Electron menjadi .exe.
-2. Android pemilik: Capacitor, tanpa login sesuai preview.
-3. iOS pemilik: Capacitor iOS.
-Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di src/platform/
+1. Laptop: web admin pemilik (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu), lalu bungkus Electron menjadi .exe. Login autentikasi Supabase Auth.
+2. Android & iOS pemilik: Capacitor, pemantauan transaksi harian real-time (read-only).
+3. Supabase Realtime Subscription: Direncanakan aktif pada fase Laptop dan Mobile monitoring. Pada fase Tablet Kasir Beta, fungsi `subscribeToMenuChanges()` disediakan sebagai stub/logger peringatan karena perubahan menu kasir diperbarui saat peluncuran atau refresh manual.
+Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di src/platform/.
 
-## 12. Keputusan yang perlu dikonfirmasi pemilik
+## 12. Keputusan yang telah dikonfirmasi pemilik
 
-- Akun perangkat tablet (bagian 5) dan apakah foto menu publik.
-- Zona waktu tampilan: HTML memakai WIB, Makassar WITA.
-- Apakah tablet boleh menjual saat internet putus (antrean offline) pada beta.
-- Nama paket aplikasi com.tatiekitchen.kasir.
+- **Akun Pemilik / Admin**: `robertusamaresi@gmail.com` (kata sandi: `tatiekitchen*1`) dan `ghulamsze@gmail.com`.
+- **Perangkat Tablet**: POS Kasir khusus, TIDAK memerlukan login akun/autentikasi (langsung masuk ke pemilihan kasir/layar kasir).
+- **Zona Waktu**: WITA (Asia/Makassar, UTC+8) telah terkonfigurasi pada format tanggal, jam, dan perputaran antrean harian (reset 00:00 WITA).
+- **Antrean Offline (Outbox)**: Telah diimplementasikan via `syncQueueStore` dengan auto-sync saat koneksi kembali online, sehingga kasir tidak macet jika jaringan terputus.
+- **Rekening Transfer Toko**: Bank Kaltimtara, No. Rek `1747037252`, a.n. `Hartati Jahri`.
+- **Nama Paket Aplikasi**: `com.tatiekitchen.kasir`.
+

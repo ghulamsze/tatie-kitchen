@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Cashier } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
 import { formatTime } from '../lib/format/formatters.ts';
+import { logError } from '../lib/logger/logger.ts';
 
 // Data kasir awal acuan dari seed / HTML
 const DEFAULT_CASHIERS: Cashier[] = [
@@ -28,8 +29,8 @@ const loadSavedCashiers = (): Cashier[] => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    logError('cashierStore:loadSavedCashiers', err);
   }
   return DEFAULT_CASHIERS;
 };
@@ -63,11 +64,13 @@ export const useCashierStore = create<CashierState>((set) => ({
         query = query.eq('shop_id', shopId);
       }
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (error) {
+        logError('cashierStore:fetchCashiers_query', error);
+      } else if (data && data.length > 0) {
         set({ cashiers: data as Cashier[] });
       }
-    } catch {
-      // Fallback ke default kasir
+    } catch (err) {
+      logError('cashierStore:fetchCashiers_exception', err);
     } finally {
       set({ isLoading: false });
     }
@@ -84,8 +87,8 @@ export const useCashierStore = create<CashierState>((set) => ({
       } else {
         localStorage.removeItem('tk-active-cashier-id');
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      logError('cashierStore:setActiveCashier_persist', err);
     }
   },
 
@@ -100,13 +103,15 @@ export const useCashierStore = create<CashierState>((set) => ({
           p_shop_id: shopId,
           p_name: trimmed,
         });
-        if (!error && data) {
+        if (error) {
+          logError('cashierStore:add_cashier_rpc_error', error);
+        } else if (data) {
           const newCashier = data as Cashier;
           set((state) => ({ cashiers: [...state.cashiers, newCashier] }));
           return newCashier;
         }
-      } catch {
-        // Lanjut ke pembuatan lokal jika error
+      } catch (err) {
+        logError('cashierStore:add_cashier_rpc_exception', err);
       }
     }
 
@@ -123,8 +128,8 @@ export const useCashierStore = create<CashierState>((set) => ({
       const updated = [...state.cashiers, localCashier];
       try {
         localStorage.setItem('tk_cashiers', JSON.stringify(updated));
-      } catch {
-        // ignore
+      } catch (err) {
+        logError('cashierStore:addNewCashier_persist', err);
       }
       return { cashiers: updated };
     });
@@ -135,9 +140,12 @@ export const useCashierStore = create<CashierState>((set) => ({
     if (isSupabaseConfigured()) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('cashiers') as any).update({ active: false }).eq('id', id);
-      } catch {
-        // Fallback local
+        const { error } = await (supabase.from('cashiers') as any).update({ active: false }).eq('id', id);
+        if (error) {
+          logError('cashierStore:removeCashier_db_error', error);
+        }
+      } catch (err) {
+        logError('cashierStore:removeCashier_db_exception', err);
       }
     }
 
@@ -149,8 +157,8 @@ export const useCashierStore = create<CashierState>((set) => ({
         if (isCurrentActive) {
           localStorage.removeItem('tk-active-cashier-id');
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        logError('cashierStore:removeCashier_persist', err);
       }
       return {
         cashiers: remaining,

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
+import { logError, logWarning } from '../lib/logger/logger.ts';
 
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
 export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
@@ -1074,6 +1075,7 @@ interface MenuState {
   setToastMessage: (msg: string | null) => void;
   toggleItemAvailability: (itemId: string, available: boolean) => Promise<void>;
   fetchMenu: (shopId?: string) => Promise<void>;
+  subscribeToMenuChanges: () => () => void;
 }
 
 const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => {
@@ -1083,8 +1085,8 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
       const map: Record<string, boolean> = JSON.parse(raw);
       return initialItems.map((it) => (it.id in map ? { ...it, available: map[it.id] } : it));
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    logError('menuStore:loadSavedAvailability', err);
   }
   return initialItems;
 };
@@ -1111,8 +1113,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         const map = raw ? JSON.parse(raw) : {};
         map[itemId] = available;
         localStorage.setItem('tk_item_availability', JSON.stringify(map));
-      } catch {
-        // ignore
+      } catch (err) {
+        logError('menuStore:persistAvailability', err);
       }
       return {
         items: updatedItems,
@@ -1140,8 +1142,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           p_item_id: itemId,
           p_available: available,
         });
-      } catch {
-        // Supabase error handled quietly
+      } catch (err) {
+        logError('menuStore:set_item_availability', err);
       }
     }
   },
@@ -1152,11 +1154,23 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       let query = supabase.from('menu_items').select('*').eq('active', true).order('sort');
       if (shopId) query = query.eq('shop_id', shopId);
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (error) {
+        logError('menuStore:fetchMenu_query', error);
+      } else if (data && data.length > 0) {
         set({ items: data as MenuItem[] });
       }
-    } catch {
-      // keep seed items
+    } catch (err) {
+      logError('menuStore:fetchMenu_exception', err);
     }
+  },
+
+  subscribeToMenuChanges: () => {
+    logWarning(
+      'menuStore:subscribeToMenuChanges',
+      'Realtime belum tersambung - perubahan menu membutuhkan refresh manual.'
+    );
+    return () => {
+      // noop unsubscribe
+    };
   },
 }));

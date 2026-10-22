@@ -12,6 +12,9 @@ export interface PaymentScreenProps {
   onCancel: () => void;
 }
 
+import { logError } from '../../lib/logger/logger.ts';
+import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
+
 import { getQuickCashOptions } from './quickCash.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
 import { generateUUID } from '../../lib/uuid.ts';
@@ -121,51 +124,63 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       let recordedOrder: Order;
       let recordedItems: OrderItem[];
 
+      const orderPayload = {
+        id: orderId,
+        shop_id: shopId,
+        cashier_id: cashierId,
+        device_id: null,
+        table_no: finalTableNo,
+        cash_received_idr: effectiveCash,
+        items: lines.map((l) => ({
+          menu_item_id: l.item.id,
+          qty: l.qty,
+        })),
+      };
+
       if (isSupabaseConfigured()) {
-        try {
-          const payload = {
-            id: orderId,
-            shop_id: shopId,
-            cashier_id: cashierId,
-            table_no: finalTableNo,
-            cash_received_idr: effectiveCash,
-            items: lines.map((l) => ({
-              menu_item_id: l.item.id,
-              qty: l.qty,
-            })),
-          };
+        const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const rpcPromise = (supabase.rpc as any)('create_order', {
-            p_order: payload,
-          });
-          const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 1200)
-          );
+        if (!isOnline) {
+          // Jika offline, langsung masukkan ke antrian sync lokal tanpa jeda
+          useSyncQueueStore.getState().enqueue(orderPayload);
+        } else {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const rpcPromise = (supabase.rpc as any)('create_order', {
+              p_order: orderPayload,
+            });
+            const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 8000)
+            );
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data, error } = await (Promise.race([rpcPromise, timeoutPromise]) as Promise<any>);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data, error } = await (Promise.race([rpcPromise, timeoutPromise]) as Promise<any>);
 
-          if (!error && data) {
-            recordedOrder = data as Order;
-            recordedItems = lines.map((l) => ({
-              id: generateUUID(),
-              order_id: recordedOrder.id,
-              menu_item_id: l.item.id,
-              name_snapshot: l.item.name,
-              price_snapshot_idr: l.item.price_idr,
-              qty: l.qty,
-            }));
+            if (!error && data) {
+              recordedOrder = data as Order;
+              recordedItems = lines.map((l) => ({
+                id: generateUUID(),
+                order_id: recordedOrder.id,
+                menu_item_id: l.item.id,
+                name_snapshot: l.item.name,
+                price_snapshot_idr: l.item.price_idr,
+                qty: l.qty,
+              }));
 
-            setLastOrder(recordedOrder, recordedItems);
-            useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
-            clearCart();
-            playPaymentSound();
-            onSuccess();
-            return;
+              setLastOrder(recordedOrder, recordedItems);
+              useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
+              clearCart();
+              playPaymentSound();
+              onSuccess();
+              return;
+            } else if (error) {
+              logError('PaymentScreen:create_order_rpc_error', error);
+              useSyncQueueStore.getState().enqueue(orderPayload);
+            }
+          } catch (err) {
+            logError('PaymentScreen:create_order_timeout_or_network', err);
+            useSyncQueueStore.getState().enqueue(orderPayload);
           }
-        } catch {
-          // fallback ke pencatatan lokal
         }
       }
 
