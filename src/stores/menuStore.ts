@@ -1059,6 +1059,8 @@ export const TOP_SELLERS_DEFAULT: [string, number][] = [
   ['Cappuccino', 15000],
   ['Brown Sugar', 15000],
   ['Milo', 15000],
+  ['Cokelat Ori', 15000],
+  ['Teh Susu', 15000],
 ];
 
 interface MenuState {

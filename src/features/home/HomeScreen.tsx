@@ -50,10 +50,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const el = rowRefs.current.get(line.item.id);
       if (el) {
         return SnapDust.disintegrate(el, {
-          particleSize: 3,
-          duration: 1000,
+          particleSize: 1.8,
+          duration: 650,
           direction: 'ltr',
-          wind: { x: 1.2, y: -0.6 },
+          wind: { x: 1.3, y: -0.5 },
         });
       }
       return Promise.resolve();
@@ -68,10 +68,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const el = rowRefs.current.get(itemId);
       if (el) {
         await SnapDust.disintegrate(el, {
-          particleSize: 3,
-          duration: 900,
+          particleSize: 1.8,
+          duration: 650,
           direction: 'ltr',
-          wind: { x: 1.2, y: -0.6 },
+          wind: { x: 1.3, y: -0.5 },
         });
       }
       updateQty(itemId, -1);

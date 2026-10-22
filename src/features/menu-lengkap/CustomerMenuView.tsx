@@ -340,7 +340,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               <div
                 className="photo-layer"
                 style={{
-                  background: 'radial-gradient(circle at 38% 48%, hsl(28 80% 60%) 0 20%, transparent 46%), hsl(28 40% 24%)',
+                  background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('/assets/images/makanan berat/nasgor telur.webp') center/cover no-repeat`,
                 }}
               />
               <div className="blur-layer" />
