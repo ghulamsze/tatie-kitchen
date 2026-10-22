@@ -16,6 +16,8 @@ import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
+import { useNetworkStatus } from './useNetworkStatus.ts';
+import { NoInternetNotice } from '../../design/components/NoInternetNotice.tsx';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
@@ -27,6 +29,7 @@ export const TabletRoot: React.FC = () => {
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
   const { heldItem, setHeldItem, toggleItemAvailability } = useMenuStore();
+  const { isOnline } = useNetworkStatus();
 
   const activeNavTab: NavItem =
     currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
@@ -77,15 +80,39 @@ export const TabletRoot: React.FC = () => {
     setCurrentScreen('select-cashier');
   };
 
+  const renderOfflineBanner = () => {
+    if (isOnline) return null;
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          top: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 990,
+          pointerEvents: 'auto',
+        }}
+      >
+        <NoInternetNotice variant="banner" />
+      </div>
+    );
+  };
+
   // 1. Layar Intro
   if (currentScreen === 'intro') {
-    return <IntroScreen onFinish={handleIntroFinish} />;
+    return (
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+        {renderOfflineBanner()}
+        <IntroScreen onFinish={handleIntroFinish} />
+      </div>
+    );
   }
 
   // 2. Layar Pilih Profil Kasir
   if (currentScreen === 'select-cashier') {
     return (
-      <>
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+        {renderOfflineBanner()}
         <SelectCashierScreen
           onSelectCashier={handleSelectCashier}
           onOpenDeviceSetup={() => setIsDeviceSetupOpen(true)}
@@ -94,26 +121,32 @@ export const TabletRoot: React.FC = () => {
           isOpen={isDeviceSetupOpen}
           onClose={() => setIsDeviceSetupOpen(false)}
         />
-      </>
+      </div>
     );
   }
 
   // 3. Layar Bayar Tunai & Keypad Meja
   if (currentScreen === 'payment') {
     return (
-      <PaymentScreen
-        onSuccess={() => setCurrentScreen('receipt')}
-        onCancel={() => setCurrentScreen('Home')}
-      />
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+        {renderOfflineBanner()}
+        <PaymentScreen
+          onSuccess={() => setCurrentScreen('receipt')}
+          onCancel={() => setCurrentScreen('Home')}
+        />
+      </div>
     );
   }
 
   // 4. Layar Struk & Bukti Bayar
   if (currentScreen === 'receipt') {
     return (
-      <ReceiptScreen
-        onNewOrder={() => setCurrentScreen('Home')}
-      />
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+        {renderOfflineBanner()}
+        <ReceiptScreen
+          onNewOrder={() => setCurrentScreen('Home')}
+        />
+      </div>
     );
   }
 
@@ -133,6 +166,7 @@ export const TabletRoot: React.FC = () => {
         background: 'var(--scr-bg)',
       }}
     >
+      {renderOfflineBanner()}
       {/* Seamless Global Dynamic Background: di luar container sliding, z-index paling bawah, tidak pernah terpotong */}
       <div
         className="tk-global-bg"

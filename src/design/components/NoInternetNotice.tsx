@@ -3,12 +3,14 @@ import { Button } from './Button.tsx';
 
 export interface NoInternetNoticeProps {
   variant?: 'banner' | 'dialog';
+  message?: string;
   onRetry?: () => void;
   onDismiss?: () => void;
 }
 
 export const NoInternetNotice: React.FC<NoInternetNoticeProps> = ({
   variant = 'banner',
+  message = 'Koneksi terputus · Mode offline (transaksi disimpan lokal)',
   onRetry,
   onDismiss,
 }) => {
@@ -16,7 +18,7 @@ export const NoInternetNotice: React.FC<NoInternetNoticeProps> = ({
     return (
       <div className="tk-no-internet-banner" role="alert">
         <span className="tk-no-internet-dot" aria-hidden="true" />
-        <span>Koneksi terputus · Mode offline</span>
+        <span>{message}</span>
         {onRetry && (
           <button
             type="button"
