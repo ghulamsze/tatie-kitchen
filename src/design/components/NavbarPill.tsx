@@ -86,8 +86,23 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     const m0 = measurements[i0] || { left: 0, width: 0 };
     const m1 = measurements[i1] || m0;
 
-    const left = m0.left + (m1.left - m0.left) * frac;
-    const width = m0.width + (m1.width - m0.width) * frac;
+    let left = m0.left + (m1.left - m0.left) * frac;
+    let width = m0.width + (m1.width - m0.width) * frac;
+
+    // Strict boundary clamping: pastikan indikator tidak pernah keluar batas navbar saat di-hold/drag
+    const navEl = internalNavRef.current;
+    if (navEl && navEl.offsetWidth > 0) {
+      const navW = navEl.offsetWidth;
+      const minLeft = 4;
+      const maxRight = navW - 4;
+      if (left < minLeft) {
+        width = Math.max(20, width - (minLeft - left));
+        left = minLeft;
+      }
+      if (left + width > maxRight) {
+        width = Math.max(20, maxRight - left);
+      }
+    }
 
     // Batalkan animasi sebelumnya jika gesture baru dimulai atau saat drag 1:1
     if (animate) {
@@ -271,12 +286,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
               opacity: 0.65 + weight * 0.35,
               fontWeight: 700,
             }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              if (!isBlocked) onSelect(item);
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               if (!isBlocked) onSelect(item);
             }}
             aria-current={activeItem === item ? 'page' : undefined}

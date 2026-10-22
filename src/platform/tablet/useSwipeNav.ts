@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { NavItem } from '../../design/components/NavbarPill.tsx';
 
 export interface UseSwipeNavOptions {
@@ -207,6 +207,7 @@ export function useSwipeNav({
 
     isDraggingRef.current = true;
     dragSourceRef.current = 'navbar';
+    setIsDragging(true);
 
     const targetIdx = getTabIndexFromClientX(e.clientX);
     animateTo(targetIdx);
@@ -224,6 +225,7 @@ export function useSwipeNav({
     if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
     isDraggingRef.current = false;
     dragSourceRef.current = null;
+    setIsDragging(false);
 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);

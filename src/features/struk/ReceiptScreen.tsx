@@ -244,6 +244,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           gap: '16px',
           boxSizing: 'border-box',
           borderRadius: 'var(--r-xl)',
+          overflow: 'hidden',
         }}
       >
         <div className="tk-receipt-status-icon animated" aria-label="Pembayaran sukses">
@@ -281,14 +282,14 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           </div>
         </div>
 
-        {/* Tombol Cetak Struk, Bagikan Struk & Unduh PNG */}
+        {/* Tombol Cetak Struk, Bagikan Struk & Unduh PNG (minWidth: 0 agar pas rapi dalam kartu tanpa offside) */}
         <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: '6px' }}>
           <Button
             variant="flat"
             size="md"
             onClick={handlePrintReceipt}
             disabled={isPrinting}
-            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
+            style={{ flex: 1, minWidth: 0, fontSize: 'var(--t-xs)', padding: '0 4px', height: '44px' }}
           >
             {isPrinting ? 'Mencetak...' : 'Cetak'}
           </Button>
@@ -296,7 +297,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
             variant="flat"
             size="md"
             onClick={handleShare}
-            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
+            style={{ flex: 1, minWidth: 0, fontSize: 'var(--t-xs)', padding: '0 4px', height: '44px' }}
           >
             Bagikan
           </Button>
@@ -305,7 +306,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
             size="md"
             onClick={handleDownloadPng}
             disabled={isDownloading}
-            style={{ flex: 1, fontSize: 'var(--t-xs)', padding: '0 8px' }}
+            style={{ flex: 1, minWidth: 0, fontSize: 'var(--t-xs)', padding: '0 4px', height: '44px' }}
           >
             {isDownloading ? 'Menyimpan...' : 'Unduh'}
           </Button>

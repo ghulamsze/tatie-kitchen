@@ -29,8 +29,21 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const [isQrisZoomed, setIsQrisZoomed] = useState(false);
 
   const total = calculateTotal();
-  // Default meja selalu '...' dengan warna abu-abu
-  const [tableInput, setTableInput] = useState<string>(tableNo && tableNo !== '...' && tableNo !== 'x' ? tableNo : '...');
+  // Default meja selalu '..' dengan warna abu-abu
+  const [tableInput, setTableInput] = useState<string>(
+    tableNo && tableNo !== '..' && tableNo !== '...' && tableNo !== 'x' ? tableNo : '..'
+  );
+  const [isRejecting, setIsRejecting] = useState<boolean>(false);
+  const rejectTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerReject = () => {
+    setIsRejecting(true);
+    if (rejectTimeoutRef.current) clearTimeout(rejectTimeoutRef.current);
+    rejectTimeoutRef.current = setTimeout(() => {
+      setIsRejecting(false);
+    }, 450);
+  };
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('tunai');
   const [isManualCash, setIsManualCash] = useState<boolean>(false);
   const [manualCashInput, setManualCashInput] = useState<string>(cashReceived ? String(cashReceived) : '');
@@ -40,7 +53,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Meja wajib diinput sebelum pembayaran dapat diproses
-  const isTableSet = tableInput !== '...' && tableInput !== 'x' && tableInput.trim().length > 0;
+  const isTableSet = tableInput !== '..' && tableInput !== '...' && tableInput !== 'x' && tableInput.trim().length > 0;
 
   // Status input manual aktif jika sedang difokuskan atau sudah diisi
   const isManualActive = isManualCash || Boolean(manualCashInput && manualCashInput.trim().length > 0);
@@ -56,35 +69,41 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
   // Opsi cepat uang diterima dihitung secara dinamis
   const quickCashOptions = getQuickCashOptions(total);
 
-  // Auto-confirm nomor meja saat digit diketik, maksimal 2 digit dan maksimal meja 15
+  // Auto-confirm nomor meja saat digit diketik, maksimal 2 digit dan maksimal meja 30
   const handleKeypadPress = (val: string | number) => {
     if (val === 'Hapus') {
-      if (tableInput.length > 1 && tableInput !== '...' && tableInput !== 'x') {
+      if (tableInput.length > 1 && tableInput !== '..' && tableInput !== '...' && tableInput !== 'x') {
         const next = tableInput.slice(0, -1);
         setTableInput(next);
         setTableNo(next);
       } else {
-        setTableInput('...');
-        setTableNo('...');
+        setTableInput('..');
+        setTableNo('..');
       }
-    } else {
-      const digit = String(val);
-      const isPlaceholder = tableInput === '...' || tableInput === 'x';
-      const candidateStr = isPlaceholder ? digit : `${tableInput}${digit}`;
-
-      // Nomor meja maksimal 2 digit
-      if (candidateStr.length > 2) {
-        return;
-      }
-
-      const candidateNum = parseInt(candidateStr, 10);
-      // Maksimal nomor meja adalah 15: blokir angka 0 tunggal atau nilai 16+
-      if (!isNaN(candidateNum) && candidateNum >= 1 && candidateNum <= 15) {
-        setTableInput(candidateStr);
-        setTableNo(candidateStr);
-      }
+      return;
     }
+
+    const digit = String(val);
+    const isPlaceholder = tableInput === '..' || tableInput === '...' || tableInput === 'x';
+    const candidateStr = isPlaceholder ? digit : `${tableInput}${digit}`;
+
+    // Nomor meja maksimal 2 digit
+    if (candidateStr.length > 2) {
+      triggerReject();
+      return;
+    }
+
+    const candidateNum = parseInt(candidateStr, 10);
+    // Maksimal nomor meja adalah 30: blokir angka 0 tunggal atau nilai 31+ dengan animasi menolak merah (tanpa notif)
+    if (isNaN(candidateNum) || candidateNum < 1 || candidateNum > 30) {
+      triggerReject();
+      return;
+    }
+
+    setTableInput(candidateStr);
+    setTableNo(candidateStr);
   };
+
 
   const handleSelectCash = (amt: number) => {
     setIsManualCash(false);
@@ -253,12 +272,17 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           </h3>
         </div>
 
-        {/* Default meja selalu '...' dengan warna abu-abu */}
+        {/* Default meja selalu '..' dengan warna abu-abu, animasi menolak merah jika > 30 */}
         <div
-          className="tk-table-display"
+          className={`tk-table-display ${isRejecting ? 'rejecting' : ''}`}
           style={{
-            color: (tableInput === '...' || tableInput === 'x') ? 'var(--ink-3)' : 'var(--ink)',
+            color: isRejecting
+              ? 'var(--danger)'
+              : (tableInput === '..' || tableInput === '...' || tableInput === 'x')
+                ? 'var(--ink-3)'
+                : 'var(--ink)',
             userSelect: 'none',
+            transition: 'color 0.15s ease',
           }}
         >
           {tableInput}
@@ -403,33 +427,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             </div>
           </>
         ) : paymentMethod === 'qris' ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              padding: '12px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              borderRadius: 'var(--r-md)',
-              border: '1px solid var(--ctl-line)',
-            }}
-          >
+          <div className="tk-qris-glass-card">
             <div
+              className="tk-qris-img-glass"
               onClick={() => setIsQrisZoomed(true)}
-              style={{
-                background: '#ffffff',
-                borderRadius: 'var(--r-md)',
-                padding: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-                cursor: 'pointer',
-                transition: 'transform 0.15s ease',
-              }}
               title="Ketuk untuk memperbesar QRIS"
             >
               <img
@@ -439,17 +440,17 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                   maxHeight: '148px',
                   width: 'auto',
                   objectFit: 'contain',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
                   display: 'block',
                 }}
               />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', display: 'block' }}>
-                TATIS CAFE DAN RESTO, TLN
+              <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', display: 'block', fontWeight: 800 }}>
+                {shop.name || 'TATIS CAFE DAN RESTO'}
               </b>
-              <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
-                NMID: ID1026489183222 • Ketuk untuk perbesar
+              <span style={{ fontSize: '11px', color: 'var(--ink-2)', fontWeight: 600 }}>
+                Ketuk gambar untuk memperbesar QRIS
               </span>
             </div>
           </div>
@@ -518,7 +519,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         )}
       </div>
 
-      {/* Modal Zoom QRIS untuk kemudahan pemindaian pembeli */}
+      {/* Modal Zoom QRIS Liquid Glass untuk kemudahan pemindaian pembeli */}
       {isQrisZoomed && (
         <div
           onClick={() => setIsQrisZoomed(false)}
@@ -526,8 +527,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             position: 'absolute',
             inset: 0,
             zIndex: 150,
-            background: 'rgba(0, 0, 0, 0.82)',
-            backdropFilter: 'blur(8px)',
+            background: 'var(--ov)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -538,30 +539,22 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           }}
         >
           <div
+            className="tk-qris-zoom-glass"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#ffffff',
-              padding: '16px',
-              borderRadius: 'var(--r-lg)',
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              maxHeight: '480px',
-            }}
           >
             <img
               src="/assets/images/qris-clean.png"
               alt="QRIS Tatis Cafe dan Resto"
               style={{
-                maxHeight: '400px',
-                maxWidth: '90vw',
+                maxHeight: '380px',
+                maxWidth: '85vw',
                 objectFit: 'contain',
                 borderRadius: '8px',
+                display: 'block',
               }}
             />
           </div>
-          <Button variant="flat" size="md" onClick={() => setIsQrisZoomed(false)}>
+          <Button variant="flat" size="md" onClick={() => setIsQrisZoomed(false)} style={{ minWidth: '160px' }}>
             Tutup Tampilan QRIS
           </Button>
         </div>

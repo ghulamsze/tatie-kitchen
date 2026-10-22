@@ -244,37 +244,37 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
       expect(payButton).not.toBeDisabled();
     });
 
-    it('harus membatasi nomor meja maksimal 15 dan auto-confirm input', () => {
+    it('harus membatasi nomor meja maksimal 30 dan auto-confirm input', () => {
       act(() => {
-        useCartStore.getState().setTableNo('...');
+        useCartStore.getState().setTableNo('..');
       });
 
       render(<PaymentScreen onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
+      const key3 = screen.getByRole('button', { name: '3' });
       const key1 = screen.getByRole('button', { name: '1' });
-      const key6 = screen.getByRole('button', { name: '6' });
-      const key5 = screen.getByRole('button', { name: '5' });
+      const key0 = screen.getByRole('button', { name: '0' });
       const backspaceBtn = screen.getByRole('button', { name: 'Hapus' });
 
-      // Tekan 1 -> meja 1
+      // Tekan 3 -> meja 3
+      fireEvent.click(key3);
+      expect(useCartStore.getState().tableNo).toBe('3');
+
+      // Tekan 1 -> 31 > 30 (diblokir, tetap 3)
       fireEvent.click(key1);
-      expect(useCartStore.getState().tableNo).toBe('1');
+      expect(useCartStore.getState().tableNo).toBe('3');
 
-      // Tekan 6 -> 16 > 15 (diblokir, tetap 1)
-      fireEvent.click(key6);
-      expect(useCartStore.getState().tableNo).toBe('1');
+      // Tekan 0 -> 30 <= 30 (diizinkan, jadi 30)
+      fireEvent.click(key0);
+      expect(useCartStore.getState().tableNo).toBe('30');
 
-      // Tekan 5 -> 15 <= 15 (diizinkan, jadi 15)
-      fireEvent.click(key5);
-      expect(useCartStore.getState().tableNo).toBe('15');
-
-      // Tekan backspace -> kembali ke 1
+      // Tekan backspace -> kembali ke 3
       fireEvent.click(backspaceBtn);
-      expect(useCartStore.getState().tableNo).toBe('1');
+      expect(useCartStore.getState().tableNo).toBe('3');
 
-      // Tekan backspace lagi -> kembali ke '...'
+      // Tekan backspace lagi -> kembali ke '..'
       fireEvent.click(backspaceBtn);
-      expect(useCartStore.getState().tableNo).toBe('...');
+      expect(useCartStore.getState().tableNo).toBe('..');
     });
 
     it('harus menghasilkan 4 opsi uang cepat sesuai algoritma tanpa duplikat', () => {
