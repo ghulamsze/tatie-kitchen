@@ -230,9 +230,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           className="tk-table-display"
           style={{
             color: (tableInput === '...' || tableInput === 'x') ? 'var(--ink-3)' : 'var(--ink)',
-            fontSize: '56px',
-            lineHeight: '64px',
-            fontWeight: 800,
             userSelect: 'none',
           }}
         >
@@ -445,7 +442,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           variant="lime"
           onClick={handleCompletePayment}
           disabled={isSubmitting || (paymentMethod === 'tunai' && !isCashSufficient) || !isTableSet}
-          style={{ marginTop: 'auto', width: '100%', height: '48px' }}
+          style={{ marginTop: 'auto', width: '100%' }}
         >
           {isSubmitting ? 'Memproses Pesanan...' : 'Selesaikan pembayaran'}
         </Button>

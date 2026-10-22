@@ -118,7 +118,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               flex: 'none',
             }}
           >
-            <h2 style={{ fontSize: '26px', lineHeight: '32px', margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
               Tati’e Kitchen
             </h2>
             <Button
@@ -141,7 +141,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
-                height: '42px',
+                height: '44px',
                 padding: searchQuery ? '0 46px 0 16px' : '0 16px',
                 fontSize: 'var(--t-sm)',
                 borderRadius: 'var(--r-md)',
@@ -270,14 +270,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 onClick={handleClearCart}
                 disabled={isClearing}
                 style={{
-                  minHeight: '36px',
+                  minHeight: '44px',
                   background: 'none',
                   border: 'none',
                   color: 'var(--danger)',
                   fontSize: 'var(--t-xs)',
                   fontWeight: 700,
                   cursor: isClearing ? 'not-allowed' : 'pointer',
-                  padding: '6px 10px',
+                  padding: '0 8px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   opacity: isClearing ? 0.6 : 1,
@@ -374,7 +374,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               style={{
-                height: '38px',
+                height: '40px',
                 fontSize: 'var(--t-xs)',
                 padding: notes.length > 0 ? '0 38px 0 12px' : '0 12px',
                 width: '100%',
@@ -413,7 +413,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Total & Tombol Lime Pembayaran */}
           <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgb(var(--w) / 0.16)', paddingTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', fontWeight: 600 }}>Total</span>
+              <span style={{ color: 'var(--ink-2)', fontSize: 'var(--t-sm)', fontWeight: 700 }}>Total</span>
               <span style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', fontWeight: 800 }}>
                 {formatRupiah(total)}
               </span>
@@ -424,7 +424,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               variant="lime"
               onClick={onProceedToPayment}
               disabled={lines.length === 0}
-              style={{ width: '100%', height: '48px' }}
+              style={{ width: '100%' }}
             >
               Lanjut ke meja & bayar
             </Button>

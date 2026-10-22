@@ -27,7 +27,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingBottom: '92px', // Ruang untuk navbar pil di bawah
+        paddingBottom: '88px', // Ruang untuk navbar pil di bawah (56px navbar + 16px bottom + 16px clearance)
         position: 'relative',
         boxSizing: 'border-box',
       }}
