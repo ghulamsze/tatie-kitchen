@@ -33,3 +33,17 @@ pyqt6/
 
 __pycache__/
 *.pyc
+
+Thumbs.db
+
+# Android build outputs & caches
+android/.gradle/
+android/app/build/
+
+# Keystores & Signing
+*.keystore
+*.jks
+keystore.properties
+
+# Logs
+*.log
