@@ -255,10 +255,10 @@ Daftar uji:
 
 ## 11. Peta jalan (belum dikerjakan)
 
-1. Laptop: web admin pemilik (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu), lalu bungkus Electron menjadi .exe. Login autentikasi Supabase Auth.
-2. Android & iOS pemilik: Capacitor, pemantauan transaksi harian real-time (read-only).
+1. Laptop: web admin pemilik (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu) menggunakan folder `src/platform/laptop/`, lalu dibungkus Electron menjadi `.exe`. Login autentikasi Supabase Auth.
+2. Android & iOS pemilik: Capacitor menggunakan folder `src/platform/phone/`, pemantauan transaksi harian real-time (read-only).
 3. Supabase Realtime Subscription: Direncanakan aktif pada fase Laptop dan Mobile monitoring. Pada fase Tablet Kasir Beta, fungsi `subscribeToMenuChanges()` disediakan sebagai stub/logger peringatan karena perubahan menu kasir diperbarui saat peluncuran atau refresh manual.
-Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di src/platform/.
+Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di `src/platform/`.
 
 ## 12. Keputusan yang telah dikonfirmasi pemilik
 
@@ -268,4 +268,17 @@ Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di src/p
 - **Antrean Offline (Outbox)**: Telah diimplementasikan via `syncQueueStore` dengan auto-sync saat koneksi kembali online, sehingga kasir tidak macet jika jaringan terputus.
 - **Rekening Transfer Toko**: Bank Kaltimtara, No. Rek `1747037252`, a.n. `Hartati Jahri`.
 - **Nama Paket Aplikasi**: `com.tatiekitchen.kasir`.
+
+## 13. Arsitektur Realtime (Fase Laptop & Mobile Monitoring)
+
+- **Tabel yang Membutuhkan Realtime**:
+  1. `menu_items`: Pembaruan status ketersediaan menu (`available`) atau perubahan harga agar kasir dan pembeli selalu melihat data terkini secara langsung.
+  2. `orders` & `order_items`: Notifikasi transaksi masuk seketika dari kasir tablet ke dashboard monitoring pemilik di laptop dan ponsel.
+- **Pola Langganan (Subscription Pattern)**:
+  - Menggunakan saluran per-toko (*per-shop channel*): `supabase.channel(`shop:${shop_id}:changes`)`.
+  - Filter Postgres Changes: `filter: `shop_id=eq.${shop_id}``.
+  - Manajemen Siklus Hidup (*Lifecycle*): Hanya aktif saat aplikasi berada di latar depan (*foreground*). Channel otomatis di-unsubscribe saat aplikasi diminimalkan atau masuk background guna menghemat daya baterai dan kuota websocket.
+- **Jadwal Implementasi**:
+  - Diimplementasikan penuh pada Fase 7+ bersamaan dengan pembangunan antarmuka Laptop Web Admin dan aplikasi Android/iOS pemilik.
+  - Pada fase Tablet Kasir Beta saat ini, POS menggunakan transaksi RPC idempotensial dan antrean offline `syncQueueStore`.
 

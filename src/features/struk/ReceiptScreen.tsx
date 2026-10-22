@@ -7,12 +7,14 @@ import { formatRupiah, formatDate, formatTime, formatQueueNo } from '../../lib/f
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
+import { useShopStore } from '../../stores/shopStore.ts';
 
 export interface ReceiptScreenProps {
   onNewOrder: () => void;
 }
 
 export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
+  const { shop } = useShopStore();
   const { lastOrder, lastOrderItems, notes } = useCartStore();
   const { activeCashier } = useCashierStore();
   const { autoPrint, isPrinting, printOrderReceipt, lastPrintResult } = usePrinterStore();
@@ -47,12 +49,12 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
       .map((item) => `${item.qty}x ${item.name_snapshot} (${formatRupiah(item.price_snapshot_idr * item.qty)})`)
       .join('\n');
 
-    const shareText = `*Tati’e Kitchen*\nJl. Tamalate 2 No. 8, Makassar\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
+    const shareText = `*${shop.name}*\n${shop.address}\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Struk Tati’e Kitchen - Meja ${tableNo}`,
+          title: `Struk ${shop.name} - Meja ${tableNo}`,
           text: shareText,
         });
         showToast('Struk berhasil dibagikan');
@@ -143,10 +145,10 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           }}
         >
         <div className="center-bold" style={{ fontSize: '16px', marginBottom: '2px' }}>
-          Tati’e Kitchen
+          {shop.name}
         </div>
         <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666' }}>
-          Jl. Tamalate 2 No. 8, Makassar
+          {shop.address}
         </div>
 
         <hr />

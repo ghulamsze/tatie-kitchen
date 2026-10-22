@@ -14,6 +14,7 @@ export interface PaymentScreenProps {
 
 import { logError } from '../../lib/logger/logger.ts';
 import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
+import { useShopStore } from '../../stores/shopStore.ts';
 
 import { getQuickCashOptions } from './quickCash.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
@@ -24,6 +25,7 @@ export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCancel }) => {
   const { lines, tableNo, setTableNo, cashReceived, setCashReceived, calculateTotal, clearCart, setLastOrder } = useCartStore();
   const { activeCashier } = useCashierStore();
+  const { shop } = useShopStore();
   const [isQrisZoomed, setIsQrisZoomed] = useState(false);
 
   const total = calculateTotal();
@@ -431,8 +433,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               title="Ketuk untuk memperbesar QRIS"
             >
               <img
-                src="/assets/images/qris-clean.png"
-                alt="QRIS Tatis Cafe dan Resto"
+                src={shop.qris_path || '/assets/images/qris-clean.png'}
+                alt="QRIS Toko"
                 style={{
                   maxHeight: '148px',
                   width: 'auto',
@@ -478,13 +480,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               }}
             >
               <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
-                Bank Kaltimtara
+                {shop.bank_name}
               </span>
               <b style={{ fontSize: 'var(--t-xl)', letterSpacing: '0.06em', color: 'var(--accent-ink)' }}>
-                1747037252
+                {shop.bank_account}
               </b>
               <span style={{ fontSize: 'var(--t-sm)', color: 'var(--ink-1)', fontWeight: 700 }}>
-                a.n. Hartati Jahri
+                a.n. {shop.bank_account_holder}
               </span>
             </div>
           </div>

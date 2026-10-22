@@ -6,6 +6,7 @@ import { CapacitorBluetoothDriver } from '../lib/printer/CapacitorBluetoothDrive
 import { buildReceiptEscPos, buildTestEscPos } from '../lib/printer/escpos.ts';
 import { Order, OrderItem } from '../lib/supabase/types.ts';
 import { formatQueueNo } from '../lib/format/formatters.ts';
+import { useShopStore } from './shopStore.ts';
 
 interface PrinterState {
   driver: PrinterDriver;
@@ -146,13 +147,14 @@ export const usePrinterStore = create<PrinterState>((set, get) => {
 
       set({ isPrinting: true });
       try {
+        const shop = useShopStore.getState().shop;
         const bytes = buildReceiptEscPos({
           order,
           items,
           cashierName,
           notes,
-          shopName: 'Tati’e Kitchen',
-          shopAddress: 'Jl. Tamalate 2 No. 8, Makassar',
+          shopName: shop.name,
+          shopAddress: shop.address,
         });
 
         const success = await driver.printRaw(bytes);

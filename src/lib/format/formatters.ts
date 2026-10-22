@@ -1,3 +1,5 @@
+import { useShopStore } from '../../stores/shopStore.ts';
+
 /**
  * Format mata uang Rupiah: Simbol 'Rp' langsung angka tanpa spasi dan titik,
  * titik hanya untuk pemisah ribuan (contoh: Rp80.000).
@@ -24,10 +26,15 @@ export function formatQueueNo(queueNo: number | null | undefined): string {
 }
 
 /**
- * Mendapatkan zona waktu resmi toko: WITA (Asia/Makassar)
- * Sesuai keputusan desain dan instruksi pemilik.
+ * Mendapatkan zona waktu resmi toko: dibaca dari useShopStore atau default WITA (Asia/Makassar)
  */
 export function getShopTimezone(): string {
+  try {
+    const tz = useShopStore.getState?.()?.shop?.timezone;
+    if (tz) return tz;
+  } catch {
+    // fallback
+  }
   return 'Asia/Makassar';
 }
 
