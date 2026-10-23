@@ -3,7 +3,7 @@
 -- Mengizinkan tablet POS dan web kasir membaca menu, kasir, toko, dan mencatat transaksi order
 -- ============================================================================
 
--- 1. Berikan hak akses skema dan tabel untuk role anon dan authenticated
+-- 1. Berikan hak akses skema, tabel, dan fungsi untuk role anon dan authenticated
 grant usage on schema public to anon, authenticated;
 grant select on public.shops to anon, authenticated;
 grant select on public.cashiers to anon, authenticated;
@@ -12,6 +12,9 @@ grant select on public.menu_items to anon, authenticated;
 grant select, insert on public.orders to anon, authenticated;
 grant select, insert on public.order_items to anon, authenticated;
 grant select, insert, update on public.shop_queue_counters to anon, authenticated;
+grant execute on function public.create_order(jsonb) to anon, authenticated;
+grant execute on function public.set_item_availability(uuid, boolean) to anon, authenticated;
+grant execute on function public.add_cashier(uuid, text) to anon, authenticated;
 
 -- 2. Kebijakan RLS (Row Level Security) untuk anon & authenticated
 -- Izinkan kasir membaca data toko

@@ -4,19 +4,22 @@ import { Database } from './types.ts';
 const DEFAULT_SUPABASE_URL = 'https://fiaetjtqhvdewqffliai.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_JQwXFsdu3S-BosZugbD4pw_ei_cNBdP';
 
-// Mendukung konfigurasi variabel lingkungan dengan awalan SUPABASE_ maupun VITE_ (kompatibel penuh dengan Supabase & Vercel)
+// Mendukung konfigurasi variabel lingkungan: NEXT_PUBLIC_, SUPABASE_, maupun VITE_
 const env = (typeof import.meta !== 'undefined' ? import.meta.env : undefined) as Record<string, string | undefined> | undefined;
 
 const supabaseUrl =
+  env?.NEXT_PUBLIC_SUPABASE_URL ||
   env?.SUPABASE_URL ||
   env?.VITE_SUPABASE_URL ||
-  (typeof process !== 'undefined' && process.env?.SUPABASE_URL) ||
+  (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_SUPABASE_URL || process.env?.SUPABASE_URL)) ||
   DEFAULT_SUPABASE_URL;
 
 const supabaseAnonKey =
+  env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  env?.SUPABASE_PUBLISHABLE_KEY ||
   env?.SUPABASE_ANON_KEY ||
   env?.VITE_SUPABASE_ANON_KEY ||
-  (typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY) ||
+  (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_ANON_KEY)) ||
   DEFAULT_SUPABASE_ANON_KEY;
 
 const isPlaceholderKey =
