@@ -7,22 +7,29 @@ import { logError } from '../lib/logger/logger.ts';
 // Data kasir awal acuan dari seed / HTML
 export const DEFAULT_CASHIERS: Cashier[] = [
   {
-    id: 'c-001',
-    shop_id: 'shop-001',
+    id: '1d83083c-9d75-4dec-9c1a-75be69bc1050',
+    shop_id: '40f91c30-2e23-476b-bdd7-5e0605b1f812',
     name: 'Robertus Amaresi',
     active: true,
-    created_at: new Date().toISOString(),
+    created_at: '2026-10-21T09:07:13.086159+00:00',
   },
   {
-    id: 'c-002',
-    shop_id: 'shop-001',
+    id: '82f0755f-5d2a-4b5e-bc8e-5f7aa478c27f',
+    shop_id: '40f91c30-2e23-476b-bdd7-5e0605b1f812',
     name: 'Puspitawati',
     active: true,
-    created_at: new Date().toISOString(),
+    created_at: '2026-10-21T09:07:13.086159+00:00',
   },
 ];
 
-export const IMMUTABLE_CASHIER_IDS = ['c-001', 'c-002', 'c-1', 'c-2'];
+export const IMMUTABLE_CASHIER_IDS = [
+  '1d83083c-9d75-4dec-9c1a-75be69bc1050',
+  '82f0755f-5d2a-4b5e-bc8e-5f7aa478c27f',
+  'c-001',
+  'c-002',
+  'c-1',
+  'c-2',
+];
 
 export const isImmutableCashier = (id: string, name?: string): boolean => {
   if (IMMUTABLE_CASHIER_IDS.includes(id)) return true;
@@ -43,7 +50,7 @@ export const deduplicateCashiers = (list: Cashier[]): Cashier[] => {
   });
 };
 
-const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023_v4';
+const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023_v6';
 
 const loadSavedCashiers = (): Cashier[] => {
   try {
@@ -92,7 +99,7 @@ export const useCashierStore = create<CashierState>((set) => ({
     try {
       set({ isLoading: true });
       let query = supabase.from('cashiers').select('*').eq('active', true);
-      if (shopId) {
+      if (shopId && shopId !== 'shop-001') {
         query = query.eq('shop_id', shopId);
       }
       const { data, error } = await query;

@@ -123,13 +123,15 @@ export const useSyncQueueStore = create<SyncQueueState>((set, get) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error: insErr } = await (supabase.from('orders') as any).insert({
               id: item.payload.id,
-              shop_id: item.payload.shop_id,
-              cashier_id: item.payload.cashier_id,
+              shop_id: item.payload.shop_id || '40f91c30-2e23-476b-bdd7-5e0605b1f812',
+              cashier_id: item.payload.cashier_id || '1d83083c-9d75-4dec-9c1a-75be69bc1050',
               table_no: item.payload.table_no,
               total_idr: item.payload.cash_received_idr,
               cash_received_idr: item.payload.cash_received_idr,
               change_idr: 0,
               status: 'paid',
+              queue_no: (item.payload as any).queue_no || 1,
+              business_date: (item.payload as any).business_date || new Date().toISOString().slice(0, 10),
             });
 
             if (!insErr) {

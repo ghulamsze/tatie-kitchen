@@ -15,11 +15,10 @@ import { SwipePager } from './SwipePager.tsx';
 import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useMenuStore } from '../../stores/menuStore.ts';
-import { useHistoryStore } from '../../stores/historyStore.ts';
-import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 import { useNetworkStatus } from './useNetworkStatus.ts';
 import { NoInternetNotice } from '../../design/components/NoInternetNotice.tsx';
+import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
@@ -36,34 +35,12 @@ export const TabletRoot: React.FC = () => {
   const activeNavTab: NavItem =
     currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
 
-  // Sinkronisasi data awal dan background polling saat online agar database terintegrasi satu kesatuan
+  // Sinkronisasi real-time dua arah berbasis database Supabase (Broadcast + Polling Cepat + Focus auto-refresh)
   useEffect(() => {
-    if (isOnline) {
-      useMenuStore.getState().fetchMenu().catch(() => {});
-      useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
-      useHistoryStore.getState().fetchOrders().catch(() => {});
-      useCashierStore.getState().fetchCashiers().catch(() => {});
-    }
-
-    const interval = setInterval(() => {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        useMenuStore.getState().fetchMenu().catch(() => {});
-        useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
-        useHistoryStore.getState().fetchOrders().catch(() => {});
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [isOnline]);
-
-  // Handler fungsi refresh saat pull-to-refresh ditarik ke bawah
-  const handleRefresh = React.useCallback(async () => {
-    await Promise.allSettled([
-      useMenuStore.getState().fetchMenu(),
-      useHistoryStore.getState().fetchOrders(),
-      useCashierStore.getState().fetchCashiers(),
-      useSyncQueueStore.getState().syncPendingOrders(),
-    ]);
+    const cleanupRealtime = initPosRealtimeSync();
+    return () => {
+      cleanupRealtime();
+    };
   }, []);
 
   const handleNavTabChange = (tab: NavItem) => {
@@ -79,9 +56,6 @@ export const TabletRoot: React.FC = () => {
     progress,
     isDragging,
     isNavbarHolding,
-    pullState,
-    pullIndicatorRef,
-    pullIconRef,
     containerRef,
     trackRef,
     indicatorRef,
@@ -99,7 +73,6 @@ export const TabletRoot: React.FC = () => {
     tabs: NAV_TABS,
     activeTab: activeNavTab,
     onTabChange: handleNavTabChange,
-    onRefresh: handleRefresh,
   });
 
   const handleIntroFinish = () => {
@@ -235,30 +208,6 @@ export const TabletRoot: React.FC = () => {
         />
       </div>
 
-      {/* Liquid Glass Pull-to-Refresh Circular Indicator (Satu Ikon Saja, Minimalis & Ultra Smooth) */}
-      <div
-        ref={pullIndicatorRef}
-        className="tk-pull-refresh-indicator"
-        aria-label="Memuat ulang halaman"
-        role="status"
-      >
-        <div ref={pullIconRef} className="tk-pull-refresh-icon">
-          {pullState === 'success' ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : pullState === 'refreshing' ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <polyline points="19 12 12 19 5 12" />
-            </svg>
-          )}
-        </div>
-      </div>
 
       {/* Horizontal Swipeable Container berbasis transform translate3d (Home, Riwayat, Akun) */}
       <SwipePager

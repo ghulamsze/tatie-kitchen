@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
+import { broadcastMenuAvailability } from '../lib/supabase/realtime.ts';
 
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
 export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
@@ -1156,6 +1157,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     if (isSupabaseConfigured() && targetItem) {
       try {
         await syncMenuItemAvailabilityToSupabase(itemId, targetItem.name, available);
+        // 3. Broadcast ke seluruh perangkat lain secara real-time (< 100ms)
+        broadcastMenuAvailability(itemId, targetItem.name, available).catch(() => {});
       } catch (err) {
         logError('menuStore:syncMenuItemAvailabilityToSupabase', err);
       }
@@ -1171,60 +1174,38 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       if (error) {
         logError('menuStore:fetchMenu_query', error);
       } else if (data && data.length > 0) {
-        // Ambil status ketersediaan lokal tersimpan
-        const localMap: Record<string, boolean> = {};
+        // Ambil pemetaan status ketersediaan langsung dari database Supabase (Single Source of Truth)
+        const remoteMap = new Map<string, boolean>();
+        (data as any[]).forEach((row: any) => {
+          if (row.name) remoteMap.set(row.name.trim().toLowerCase(), Boolean(row.available));
+          if (row.id) remoteMap.set(row.id, Boolean(row.available));
+        });
+
+        // Simpan pembaruan status dari database ke localStorage agar tersinkron saat offline
         try {
           const raw = localStorage.getItem('tk_item_availability');
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            Object.keys(parsed).forEach((k) => {
-              const v = parsed[k];
-              localMap[k] = typeof v === 'object' && v !== null ? v.available : Boolean(v);
-            });
-          }
+          const localMap = raw ? JSON.parse(raw) : {};
+          (data as any[]).forEach((row: any) => {
+            if (row.id) localMap[row.id] = Boolean(row.available);
+            if (row.name) localMap[row.name.trim().toLowerCase()] = Boolean(row.available);
+          });
+          localStorage.setItem('tk_item_availability', JSON.stringify(localMap));
         } catch {
           // ignore
         }
 
-        const remoteAvailabilityMap = new Map<string, boolean>();
-        (data as any[]).forEach((row: any) => {
-          if (row.name) remoteAvailabilityMap.set(row.name.trim().toLowerCase(), Boolean(row.available));
-          if (row.id) remoteAvailabilityMap.set(row.id, Boolean(row.available));
-        });
-
         set((state) => ({
           items: state.items.map((item) => {
             const normName = item.name.trim().toLowerCase();
-
-            const localHasId = item.id in localMap;
-            const localHasName = normName in localMap;
-            const localStatus = localHasId ? localMap[item.id] : localHasName ? localMap[normName] : undefined;
-
-            const remoteStatus = remoteAvailabilityMap.has(item.id)
-              ? remoteAvailabilityMap.get(item.id)
-              : remoteAvailabilityMap.has(normName)
-              ? remoteAvailabilityMap.get(normName)
-              : undefined;
-
-            let finalAvailable = item.available;
-
-            // ATURAN INTEGRITAS KETERSEDIAAN:
-            // Jika secara lokal eksplisit ditandai habis (false), JANGAN PERNAH menimpanya menjadi true!
-            if (localStatus === false) {
-              finalAvailable = false;
-              // Sembuhkan Supabase jika remote masih true di database
-              if (remoteStatus === true) {
-                syncMenuItemAvailabilityToSupabase(item.id, item.name, false).catch(() => {});
-              }
-            } else if (remoteStatus !== undefined) {
-              finalAvailable = remoteStatus;
-            } else if (localStatus !== undefined) {
-              finalAvailable = localStatus;
-            }
+            const remoteAvailable = remoteMap.has(item.id)
+              ? remoteMap.get(item.id)!
+              : remoteMap.has(normName)
+              ? remoteMap.get(normName)!
+              : item.available;
 
             return {
               ...item,
-              available: finalAvailable,
+              available: remoteAvailable,
             };
           }),
         }));

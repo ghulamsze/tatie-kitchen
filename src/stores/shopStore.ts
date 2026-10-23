@@ -14,8 +14,10 @@ export interface ShopSettings {
   qris_path: string;
 }
 
+export const TATIE_SHOP_ID = '40f91c30-2e23-476b-bdd7-5e0605b1f812';
+
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
-  id: '00000000-0000-0000-0000-000000000001',
+  id: TATIE_SHOP_ID,
   name: "Tati’e Kitchen",
   timezone: 'Asia/Makassar',
   phone_no: '0812-3456-7890',
@@ -52,15 +54,14 @@ export const useShopStore = create<ShopState>((set, get) => ({
   shop: loadSavedShop(),
   isLoading: false,
 
-  fetchShop: async (shopId = 'shop-001') => {
+  fetchShop: async (shopId) => {
     if (!isSupabaseConfigured()) return;
     try {
       set({ isLoading: true });
-      const { data, error } = await supabase
-        .from('shops')
-        .select('*')
-        .eq('id', shopId)
-        .single();
+      let query = supabase.from('shops').select('*');
+      const targetId = shopId && shopId !== 'shop-001' ? shopId : TATIE_SHOP_ID;
+      query = query.eq('id', targetId);
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (error) {
         logError('shopStore:fetchShop_query', error);

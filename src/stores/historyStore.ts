@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Order, OrderItem } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
 import { logError } from '../lib/logger/logger.ts';
+import { broadcastOrderCreated } from '../lib/supabase/realtime.ts';
 
 export interface HistoryOrderWithItems {
   order: Order;
@@ -77,6 +78,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       }
       return { orders: updated };
     });
+    // Broadcast pembuatan order ke perangkat lain secara real-time
+    broadcastOrderCreated(order.id, order.queue_no || 1, order.total_idr).catch(() => {});
   },
 
   fetchOrders: async (shopId) => {

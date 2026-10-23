@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavItem, NavbarPill } from '../../design/components/NavbarPill.tsx';
 import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
+import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 
 export const PhoneRoot: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('Home');
+
+  // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
+  useEffect(() => {
+    const cleanup = initPosRealtimeSync();
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   return (
     <div

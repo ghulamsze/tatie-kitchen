@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './design/tokens.css';
 import './design/components.css';
 import './design/phone.css';
+import './design/printMenu.css';
 import { initTheme } from './design/theme.ts';
 
 // Inisialisasi tema dan palet

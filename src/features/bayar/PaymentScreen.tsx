@@ -17,8 +17,8 @@ import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
 import { useShopStore } from '../../stores/shopStore.ts';
 
 import { getQuickCashOptions } from './quickCash.ts';
+import { generateUUID } from '../../lib/uuid.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
-import { generateUUID, ensureUUID } from '../../lib/uuid.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
@@ -139,8 +139,28 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       setErrorMessage('');
 
       const orderId = generateUUID();
-      const cashierId = ensureUUID(activeCashier?.id, '00000000-0000-0000-0000-000000000002');
-      const shopId = ensureUUID(activeCashier?.shop_id || shop?.id, '00000000-0000-0000-0000-000000000001');
+      const isRealUuid = (val?: string | null): boolean =>
+        Boolean(
+          val &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) &&
+            !val.startsWith('00000000-0000-0000-0000-00000000000')
+        );
+
+      const cashierId = isRealUuid(activeCashier?.id)
+        ? activeCashier!.id
+        : '1d83083c-9d75-4dec-9c1a-75be69bc1050';
+      const shopId = isRealUuid(activeCashier?.shop_id)
+        ? activeCashier!.shop_id
+        : isRealUuid(shop?.id)
+        ? shop.id
+        : '40f91c30-2e23-476b-bdd7-5e0605b1f812';
+
+      const existingOrders = useHistoryStore.getState().orders;
+      const todayDateStr = getShopTodayDateStr();
+      const maxLocalQueue = existingOrders
+        .filter((o) => o.order.business_date === todayDateStr || o.order.created_at.startsWith(todayDateStr))
+        .reduce((max, o) => Math.max(max, o.order.queue_no || 0), 0);
+      const nextQueueNo = maxLocalQueue + 1;
 
       let recordedOrder: Order;
       let recordedItems: OrderItem[];
@@ -152,6 +172,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         device_id: null,
         table_no: finalTableNo,
         cash_received_idr: effectiveCash,
+        queue_no: nextQueueNo,
+        business_date: todayDateStr,
         items: lines.map((l) => ({
           menu_item_id: l.item.id,
           name_snapshot: l.item.name,
@@ -210,6 +232,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                     cash_received_idr: effectiveCash,
                     change_idr: change,
                     status: 'paid',
+                    queue_no: nextQueueNo,
+                    business_date: todayDateStr,
                   })
                   .select()
                   .single();
@@ -259,13 +283,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       }
 
       // Fallback pencatatan transaksi lokal dengan penghitung antrian harian (reset 00:00 WITA)
-      const existingOrders = useHistoryStore.getState().orders;
-      const todayDateStr = getShopTodayDateStr();
-      const maxLocalQueue = existingOrders
-        .filter((o) => o.order.business_date === todayDateStr || o.order.created_at.startsWith(todayDateStr))
-        .reduce((max, o) => Math.max(max, o.order.queue_no || 0), 0);
-      const nextQueueNo = maxLocalQueue + 1;
-
       recordedOrder = {
         id: orderId,
         shop_id: shopId,

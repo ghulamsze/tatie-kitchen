@@ -1,0 +1,282 @@
+/* ==========================================================================
+   TATIE KITCHEN - MENU CETAK FISIK A4 (BAGIAN 11)
+   Satu sampul dan tiga halaman isi. Ukuran 210mm x 297mm.
+   Pilihan margin normal (2,54 cm) atau margin 4433, serta opsi hemat tinta.
+   ========================================================================== */
+
+#mps {
+  display: block;
+}
+
+#mp {
+  --pb: var(--bg);
+  --pf: var(--ink);
+  --pm: var(--ink-3);
+  --pa: var(--accent);
+  --pd: var(--accent);
+  --pl: var(--w);
+  --g1: var(--b1);
+  --g2: var(--b2);
+  --mt: 25.4mm;
+  --mr: 25.4mm;
+  --mb: 25.4mm;
+  --ml: 25.4mm;
+  --u: 1;
+}
+
+#mp.m4433 {
+  --mt: 40mm;
+  --mr: 30mm;
+  --mb: 30mm;
+  --ml: 40mm;
+}
+
+#mp.ink {
+  --pb: #ffffff;
+  --pf: #1c1516;
+  --pm: #5e4e50;
+  --pa: #0a0a0a;
+  --pd: #171717;
+  --pl: 0 0 0;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* Pratinjau Dokumen Cetak di Layar */
+.tk-print-preview-container {
+  display: none;
+}
+
+.tk-print-preview-container.visible {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  padding: 24px 0;
+}
+
+#mp .pgw {
+  zoom: 0.45;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+#mp .pg {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  padding: var(--mt) var(--mr) var(--mb) var(--ml);
+  overflow: hidden;
+  box-sizing: border-box;
+  color: var(--pf);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: radial-gradient(circle at 10% 4%, var(--g1), transparent 28%),
+              radial-gradient(ellipse at 62% 104%, var(--g2), transparent 60%),
+              var(--pb);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Header Tiap Halaman Isi (Halaman 2 - 4) */
+#mp .pph {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10pt;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pm);
+  margin-bottom: 4mm;
+}
+
+#mp .pg h2 {
+  font-size: 30pt;
+  line-height: 34pt;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 4mm 0 8mm;
+  color: var(--pf);
+}
+
+#mp .cols {
+  column-count: 2;
+  column-gap: 14mm;
+}
+
+#mp .mg {
+  break-inside: avoid;
+  margin: 0 0 calc(7mm * var(--u, 1));
+}
+
+#mp .mg h3 {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  font-size: calc(13pt * var(--u, 1));
+  line-height: calc(18pt * var(--u, 1));
+  font-weight: 800;
+  margin: 0;
+  color: var(--pa);
+}
+
+#mp .dv {
+  height: 2px;
+  margin: calc(2.5mm * var(--u, 1)) 0 1mm;
+  background: linear-gradient(90deg, transparent, rgb(var(--pl) / 0.7) 50%, transparent);
+}
+
+#mp .mr {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  padding: calc(1.7mm * var(--u, 1)) 0 calc(1.9mm * var(--u, 1)) calc(6mm * var(--u, 1));
+  font-size: calc(11pt * var(--u, 1));
+  line-height: calc(15pt * var(--u, 1));
+  font-weight: 700;
+}
+
+#mp .mr b {
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+#mp .ppr {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  min-width: calc(18mm * var(--u, 1));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bullet Titik Ketupat Khas Tati'e Kitchen */
+#mp .mr::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(3.2mm * var(--u, 1));
+  width: calc(2.4mm * var(--u, 1));
+  height: calc(2.4mm * var(--u, 1));
+  background: var(--pd);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* Halaman 1: Sampul Depan (Cover) */
+#mp .cv .lat {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, transparent 0 9mm, rgb(var(--pl) / 0.14) 9mm 9.3mm),
+              repeating-linear-gradient(-45deg, transparent 0 9mm, rgb(var(--pl) / 0.14) 9mm 9.3mm);
+  -webkit-mask-image: radial-gradient(ellipse at 85% 85%, #000, transparent 70%);
+  mask-image: radial-gradient(ellipse at 85% 85%, #000, transparent 70%);
+}
+
+#mp .cv .cg {
+  position: absolute;
+  right: -48mm;
+  top: -40mm;
+  width: 160mm;
+  height: 160mm;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--pd), transparent 68%);
+}
+
+#mp .cv .eb {
+  position: absolute;
+  left: var(--ml);
+  top: var(--mt);
+  font-size: 13pt;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--pa);
+}
+
+#mp .cv .wmk {
+  position: absolute;
+  left: var(--ml);
+  right: var(--mr);
+  bottom: calc(var(--mb) + 40mm);
+  font-size: 80pt;
+  line-height: 76pt;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+#mp .cv .wmk span {
+  display: block;
+}
+
+#mp .cv .ac {
+  color: var(--pa);
+}
+
+#mp .cv .cats {
+  position: absolute;
+  left: var(--ml);
+  right: var(--mr);
+  bottom: var(--mb);
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  font-size: 12pt;
+  font-weight: 800;
+}
+
+#mp .cv .cats i {
+  display: inline-block;
+  width: 3mm;
+  height: 3mm;
+  background: var(--pd);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* ==========================================================================
+   ATURAN CETAK PRINTER (@media print)
+   Menyembunyikan UI layar dan hanya mencetak halaman A4
+   ========================================================================== */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body > *:not(#mps-root) {
+    display: none !important;
+  }
+
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+  }
+
+  :root {
+    padding: 0 !important;
+  }
+
+  #mps-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  #mp .pgw {
+    zoom: 1 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  #mp .pg {
+    break-after: page !important;
+    break-inside: avoid !important;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+
+  #mp .pgw:last-child .pg {
+    break-after: auto !important;
+  }
+}

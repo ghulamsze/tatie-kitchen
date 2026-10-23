@@ -1,24 +1,62 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useCashierStore } from '../../../stores/cashierStore.ts';
-import { AppearanceSheet } from '../../../features/akun/AppearanceSheet.tsx';
-import { Button } from '../../../design/components/Button.tsx';
+import { useShopStore } from '../../../stores/shopStore.ts';
+import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
+import { PhonePrintMenuDialog } from '../components/PhonePrintMenuDialog.tsx';
+import { PrintMenuDocument } from '../components/PrintMenuDocument.tsx';
 
-export const PhoneAccountScreen: React.FC = () => {
+export interface PhoneAccountScreenProps {
+  onOpenPrintMenu?: () => void;
+  onLogout?: () => void;
+}
+
+export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
+  onOpenPrintMenu,
+  onLogout,
+}) => {
   const { cashiers } = useCashierStore();
-  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const { shop } = useShopStore();
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [printOptions, setPrintOptions] = useState({
+    isMargin4433: false,
+    isInkSaver: false,
+  });
 
   const activeCashiers = cashiers.filter((c) => c.active);
 
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      window.location.search = '';
+    }
+  };
+
+  const handleApplyPrint = (opts: { isMargin4433: boolean; isInkSaver: boolean }) => {
+    setPrintOptions(opts);
+    if (onOpenPrintMenu) onOpenPrintMenu();
+  };
+
   return (
     <div className="tk-phone-screen">
+      {/* 1. Judul Layar */}
       <h1 className="tk-phone-title">Akun</h1>
 
-      <div className="g-acrylic tk-phone-hero" style={{ alignItems: 'center', textAlign: 'center' }}>
+      {/* 2. Hero Card Profil Pemilik */}
+      <div
+        className="g-acrylic tk-phone-hero"
+        style={{
+          alignItems: 'center',
+          textAlign: 'center',
+          padding: '24px 20px',
+        }}
+      >
         <div
           style={{
             width: '64px',
             height: '64px',
-            borderRadius: 'var(--r-lg)',
+            borderRadius: 'var(--r-xl)',
             background: 'var(--accent)',
             color: 'var(--on-accent)',
             display: 'grid',
@@ -27,89 +65,174 @@ export const PhoneAccountScreen: React.FC = () => {
             lineHeight: 'var(--l-xl)',
             fontWeight: 800,
             marginBottom: '8px',
+            boxShadow: '0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent)',
           }}
         >
           P
         </div>
-        <b style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', color: 'var(--ink)' }}>
+        <b
+          style={{
+            fontSize: 'var(--t-lg)',
+            lineHeight: 'var(--l-lg)',
+            fontWeight: 800,
+            color: 'var(--ink)',
+          }}
+        >
           Pemilik
         </b>
-        <span style={{ fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', color: 'var(--ink-3)' }}>
-          Tati’e Kitchen
+        <span
+          style={{
+            fontSize: 'var(--t-sm)',
+            lineHeight: 'var(--l-sm)',
+            color: 'var(--ink-2)',
+            marginTop: '2px',
+          }}
+        >
+          {shop.name || 'Tati’e Kitchen'}
         </span>
       </div>
 
-      <h2 className="tk-phone-section-title">Kasir</h2>
+      {/* 3. Daftar Kasir Bertugas */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          margin: '16px 4px 8px',
+        }}
+      >
+        <h2 className="tk-phone-section-title" style={{ margin: 0 }}>
+          Kasir
+        </h2>
+        <span
+          style={{
+            fontSize: 'var(--t-xs)',
+            lineHeight: 'var(--l-xs)',
+            color: 'var(--ink-3)',
+            fontWeight: 600,
+          }}
+        >
+          {activeCashiers.length} aktif
+        </span>
+      </div>
+
       <div className="tk-phone-list-card" style={{ marginBottom: '16px' }}>
         {activeCashiers.length === 0 ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--ink-3)', fontSize: 'var(--t-sm)' }}>
+          <div
+            style={{
+              padding: '20px 16px',
+              textAlign: 'center',
+              color: 'var(--ink-3)',
+              fontSize: 'var(--t-sm)',
+            }}
+          >
             Belum ada kasir aktif
           </div>
         ) : (
           activeCashiers.map((cashier) => (
-            <div key={cashier.id} className="tk-phone-row" style={{ cursor: 'default' }}>
-              <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>{cashier.name}</b>
-              <span style={{ color: 'var(--ink-3)', fontSize: 'var(--t-xs)' }}>Aktif</span>
+            <div
+              key={cashier.id}
+              className="tk-phone-row rw"
+              style={{ cursor: 'default' }}
+            >
+              <b
+                style={{
+                  fontSize: 'var(--t-md)',
+                  lineHeight: 'var(--l-md)',
+                  color: 'var(--ink)',
+                }}
+              >
+                {cashier.name}
+              </b>
+              <span
+                style={{
+                  color: 'var(--accent)',
+                  fontSize: 'var(--t-xs)',
+                  lineHeight: 'var(--l-xs)',
+                  fontWeight: 700,
+                  background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                  padding: '4px 10px',
+                  borderRadius: 'var(--r-pill)',
+                }}
+              >
+                Aktif
+              </span>
             </div>
           ))
         )}
       </div>
 
+      {/* 4. Tombol Pengaturan Tampilan Tema & Palet (.rg.g.vb) */}
       <div
-        className="g-liquid"
-        onClick={() => setIsAppearanceOpen(true)}
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '14px 20px',
-          borderRadius: 'var(--r-md)',
-          fontWeight: 700,
-          fontSize: 'var(--t-md)',
-          lineHeight: 'var(--l-md)',
-          marginBottom: '12px',
-          cursor: 'pointer',
+        className="tk-phone-range-trigger rg g vb"
+        onClick={() => setIsThemeOpen(true)}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-label="Atur tampilan tema dan warna"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setIsThemeOpen(true);
+          }
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="tk-phone-dot" />
-          Tampilan
+        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <i className="dotc" aria-hidden="true" />
+          <span>Tampilan</span>
         </span>
         <span style={{ color: 'var(--ink-3)' }}>▾</span>
       </div>
 
-      <div
-        className="g-liquid"
+      {/* 5. Tombol Cetak Menu (Fase 6) */}
+      <button
+        type="button"
+        className="tk-btn-flat"
+        onClick={() => setIsPrintDialogOpen(true)}
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '14px 20px',
-          borderRadius: 'var(--r-md)',
-          fontWeight: 700,
-          fontSize: 'var(--t-md)',
-          lineHeight: 'var(--l-md)',
+          width: '100%',
+          height: '48px',
           marginBottom: '12px',
-          cursor: 'pointer',
-          color: 'var(--ink)',
+          fontSize: 'var(--t-sm)',
         }}
       >
         Cetak menu
-      </div>
+      </button>
 
-      <Button
-        variant="flat"
-        size="md"
-        onClick={() => {}}
-        style={{ width: '100%', marginTop: '4px' }}
+      {/* 6. Tombol Keluar */}
+      <button
+        type="button"
+        className="tk-btn-flat"
+        onClick={handleLogout}
+        style={{
+          width: '100%',
+          height: '48px',
+          color: 'var(--ink-2)',
+          fontSize: 'var(--t-sm)',
+        }}
       >
         Keluar
-      </Button>
+      </button>
 
-      <AppearanceSheet
-        isOpen={isAppearanceOpen}
-        onClose={() => setIsAppearanceOpen(false)}
+      {/* 7. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
+      <PhoneThemeSheet
+        isOpen={isThemeOpen}
+        onClose={() => setIsThemeOpen(false)}
+      />
+
+      {/* 8. Dialog Konfigurasi Cetak Menu A4 */}
+      <PhonePrintMenuDialog
+        isOpen={isPrintDialogOpen}
+        onClose={() => setIsPrintDialogOpen(false)}
+        onPrint={handleApplyPrint}
+      />
+
+      {/* 9. Target Dokumen Cetak A4 (Aktif saat mode cetak printer) */}
+      <PrintMenuDocument
+        isMargin4433={printOptions.isMargin4433}
+        isInkSaver={printOptions.isInkSaver}
       />
     </div>
   );
 };
+
+export default PhoneAccountScreen;
