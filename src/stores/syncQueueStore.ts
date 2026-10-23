@@ -29,7 +29,7 @@ interface SyncQueueState {
 }
 
 const STORAGE_KEY = 'tk_sync_queue';
-const SYNC_RESET_KEY = 'tk_sync_queue_reset_20261023_v5';
+const SYNC_RESET_KEY = 'tk_sync_queue_reset_20261024_v2';
 
 function loadStoredQueue(): SyncQueueItem[] {
   if (typeof window === 'undefined') return [];

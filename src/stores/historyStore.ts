@@ -14,11 +14,11 @@ export type DateRangePreset = 'hari-ini' | 'kemarin' | '7-hari' | '30-hari' | 's
 // Riwayat transaksi default dikosongkan sesuai permintaan
 export const SEED_HISTORY_ORDERS: HistoryOrderWithItems[] = [];
 
-const HISTORY_RESET_KEY = 'tk_history_reset_20261023_v5';
+const HISTORY_RESET_KEY = 'tk_history_reset_20261024_v2';
 
 const loadSavedOrders = (): HistoryOrderWithItems[] => {
   try {
-    // Lakukan reset satu kali untuk menghapus data riwayat transaksi lama
+    // Lakukan reset untuk menghapus seluruh data riwayat transaksi lama di semua rentang waktu
     if (typeof localStorage !== 'undefined') {
       if (!localStorage.getItem(HISTORY_RESET_KEY)) {
         localStorage.removeItem('tk_order_history');
@@ -119,6 +119,18 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         }));
 
         set((state) => {
+          // Jika di database Supabase pesanan kosong (direset), bersihkan riwayat lokal
+          if (remoteOrders.length === 0) {
+            try {
+              if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem('tk_order_history');
+              }
+            } catch {
+              // ignore
+            }
+            return { orders: [], selectedOrder: null };
+          }
+
           // Gabungkan pesanan remote dari Supabase dengan pesanan lokal offline yang belum tersinkron
           const remoteIds = new Set(remoteOrders.map((ro) => ro.order.id));
           const unsyncedLocal = state.orders.filter((lo) => !remoteIds.has(lo.order.id));
