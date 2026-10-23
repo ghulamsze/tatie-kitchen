@@ -1,423 +1,214 @@
-NEXT MASTER PROMPT
-Tatie Kitchen Tablet Beta - Phase Hardening + Preparation for Laptop/Android/iOS
-Version: 2.0 | Created: 2026-10-22 | Author: lead engineer
-
-=== CONTEXT ===
-
-docs/design.md (rebuilt from source code 2026-10-22) is the visual source of truth.
-reference/tati_e-kitchen-final-preview.html is history, NOT truth.
-Do not use the reference HTML as the basis for new implementation.
-Current app version: 0.1.0. Target before next platform stages: 0.2.0 (tablet beta ready).
-
-Architectural rules confirmed by owner:
-- Tablet: Dedicated POS cashier device. NO login/account required. Opens directly to cashier selection/POS.
-- Mobile (Android/iOS): Read-only daily transaction monitor.
-- Laptop: Backoffice admin with Supabase Auth login.
-- Timezone: WITA (Asia/Makassar).
-- Bank transfer & QRIS: Keep current placeholders until owner finalizes real account & QRIS image.
-- Default cashiers: Robertus Amaresi & Puspitawati (business owners).
-
-Do not touch: supabase/migrations, supabase seed.sql, reference/, any live Supabase project,
-capacitor.config.ts (unless explicitly in scope), existing working features.
-
-Out of scope until approved:
-- Laptop admin screens
-- Android owner app
-- iOS owner app
-- APK release signing (debug only)
-- Any Electron work
-- Print menu feature
-
-Stop after each phase. Wait for "Lanjut" before starting the next one.
-
-=== PHASE 0: READ AND UNDERSTAND ===
-
-Before any code: read these files completely.
-- docs/design.md (rebuilt)
-- docs/design-diff.md
-- docs/arsitektur.md
-- src/design/tokens.css
-- src/design/components.css
-- src/design/theme.ts
-- src/app/AppShell.tsx (and find TabletRoot.tsx)
-- Current e2e/ and src/test/ structure
-
-Report: list of test files found, current test pass/fail count (npm run test),
-current build status (npm run build).
-
-Done criterion: you have read every file, tests run, build succeeds.
-Stop gate: wait for "Lanjut" before Phase 1.
-
-=== PHASE 1: DESIGN AUDIT AND TOKEN FIXES ===
-
-Goal: Zero hardcoded values in component layer. All violations from design.md Section 14 fixed.
-
-Tasks:
-1. Fix HomeScreen.tsx line 121: change 26px/32px to var(--t-xl)/var(--l-xl) and fontWeight 800.
-2. Fix PaymentScreen.tsx lines 233-234: change 56px/64px to var(--t-3xl)/var(--l-3xl) via .tk-table-display CSS class (already defined, just remove inline override).
-3. Fix HomeScreen.tsx line 416: change fontWeight 600 to 700.
-4. Fix HomeScreen.tsx line 427 (lime button): remove height 48px inline style so it uses --c-lg (56px). Adjust surrounding layout if needed.
-5. Fix PaymentScreen.tsx line 448 (lime button): same as above.
-6. Fix components.css line 374: change color: #ffffff to color: var(--on-accent) for .tk-navbar-item.active.
-7. Fix HomeScreen.tsx line 148: change height 42px to 44px (closest multiple of 4 above 44px target).
-8. Fix HomeScreen.tsx line 378 (notes input): change height 38px to 40px.
-9. Fix AccountScreen.tsx line 30: change paddingBottom 92px to 88px (multiple of 4, maintains space for 56px navbar + 16px gap + 16px).
-10. Fix components.css line 1227: change font-weight 600 to 700 for .tk-menu-group-item-price.
-11. Fix HomeScreen.tsx line 278 (Kosongkan button): change minHeight 36px to 44px. Use minWidth to keep it compact.
-
-Files likely to change:
-- src/features/home/HomeScreen.tsx
-- src/features/bayar/PaymentScreen.tsx
-- src/features/akun/AccountScreen.tsx
-- src/design/components.css
-
-Test:
-- npm run test (all must pass)
-- npm run build (must succeed)
-- Open http://localhost:5173/?device=tablet, check each screen visually
-- Check that no hardcoded font-size, font-weight, height values remain in changed files
-
-Done criterion: npm run test passes, npm run build passes, design.md Section 14 items 1-14 all fixed.
-Stop gate: wait for "Lanjut".
-
-=== PHASE 2: CONNECTIVITY AND OFFLINE STATES ===
-
-Goal: App gracefully handles no internet. All 8 tablet screens show correct state.
-
-Context from design-diff.md Section C:
-- NoInternetNotice component exists but is NOT connected to AppShell or TabletRoot.
-- No loading states for menu fetch or cashier fetch.
-- Session expired not handled in UI.
-
-Tasks:
-2a. Create src/lib/network/useOnline.ts
-  - Hook using window.addEventListener('online'/'offline') + navigator.onLine.
-  - Returns: { isOnline: boolean }.
-  - Test: unit test with mock navigator.onLine.
-
-2b. Integrate banner in TabletRoot (find file, read it first):
-  - When isOnline=false and app is past intro+profile: show NoInternetNotice variant=banner
-    at top of screen (position absolute, z-index 60, centered horizontally).
-  - When isOnline=true and was false: show toast "Terhubung kembali" then dismiss.
-  - Do NOT block the app when offline - cashier can still browse menu (local data).
-  - DO show warning in payment flow: if offline when "Selesaikan pembayaran" is tapped,
-    show toast "Offline - transaksi dicatat lokal" then proceed to local fallback.
-
-2c. Add loading state to SelectCashierScreen:
-  - When cashierStore.isLoading=true: show skeleton (3 placeholder cards, same size as cashier cards,
-    animated pulse using CSS animation, use --ctl as background).
-  - Add CSS class .tk-skeleton to components.css.
-
-2d. Add loading state to HomeScreen menu grid:
-  - When menuStore.isLoading=true (add this field to menuStore): show 6 skeleton card placeholders.
-  - Same .tk-skeleton class.
-
-2e. Add error state to HomeScreen:
-  - When menuStore.error (add field): show centered panel with icon, message, and retry button.
-
-2f. Handle session expiry:
-  - In src/lib/supabase/client.ts, add onAuthStateChange listener.
-  - If event === 'SIGNED_OUT' or 'TOKEN_REFRESHED' fails: set a global flag isSessionExpired.
-  - In TabletRoot: when isSessionExpired=true, show dialog: "Sesi perangkat berakhir. Hubungi pemilik toko."
-    with only one button: "Tutup" (flat, no action - owner must re-login from device setup).
-  - Do not auto-redirect. Just show the dialog and let cashier continue using local data.
-
-Files likely to change:
-- src/lib/network/useOnline.ts (new)
-- src/platform/tablet/TabletRoot.tsx (find and read first)
-- src/stores/menuStore.ts (add isLoading, error fields)
-- src/stores/cashierStore.ts (already has isLoading)
-- src/features/home/HomeScreen.tsx
-- src/features/profil/SelectCashierScreen.tsx
-- src/design/components.css (add .tk-skeleton)
-- src/lib/supabase/client.ts
-
-Test:
-- npm run test
-- npm run build
-- Manual: disconnect WiFi, navigate all screens, check banner appears.
-- Manual: reconnect, check toast appears.
-- Playwright e2e test: mock navigator.onLine=false, verify banner rendered.
-
-Done criterion: tests pass, build passes, offline banner visible when disconnected,
-loading skeletons shown during Supabase fetch, error state shown when fetch fails.
-Stop gate: wait for "Lanjut".
-
-=== PHASE 3: DATA INTEGRITY AND SECURITY HARDENING ===
-
-Goal: Tablet cannot corrupt data. RLS tested. No stale menu in orders.
-
-Tasks:
-3a. Wire up set_item_availability RPC:
-  - In menuStore.ts, implement setItemAvailability(itemId, available):
-    if Supabase configured: call rpc('set_item_availability', {p_item_id, p_available}).
-    Always update local store optimistically. On error: revert and show toast.
-  - In HomeScreen.tsx, when heldItem is set (card hold trigger):
-    open a Sheet (new component or reuse .tk-sheet) with:
-    - If item.available: "Tandai Habis" (danger button) + "Batal" (lime, one per screen).
-    - If not item.available: "Tandai Tersedia" (lime) + "Batal" (flat).
-    - On confirm: call menuStore.setItemAvailability, clear heldItem, show toast.
-
-3b. Validate payment change calculation:
-  - In PaymentScreen.tsx: ensure effectiveCash and change are calculated client-side for display
-    but the server RPC is the source of truth for total and change stored in DB.
-  - Add validation: if paymentMethod=tunai and isCashSufficient=false, disable lime button
-    AND show clear error. (Already partially done, verify it works.)
-
-3c. Verify RLS tests:
-  - Read supabase/migrations/001_initial_schema.sql fully.
-  - Read src/lib/supabase/supabase.test.ts fully.
-  - Add missing RLS behavior tests: device role cannot update menu_items price directly,
-    device role can call set_item_availability RPC, duplicate order ID returns existing order.
-  - These are unit-level tests using mocked Supabase, not live DB tests.
-
-3d. Timezone consistency:
-  - In src/lib/format/formatters.ts: add getShopTimezone() function.
-    For now it returns 'Asia/Makassar' (hardcoded, will be from shop settings later).
-    Replace getAutoTimezone() calls in HistoryScreen filtering with getShopTimezone().
-  - In HistoryScreen.tsx: use getShopTimezone() for date range calculations.
-  - Document in docs/design.md Section 11 that this is now fixed.
-
-3e. Order ID uniqueness:
-  - In PaymentScreen.tsx line 115: replace 'ord-' + Math.random()... with a proper UUID.
-    Import crypto.randomUUID() (available in modern browsers and Node 14.17+).
-    Fallback: if not available, use timestamp + random (document this).
-
-Files likely to change:
-- src/stores/menuStore.ts
-- src/features/home/HomeScreen.tsx (sheet tandai habis)
-- src/features/bayar/PaymentScreen.tsx
-- src/lib/supabase/supabase.test.ts
-- src/lib/format/formatters.ts
-- src/features/riwayat/HistoryScreen.tsx
-
-Test:
-- npm run test (all must pass including new RLS tests)
-- npm run build
-- Manual: hold card > sheet appears > confirm > toast > menu state updated locally
-- Manual: try payment with cash less than total > button disabled + error shown
-
-Done criterion: tests pass, build passes, sheet tandai habis works end-to-end locally,
-RLS tests cover device vs owner roles, timezone uses shop timezone.
-Stop gate: wait for "Lanjut".
-
-=== PHASE 4: AUTOMATED DESIGN AUDIT ===
-
-Goal: Any future token violation is caught automatically.
-
-Tasks:
-4a. Playwright design audit test (e2e/design-audit.spec.ts):
-  - For each of the 6 palettes x 2 modes (12 combinations):
-    - Apply palette and mode via URL params or direct attribute setting.
-    - Check all rendered font-sizes are from the allowed set {12,14,16,20,32,44,64}px.
-    - Check all rendered font-weights are from the allowed set {500,700,800}.
-    - Check all computed heights for elements with role=button are >= 44px (except navbar items, document exception).
-  - Test fails if any violation found.
-  - Add npm script: "audit:visual": "playwright test e2e/design-audit.spec.ts"
-
-4b. Vitest token completeness test (extend src/design/tokens.test.ts):
-  - Verify all 7 text pairs exist in tokens.css.
-  - Verify all 5 radius tokens exist.
-  - Verify all 3 control height tokens exist.
-  - Verify all 6 palettes have overrides for --bg, --accent, --accent-ink in both light and dark.
-
-4c. Verify intro timing test (already in tabletA.test.tsx, just verify it covers reduced-motion).
-
-Files likely to change:
-- e2e/design-audit.spec.ts (new)
-- src/design/tokens.test.ts (extend)
-- package.json (add audit:visual script)
-
-Test:
-- npm run test
-- npm run audit:design
-- npm run audit:visual (if Playwright installed)
-
-Done criterion: design audit tests pass for netflix palette (minimum). All 6 palettes pass on best-effort.
-Stop gate: wait for "Lanjut".
-
-=== PHASE 5: RELEASE READINESS ===
-
-Goal: App ready for beta distribution from tablet browser. APK debug installable.
-
-Tasks:
-5a. Add version display to AccountScreen:
-  - Show app version (from package.json via import.meta.env.VITE_APP_VERSION or fallback '0.1.0')
-    below the cashier card, small font --t-xs, color --ink-3.
-  - Add VITE_APP_VERSION to .env.example with value "0.1.0".
-
-5b. Clean up Menu Lengkap (CustomerMenuView.tsx):
-  - Refactor customer menu view to adhere strictly to design tokens and responsive grid.
-  - Fix broken card hierarchy, spacing (multiples of 4), badge styling, and back navigation.
-  - Ensure silky-smooth scrolling and clean category pill navigation at 1024x640.
-
-5c. Database & Web Sync Stabilization:
-  - Investigate discrepancy between tablet APK and web Supabase sync.
-  - Verify sync queue processor (syncQueueStore.ts) and network event listeners on Capacitor Android.
-  - Ensure Supabase client config handles network switches and background pauses cleanly.
-
-5d. Realtime subscription stub (preparation only - do not implement full Realtime yet):
-  - In menuStore.ts: add subscribeToMenuChanges() function.
-    For now it logs a warning: "Realtime not yet connected - menu changes require manual refresh."
-  - Do NOT create actual Supabase Realtime channels yet (that is laptop+Android phase).
-  - Document in arsitektur.md Section 11 that Realtime is planned for laptop phase.
-
-5e. Error logging stub:
-  - Create src/lib/logger/logger.ts with functions: logError(context, error), logWarning(context, message).
-  - For now: console.error/warn with prefix "[TK]".
-  - Replace all catch blocks that currently swallow errors with logError() calls.
-  - This makes future error service integration (Sentry etc.) easier.
-
-5f. APK debug build verification:
-  - Verify npm run build:apk:debug works.
-  - Verify tatie-kitchen-debug.apk installs on test device and syncs data to Supabase beta.
-  - Document any issues in docs/panduan-apk-tablet.md (update existing file).
-
-Manual steps for owner (remind at this phase):
-1. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env file.
-2. Run Supabase migration 001_initial_schema.sql on beta project (if not done).
-3. Confirm shop timezone (Asia/Makassar = WITA - confirmed).
-4. Confirm bank account details to show in Transfer tab (currently BCA placeholder).
-5. Install Android Studio and JDK 17 before requesting APK builds.
-
-Files likely to change:
-- src/features/akun/AccountScreen.tsx (version display)
-- src/features/menu-lengkap/CustomerMenuView.tsx (layout & design cleanup)
-- src/stores/syncQueueStore.ts / src/lib/supabase/client.ts (sync stabilization)
-- src/stores/menuStore.ts (subscribeToMenuChanges stub)
-- src/lib/logger/logger.ts (new)
-- Multiple files (logError integration)
-- .env.example
-- docs/panduan-apk-tablet.md
-
-Test:
-- npm run test
-- npm run build
-- Manual: version number visible in AccountScreen
-- Manual: CustomerMenuView displays cleanly at 1024x640
-- Manual: APK debug syncs transactions to Supabase beta project
-
-Done criterion: tests pass, build passes, version displayed, device setup flow functional,
-logError used in all catch blocks, APK debug verified on physical tablet.
-Stop gate: wait for "Lanjut".
-
-=== PHASE 6: SCHEMA AND STRUCTURE PREPARATION FOR LAPTOP, ANDROID, IOS ===
-
-Goal: No rework needed when laptop admin and owner apps start development.
-
-Tasks:
-6a. Schema review - add migration 002 if needed:
-  - Add columns to shops table: phone_no text, address text, bank_name text, bank_account text, qris_path text.
-  - These replace the hardcoded values in ReceiptScreen and PaymentScreen.
-  - New migration: supabase/migrations/002_shop_settings.sql
-  - Update ReceiptScreen to read from shop settings (via a new useShopStore or extend cashierStore).
-  - Update PaymentScreen transfer bank section to use shop settings.
-  - Update formatters.ts getShopTimezone() to read from shops.timezone via Supabase.
-  - RLS: shop_members can read their shop, only owner can update.
-
-6b. Folder structure for future platforms:
-  - Verify src/platform/laptop/ has LaptopPlaceholder.tsx (already exists per AppShell.tsx).
-  - Verify src/platform/phone/ has PhonePlaceholder.tsx.
-  - Create src/platform/laptop/index.ts and src/platform/phone/index.ts as explicit exports.
-  - Document in arsitektur.md Section 11 that laptop admin will use src/platform/laptop/.
-
-6c. Realtime architecture decision:
-  - Read arsitektur.md Section 8 (Online dan lingkungan) and Section 11 (Peta jalan).
-  - Add to arsitektur.md Section 12 (new): "Arsitektur Realtime"
-    - Which tables need Realtime: menu_items (available changes), orders (new orders from other devices).
-    - Subscription pattern: per-shop channel, filter by shop_id.
-    - When to implement: laptop admin phase (Phase 7+).
-  - Do not implement Realtime now.
-
-6d. Owner role API surface:
-  - Review what RPC/REST calls the laptop admin will need that are NOT yet in the schema.
-  - Likely additions: get_sales_report(shop_id, start_date, end_date), update_menu_item, deactivate_cashier.
-  - Add these as empty function stubs in a new migration 003_owner_rpcs.sql (CREATE OR REPLACE with placeholder body that raises 'Not implemented').
-  - This reserves the function names and validates RLS before laptop development starts.
-
-Files likely to change:
-- supabase/migrations/002_shop_settings.sql (new)
-- supabase/migrations/003_owner_rpcs.sql (new)
-- src/stores/ (new useShopStore.ts)
-- src/features/struk/ReceiptScreen.tsx (use shop settings)
-- src/features/bayar/PaymentScreen.tsx (use shop settings)
-- src/lib/format/formatters.ts (getShopTimezone from store)
-- src/platform/laptop/index.ts (new)
-- src/platform/phone/index.ts (new)
-- docs/arsitektur.md (Realtime section)
-
-Test:
-- npm run test
-- npm run build
-- Review migration 002 SQL manually before applying to beta Supabase.
-
-Manual steps for owner:
-1. Apply migration 002 to beta Supabase project (CLI: supabase db push).
-2. Fill in shop settings: name, address, phone, bank name, bank account, WITA timezone.
-3. Apply migration 003.
-4. Confirm: laptop admin and Android/iOS development can now start without schema rework.
-
-Done criterion: tests pass, build passes, shop settings driven from DB, migrations 002 and 003 exist,
-platform folder structure documented and verified.
-Stop gate: wait for "Lanjut" before any laptop/Android/iOS work begins.
-
-=== FOLLOW-UP MESSAGES (PASTE THESE AFTER EACH PHASE) ===
-
-After Phase 0:
-"Lanjut ke Phase 1. Sebelum mulai, konfirmasi: npm run test lulus berapa test, dan npm run build sukses?"
-
-After Phase 1:
-"Lanjut ke Phase 2. Tunjukkan diff singkat perubahan di HomeScreen dan PaymentScreen untuk nilai yang diperbaiki."
-
-After Phase 2:
-"Lanjut ke Phase 3. Sebelum mulai, tunjukkan bagaimana NoInternetNotice terintegrasi di TabletRoot."
-
-After Phase 3:
-"Lanjut ke Phase 4. Sebelum mulai, tunjukkan sheet tandai habis berjalan di layar Home."
-
-After Phase 4:
-"Lanjut ke Phase 5. Tunjukkan hasil npm run audit:design."
-
-After Phase 5:
-"Lanjut ke Phase 6. Sebelum mulai, konfirmasi: APK debug sudah diuji di tablet fisik?"
-
-After Phase 6:
-"Phase 6 selesai. Tablet beta siap. Buat laporan ringkas: versi app, test count, fitur yang bekerja,
-fitur yang belum, dan langkah manual yang tersisa untuk pemilik sebelum memulai laptop admin."
-
-=== MANUAL STEPS SUMMARY FOR OWNER ===
-
-Before Phase 2-3:
-- Provide .env values: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (beta project)
-- Create device Supabase account (email+password, role=device in shop_members)
-
-Before Phase 5:
-- Install Android Studio and JDK 17 on development machine
-- Provide correct bank account details for Transfer tab
-
-Before Phase 6:
-- Run: supabase db push (for migration 002)
-- Fill shop settings in Supabase dashboard or via SQL
-- Confirm shop timezone is Asia/Makassar (WITA)
-- Confirm QRIS image path (or provide QRIS image file)
-
-=== EXPLICIT OUT-OF-SCOPE ITEMS ===
-
-The following will NOT start until this master prompt is complete and owner says "Mulai platform laptop":
-- Laptop admin web screens (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu)
-- Electron .exe wrapping
-- Android owner APK (separate Capacitor build)
-- iOS owner app (requires Mac + Xcode + Apple Developer account)
-- APK release signing and keystore (debug only until explicitly approved)
-- Supabase Realtime subscriptions
-- Owner-facing reports and analytics
-- Print menu feature
-- Push notifications
-
-=== DESIGN SOURCE OF TRUTH ===
-
-docs/design.md (rebuilt 2026-10-22 from source code) is the single visual source of truth.
-All implementation must match docs/design.md.
-reference/tati_e-kitchen-final-preview.html is historical reference only.
-Any discrepancy between docs/design.md and code: fix the code to match design.md,
-or update design.md with evidence and owner approval.
+MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (REVISI TOTAL HP ANDROID PEMILIK)
+
+Tempel isi ini sebagai pesan pertama ke agent untuk eksekusi revisi layar Android HP. Setelah itu kirim pesan pendek per fase (lihat bagian paling bawah).
+
+================================================================================
+PERAN
+================================================================================
+Kamu adalah tim pengembang frontend & mobile senior yang menyempurnakan aplikasi kasir & pemantau warung Tati’e Kitchen. Kamu bekerja bertahap, presisi tinggi, dan selalu menunggu persetujuan pemilik di setiap akhir fase.
+
+================================================================================
+TUJUAN
+================================================================================
+Revisi total seluruh antarmuka HP Android (Mode Pemilik / Owner App) agar 100% presisi dan identik dengan desain di docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
+
+================================================================================
+SUMBER KEBENARAN VISUAL & ATURAN GAYA
+================================================================================
+1. DESAIN & STRUKTUR:
+   - Sumber kebenaran mutlak untuk layout, hierarki teks, dan konten adalah docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
+   - Terdapat 5 frame tampilan utama di PDF:
+     * Frame 1 (Layar 7a): Home (Total transaksi hari ini, daftar Terbaru)
+     * Frame 2 (Layar 7b): Riwayat (Pengelompokan per tanggal, filter rentang)
+     * Frame 3 (Layar 7c): Rentang Waktu (Bottom sheet pilihan preset & kustom tanggal)
+     * Frame 4 (Layar 7d): Rincian Transaksi (Meja, jam, nominal besar, rincian item, tombol Share & Download PNG)
+     * Frame 5 (Layar 7e): Akun (Profil Pemilik, daftar Kasir, tombol Tampilan, Cetak menu, Keluar)
+
+2. ATURAN GAYA TABLET (GOLDEN STANDARD):
+   - Style antarmuka tablet saat ini sudah paling sempurna: gunakan seluruh token desain, material glassmorphism (g-acrylic, g-liquid, liquid-glass), background radial gradient dinamis, font Plus Jakarta Sans, dan palet warna aktif (Netflix, Samudra, dsb.) serta mode gelap/terang.
+   - SEMUA warna, ukuran font, line-height, radius, dan jarak WAJIB menggunakan token CSS (var(--t-*), var(--r-*), var(--ctl*), var(--accent), var(--ink*)). DILARANG MENULIS NILAI HARDCODED PIXEL ATAU HEX SECARA SEMBARANGAN.
+
+3. HINDARI BADGE BERLEBIHAN (CRITICAL):
+   - Jangan menambahkan badge atau dekorasi berisik yang tidak ada di PDF:
+     * HAPUS badge "Live" berkedip di header Home.
+     * HAPUS dot-dot indikator status di sebelah nama meja.
+     * HAPUS label teks "Lunas" di bawah harga transaksi.
+     * HAPUS tautan "Lihat semua ›" di sebelah judul Terbaru.
+     * HAPUS chip badge "Aktif" di samping nama kasir di Akun.
+     * HAPUS counter "2 aktif" di header Kasir.
+     * HAPUS kotak kartu perbandingan Tunai vs QRIS di Home (kembalikan ke hero card tunggal yang bersih sesuai PDF).
+   - Samakan gayanya: tenang, minimalis, bersih, elegan, dan proporsional.
+
+4. ALUR KERJA BERTAHAP (STOP GATES):
+   - Kerjakan satu fase dalam satu waktu.
+   - Laporkan hasil di akhir fase dan BERHENTI sampai pemilik mengetik "Lanjut".
+
+================================================================================
+RINCIAN SPESIFIKASI 5 LAYAR HP (PDF HALAMAN 17)
+================================================================================
+
+1. LAYAR 7a: HOME
+   - Simulasi Status Bar atas: jam (kiri, misal "10.04") dan sinyal (kanan, misal "5G · 82%").
+   - Heading: "Home" (var(--t-xl), font-weight 800, tanpa badge "Live").
+   - Hero Card (.g-acrylic, radius var(--r-lg), padding 20px):
+     * Label atas: "Total transaksi hari ini" (var(--t-sm), var(--ink-2), font-weight 500).
+     * Nominal utama: Format Rupiah tebal dan besar (var(--t-xl), font-weight 800, var(--ink)).
+     * Label bawah: "{totalCount} transaksi" (var(--t-sm), var(--ink-3), font-weight 700).
+   - Bagian "Terbaru":
+     * Judul bagian: "Terbaru" (var(--t-md), font-weight 800, tanpa tombol "Lihat semua").
+     * Sub-header tanggal: Format tanggal hari ini (misal "21 Okt 2026").
+     * Kartu daftar (.tk-phone-list-card):
+       - Setiap baris (.tk-phone-row) terdiri dari 2 kolom rapi:
+         Kiri: Meja {no} (tebal, var(--t-md)) & {qty} item (var(--ink-3), var(--t-xs))
+         Kanan: Rp{total} (tebal, var(--t-md)) & {jam} WITA (var(--ink-3), var(--t-xs))
+       - Tanpa dot neon hijau, tanpa badge "Lunas".
+       - Mengetuk baris akan membuka Layar 7d (Rincian Transaksi).
+   - Floating Navbar Pill di bawah: [ Home ] [ Riwayat ] [ Akun ].
+
+2. LAYAR 7b: RIWAYAT
+   - Simulasi Status Bar atas: jam & sinyal.
+   - Heading: "Riwayat" (var(--t-xl), font-weight 800).
+   - Filter Rentang Waktu (Pill trigger .tk-phone-range-trigger):
+     * Menampilkan rentang aktif, misal: "Hari ini · 21 Okt 2026 ▾" atau "Semua waktu ▾".
+     * Mengetuk tombol membuka Bottom Sheet Rentang Waktu (Layar 7c).
+   - Pengelompokan Transaksi Berdasarkan Tanggal:
+     * Header per tanggal (misal "21 Okt 2026", "20 Okt 2026").
+     * Di bawah setiap header tanggal, tampilkan baris-baris transaksi dengan format identik:
+       Kiri: Meja {no} & {qty} item
+       Kanan: Rp{total} & {jam} WITA
+     * Mengetuk baris membuka Layar 7d (Rincian Transaksi).
+   - Floating Navbar Pill di bawah.
+
+3. LAYAR 7c: RENTANG WAKTU (BOTTOM SHEET)
+   - Latar belakang mengabur gelap (backdrop-filter: blur(16px)).
+   - Bottom sheet glass (.g-liquid, radius var(--r-xl)):
+     * Judul sheet: "Rentang waktu" (var(--t-lg), font-weight 800).
+     * Opsi baris (tinggi 48px, background var(--ctl), radius var(--r-md)):
+       - "Hari ini" (dengan tanda centang "✓" di kanan jika terpilih)
+       - "Kemarin"
+       - "7 hari terakhir"
+       - "30 hari terakhir"
+       - "Pilih tanggal..."
+     * Tombol aksi primer di bawah: "Terapkan" (.tk-btn-lime atau tombol aksen palet, tinggi 48px).
+
+4. LAYAR 7d: RINCIAN TRANSAKSI (DETAIL PESANAN)
+   - Tombol kembali di kiri atas: "‹ Rincian" (teks tombol datar tanpa background, saat diketuk kembali ke layar pemanggil).
+   - Sub-header: "Meja {no} · {jam} WITA" (var(--ink-2), var(--t-md)).
+   - Nominal total transaksi sangat besar: "Rp80.000" (var(--t-2xl) atau var(--t-3xl), font-weight 800, var(--ink)).
+   - Baris kasir: "Kasir {namaKasir}" (var(--ink-3), var(--t-sm)).
+   - Kartu Rincian Menu (.g-acrylic atau .tk-phone-list-card):
+     * Setiap item pesanan: {qty} {nama_menu} (kiri) | Rp{subtotal} (kanan)
+     * Catatan jika ada: "Catatan: {catatan}" (var(--ink-3), var(--t-xs))
+     * Garis pemisah tipis
+     * Baris Total: "Total" (kiri) | Rp{total} (kanan, font-weight 800)
+   - Tombol Aksi Bawah (2 Tombol Berdampingan, lebar 50% / 50%):
+     * Tombol Kiri: "Share" (.tk-btn-flat, tinggi 48px, membagikan struk)
+     * Tombol Kanan: "Download PNG" (tombol aksen, tinggi 48px, mengunduh gambar struk)
+   - Floating Navbar Pill tetap ada di bawah.
+
+5. LAYAR 7e: AKUN
+   - Simulasi Status Bar atas: jam & sinyal.
+   - Heading: "Akun" (var(--t-xl), font-weight 800).
+   - Hero Card Profil Pemilik (.g-acrylic, radius var(--r-lg)):
+     * Avatar bulat/persegi tumpul dengan inisial "P" (var(--accent)).
+     * Teks peran: "Pemilik" (var(--t-md), font-weight 800).
+     * Nama warung: "Tati’e Kitchen" (var(--t-sm), var(--ink-3)).
+   - Bagian "Kasir":
+     * Judul section: "Kasir" (var(--t-md), font-weight 800, tanpa badge "aktif").
+     * Daftar kasir dalam kartu bersih (.tk-phone-list-card):
+       - Baris nama kasir: "Robertus Amaresi"
+       - Baris nama kasir: "Puspitawati"
+       - Tanpa tombol edit/hapus dan tanpa badge "Aktif" (menjaga kesederhanaan mode pemilik sesuai PDF).
+   - Tombol Pengaturan:
+     * Baris "Tampilan" (dengan dot warna palet aktif di kiri dan panah "▾" di kanan).
+     * Tombol "Cetak menu" (.tk-btn-flat, tinggi 48px).
+     * Tombol "Keluar" (.tk-btn-flat, tinggi 48px, warna var(--ink-2)).
+   - Floating Navbar Pill di bawah.
+
+================================================================================
+RENCANA FASE PENGERJAAN
+================================================================================
+
+FASE 0: AUDIT & STRUKTUR NAVIGASI
+- Periksa seluruh berkas di src/platform/phone/:
+  * PhoneRoot.tsx
+  * screens/PhoneHomeScreen.tsx
+  * screens/PhoneHistoryScreen.tsx
+  * screens/PhoneOrderDetailScreen.tsx
+  * screens/PhoneAccountScreen.tsx
+  * components/PhoneDateRangeSheet.tsx
+  * components/PhoneThemeSheet.tsx
+  * components/PhonePrintMenuDialog.tsx
+  * src/design/phone.css
+- Di PhoneRoot.tsx, tambahkan state routing untuk mendukung navigasi ke Layar 7d (Rincian Transaksi) saat baris transaksi di Home atau Riwayat diketuk, dengan tombol kembali "‹ Rincian".
+- Tulis daftar perbedaan antara kode saat ini dengan PDF Halaman 17.
+- Tunggu persetujuan pemilik sebelum lanjut ke Fase 1.
+
+FASE 1: REVISI LAYAR HOME (SESUAI FRAME 1 PDF)
+- Bersihkan PhoneHomeScreen.tsx:
+  * Hapus badge "Live" di header.
+  * Hapus tombol "Lihat semua ›".
+  * Hapus dot neon di samping meja.
+  * Hapus label "Lunas".
+  * Pastikan susunan kartu hero dan daftar transaksi terbaru presisi mengikuti Frame 1 PDF.
+  * Hubungkan ketukan baris transaksi agar membuka Layar 7d.
+- Uji tampilan pada viewport HP (390 x 800) dan verifikasi di browser.
+- Tunggu "Lanjut".
+
+FASE 2: REVISI LAYAR RIWAYAT & BOTTOM SHEET RENTANG WAKTU (SESUAI FRAME 2 & 3 PDF)
+- Bersihkan PhoneHistoryScreen.tsx:
+  * Format baris transaksi disamakan persis dengan Home: Meja {no} ({qty} item) di kiri, Rp{total} ({jam}) di kanan.
+  * Pengelompokan tanggal rapi dengan header tanggal bersih.
+  * Hubungkan tombol trigger rentang waktu ke PhoneDateRangeSheet.
+- Pastikan PhoneDateRangeSheet.tsx memiliki opsi: Hari ini, Kemarin, 7 hari terakhir, 30 hari terakhir, Pilih tanggal..., dan tombol primer "Terapkan".
+- Hubungkan ketukan baris transaksi ke Layar 7d.
+- Tunggu "Lanjut".
+
+FASE 3: REVISI LAYAR RINCIAN TRANSAKSI (SESUAI FRAME 4 PDF)
+- Rombak PhoneOrderDetailScreen.tsx:
+  * Tombol navigasi atas: "‹ Rincian" (kembali ke layar asal).
+  * Sub-header meja & jam transaksi.
+  * Nominal omzet transaksi sangat besar (Rp80.000).
+  * Baris "Kasir {namaKasir}".
+  * Rincian item pesanan dalam satu daftar bersih beserta catatan dan baris Total.
+  * Dua tombol aksi berdampingan: "Share" (flat) dan "Download PNG" (accent) dengan fungsi ekspor/bagikan struk.
+  * Floating navbar tetap tampil di bagian bawah.
+- Tunggu "Lanjut".
+
+FASE 4: REVISI LAYAR AKUN (SESUAI FRAME 5 PDF)
+- Bersihkan PhoneAccountScreen.tsx:
+  * Profil pemilik bersih (avatar P, Pemilik, Tati'e Kitchen).
+  * Section "Kasir": daftar nama kasir polos tanpa badge "Aktif" atau tombol aksi berlebihan.
+  * Baris "Tampilan" dengan pop-up/sheet pilihan tema dan 6 palet warna.
+  * Tombol "Cetak menu" dan tombol "Keluar".
+- Tunggu "Lanjut".
+
+FASE 5: PENYESUAIAN CSS & VERIFIKASI MULTI-PALET
+- Di src/design/phone.css:
+  * Hapus selector dan styling badge yang tidak terpakai.
+  * Pastikan 100% token discipline: var(--*).
+  * Verifikasi di 6 palet warna (Netflix, Matcha, Samudra, Senja, Blush, Mono) dan 2 mode (Gelap & Terang).
+  * Jalankan audit: npm run build dan npx tsc --noEmit.
+  * Buat tangkapan layar komparasi kelima layar di viewport HP.
+- Tunggu "Lanjut".
+
+FASE 6: BUILD APK ANDROID (HP)
+- Sinkronisasikan build web ke platform Capacitor Android:
+  * npx cap sync android
+- Kompilasi berkas APK debug:
+  * gradlew assembleDebug (atau npm run build:apk:debug)
+- Konfirmasi file android/app/build/outputs/apk/debug/app-debug.apk siap dipasang di HP pemilik.
+- Tunggu konfirmasi akhir pemilik.
+
+================================================================================
+PESAN PENDEK UNTUK SETIAP FASE (TEMPEL SATU PER SATU)
+================================================================================
+
+Lanjut Fase 1. Rencana Fase 0 disetujui.
+Lanjut Fase 2. Layar Home sudah sesuai PDF.
+Lanjut Fase 3. Layar Riwayat & Rentang Waktu sudah sesuai PDF.
+Lanjut Fase 4. Layar Rincian Transaksi sudah sesuai PDF.
+Lanjut Fase 5. Layar Akun sudah sesuai PDF.
+Lanjut Fase 6. CSS & uji multi-palet disetujui. Siapkan build APK.
+
+Jika ada yang belum sesuai: Perbaiki dulu (tulis temuan). Jangan lanjut fase.

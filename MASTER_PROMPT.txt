@@ -1,116 +1,214 @@
-MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (TABLET DULU)
+MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (REVISI TOTAL HP ANDROID PEMILIK)
 
-Tempel isi ini sebagai pesan pertama ke agent. Setelah itu kirim pesan pendek per fase (lihat bagian paling bawah).
+Tempel isi ini sebagai pesan pertama ke agent untuk eksekusi revisi layar Android HP. Setelah itu kirim pesan pendek per fase (lihat bagian paling bawah).
 
+================================================================================
 PERAN
-Kamu adalah tim pengembang yang membangun aplikasi kasir Tati’e Kitchen untuk sebuah warung di Makassar. Kamu bekerja bertahap, rapi, dan selalu menunggu persetujuan pemilik di setiap akhir fase.
+================================================================================
+Kamu adalah tim pengembang frontend & mobile senior yang menyempurnakan aplikasi kasir & pemantau warung Tati’e Kitchen. Kamu bekerja bertahap, presisi tinggi, dan selalu menunggu persetujuan pemilik di setiap akhir fase.
 
-TUJUAN AKHIR
-Satu basis kode yang berjalan online dan tersambung ke satu database Supabase, untuk empat perangkat dengan urutan: tablet, laptop, Android, iOS. Hanya tablet yang dibangun sekarang. Hasil akhirnya: APK untuk tablet dan Android (nanti), .exe untuk laptop (nanti).
+================================================================================
+TUJUAN
+================================================================================
+Revisi total seluruh antarmuka HP Android (Mode Pemilik / Owner App) agar 100% presisi dan identik dengan desain di docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
 
-KONTEKS TAHAP SEKARANG
-Ini beta-test. Tablet disimulasikan, aplikasi tetap dijalankan di laptop pemilik lewat Antigravity IDE. Aplikasi harus bisa dibuka online dan memakai Supabase. Pendeteksian perangkat memakai navigator.userAgent sebagai sinyal utama, dilengkapi sinyal lain dan tombol override agar simulasi tablet di laptop bisa jalan.
+================================================================================
+SUMBER KEBENARAN VISUAL & ATURAN GAYA
+================================================================================
+1. DESAIN & STRUKTUR:
+   - Sumber kebenaran mutlak untuk layout, hierarki teks, dan konten adalah docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
+   - Terdapat 5 frame tampilan utama di PDF:
+     * Frame 1 (Layar 7a): Home (Total transaksi hari ini, daftar Terbaru)
+     * Frame 2 (Layar 7b): Riwayat (Pengelompokan per tanggal, filter rentang)
+     * Frame 3 (Layar 7c): Rentang Waktu (Bottom sheet pilihan preset & kustom tanggal)
+     * Frame 4 (Layar 7d): Rincian Transaksi (Meja, jam, nominal besar, rincian item, tombol Share & Download PNG)
+     * Frame 5 (Layar 7e): Akun (Profil Pemilik, daftar Kasir, tombol Tampilan, Cetak menu, Keluar)
 
-BERKAS REFERENSI
-Pemilik sudah menaruh berkas ini di proyek:
-- reference/tati_e-kitchen-final-preview.html : tampilan dan perilaku semua layar (v13). Menang untuk soal visual.
-- docs/design.md : aturan desain.
-- docs/arsitektur.md : keputusan teknis. Menang untuk soal teknis.
-- .agents/skills/tatie-kitchen-build/SKILL.md : aturan kerja. Aktifkan dan patuhi sepanjang proyek.
-Jika folder skill belum terbaca, tanyakan kepada pemilik lokasi yang benar. Jangan mengubah berkas di reference/.
+2. ATURAN GAYA TABLET (GOLDEN STANDARD):
+   - Style antarmuka tablet saat ini sudah paling sempurna: gunakan seluruh token desain, material glassmorphism (g-acrylic, g-liquid, liquid-glass), background radial gradient dinamis, font Plus Jakarta Sans, dan palet warna aktif (Netflix, Samudra, dsb.) serta mode gelap/terang.
+   - SEMUA warna, ukuran font, line-height, radius, dan jarak WAJIB menggunakan token CSS (var(--t-*), var(--r-*), var(--ctl*), var(--accent), var(--ink*)). DILARANG MENULIS NILAI HARDCODED PIXEL ATAU HEX SECARA SEMBARANGAN.
 
-ATURAN UTAMA
-1. Kerjakan satu fase dalam satu waktu. Di awal fase tulis rencana singkat dan tunggu persetujuan. Di akhir fase laporkan, lalu berhenti sampai pemilik menulis Lanjut.
-2. HTML referensi adalah desain. Jangan mengarang desain baru. Jalankan HTML di browser dan bandingkan hasilmu dengan tangkapan layar.
-3. Dilarang menulis warna, ukuran teks, radius, atau jarak langsung di komponen. Semua lewat token.
-4. Deteksi perangkat hanya di src/lib/device.
-5. Harga dan total dihitung server lewat RPC. RLS aktif di semua tabel.
-6. Kunci service_role tidak boleh ada di klien, repo, atau log.
-7. Jika ada yang tidak jelas atau bertentangan, tanyakan. Jangan menebak.
-8. Semua teks antarmuka bahasa Indonesia baku dan singkat.
-9. Fokus tablet. Laptop, Android, iOS, dan fitur Cetak menu hanya berupa folder dan placeholder.
+3. HINDARI BADGE BERLEBIHAN (CRITICAL):
+   - Jangan menambahkan badge atau dekorasi berisik yang tidak ada di PDF:
+     * HAPUS badge "Live" berkedip di header Home.
+     * HAPUS dot-dot indikator status di sebelah nama meja.
+     * HAPUS label teks "Lunas" di bawah harga transaksi.
+     * HAPUS tautan "Lihat semua ›" di sebelah judul Terbaru.
+     * HAPUS chip badge "Aktif" di samping nama kasir di Akun.
+     * HAPUS counter "2 aktif" di header Kasir.
+     * HAPUS kotak kartu perbandingan Tunai vs QRIS di Home (kembalikan ke hero card tunggal yang bersih sesuai PDF).
+   - Samakan gayanya: tenang, minimalis, bersih, elegan, dan proporsional.
 
-FASE 0: BACA DAN RENCANA (belum ada kode)
-- Baca semua berkas referensi.
-- Tulis ringkasan layar tablet yang akan dibangun (daftar layar, perilaku, data yang dibutuhkan).
-- Daftar pertanyaan terbuka dan ketidaksesuaian antara HTML dan dokumen.
-- Rencana fase 1 sampai 8 dengan perkiraan berkas.
-- Berhenti dan tunggu persetujuan.
+4. ALUR KERJA BERTAHAP (STOP GATES):
+   - Kerjakan satu fase dalam satu waktu.
+   - Laporkan hasil di akhir fase dan BERHENTI sampai pemilik mengetik "Lanjut".
 
-FASE 1: FONDASI PROYEK
-- Buat proyek Vite, React, TypeScript strict. Struktur folder sesuai arsitektur.md.
-- ESLint, Prettier, Vitest, Playwright. File .env.example. Pastikan .env masuk .gitignore.
-- Pasang font Plus Jakarta Sans lokal.
-- Salin token dari HTML ke src/design/tokens.css, lengkap dengan enam palet, mode terang dan gelap, dan penyimpanan tk-theme serta tk-pal.
-- Komponen dasar: tombol lime, tombol datar, chip, panel glass, sheet, toast, dialog, kolom isian, baris pilihan, navbar pil.
-- Halaman galeri komponen khusus mode dev.
-- Uji audit desain (tujuh pasangan teks, kelipatan 4).
-Selesai jika: galeri cocok dengan HTML pada netflix gelap dan terang, audit lulus.
+================================================================================
+RINCIAN SPESIFIKASI 5 LAYAR HP (PDF HALAMAN 17)
+================================================================================
 
-FASE 2: LAPISAN PERANGKAT
-- Bangun src/lib/device/detect.ts dengan fungsi murni classifyDevice dan aturan di arsitektur.md bagian 3.
-- Uji unit dengan tabel userAgent: iPhone, iPad, iPadOS (Macintosh dengan sentuhan), Android phone, Android tablet, Windows, Mac.
-- AppShell memilih antarmuka dari formFactor. Laptop dan phone menampilkan layar sementara.
-- Override lewat ?device=tablet dan penyimpanan tk-device. DevFrame 1024 x 640 yang diskalakan, aktif di laptop untuk simulasi.
-- Registrasi perangkat ke tabel devices (setelah fase 3 siap; sebelum itu pakai tiruan).
-Selesai jika: http://localhost:5173/?device=tablet menampilkan bingkai tablet di laptop, dan uji deteksi lulus.
+1. LAYAR 7a: HOME
+   - Simulasi Status Bar atas: jam (kiri, misal "10.04") dan sinyal (kanan, misal "5G · 82%").
+   - Heading: "Home" (var(--t-xl), font-weight 800, tanpa badge "Live").
+   - Hero Card (.g-acrylic, radius var(--r-lg), padding 20px):
+     * Label atas: "Total transaksi hari ini" (var(--t-sm), var(--ink-2), font-weight 500).
+     * Nominal utama: Format Rupiah tebal dan besar (var(--t-xl), font-weight 800, var(--ink)).
+     * Label bawah: "{totalCount} transaksi" (var(--t-sm), var(--ink-3), font-weight 700).
+   - Bagian "Terbaru":
+     * Judul bagian: "Terbaru" (var(--t-md), font-weight 800, tanpa tombol "Lihat semua").
+     * Sub-header tanggal: Format tanggal hari ini (misal "21 Okt 2026").
+     * Kartu daftar (.tk-phone-list-card):
+       - Setiap baris (.tk-phone-row) terdiri dari 2 kolom rapi:
+         Kiri: Meja {no} (tebal, var(--t-md)) & {qty} item (var(--ink-3), var(--t-xs))
+         Kanan: Rp{total} (tebal, var(--t-md)) & {jam} WITA (var(--ink-3), var(--t-xs))
+       - Tanpa dot neon hijau, tanpa badge "Lunas".
+       - Mengetuk baris akan membuka Layar 7d (Rincian Transaksi).
+   - Floating Navbar Pill di bawah: [ Home ] [ Riwayat ] [ Akun ].
 
-FASE 3: SUPABASE
-- Siapkan Supabase CLI dan migrasi: skema di arsitektur.md bagian 4, RLS, fungsi is_member dan is_owner, RPC set_item_availability, create_order, add_cashier, view best_sellers, trigger maksimal 7 item aktif per kelompok.
-- supabase/seed.sql dari data di HTML (konstanta MG, TR, HB): kelompok, menu, harga (kali 1000), dua kasir contoh (Robertus Amaresi, Puspitawati), Kebab habis. Salin nama persis; laporkan salah ketik tanpa mengubahnya.
-- Bucket foto menu.
-- Hasilkan tipe TypeScript. Klien di src/lib/supabase.
-- Uji RLS: akun device tidak bisa ubah harga atau hapus; create_order menolak uang kurang dan aman diulang.
-- Ingatkan pemilik membuat proyek Supabase dan mengisi .env. Jangan membuat atau mengubah proyek online tanpa persetujuan.
-Selesai jika: uji RLS dan RPC lulus di proyek dev.
+2. LAYAR 7b: RIWAYAT
+   - Simulasi Status Bar atas: jam & sinyal.
+   - Heading: "Riwayat" (var(--t-xl), font-weight 800).
+   - Filter Rentang Waktu (Pill trigger .tk-phone-range-trigger):
+     * Menampilkan rentang aktif, misal: "Hari ini · 21 Okt 2026 ▾" atau "Semua waktu ▾".
+     * Mengetuk tombol membuka Bottom Sheet Rentang Waktu (Layar 7c).
+   - Pengelompokan Transaksi Berdasarkan Tanggal:
+     * Header per tanggal (misal "21 Okt 2026", "20 Okt 2026").
+     * Di bawah setiap header tanggal, tampilkan baris-baris transaksi dengan format identik:
+       Kiri: Meja {no} & {qty} item
+       Kanan: Rp{total} & {jam} WITA
+     * Mengetuk baris membuka Layar 7d (Rincian Transaksi).
+   - Floating Navbar Pill di bawah.
 
-FASE 4: LAYAR TABLET BAGIAN A
-- Intro (bagian 0), Pilih profil kasir (1), navbar Home, Riwayat, Akun, layar Akun dengan ganti kasir dan Tampilan (6 dan 6b), tambah kasir.
-- Masuk perangkat (setup akun device) untuk pemilik.
-Selesai jika: tiap layar cocok dengan HTML pada 1024 x 640, tema dan palet berlaku di semua layar.
+3. LAYAR 7c: RENTANG WAKTU (BOTTOM SHEET)
+   - Latar belakang mengabur gelap (backdrop-filter: blur(16px)).
+   - Bottom sheet glass (.g-liquid, radius var(--r-xl)):
+     * Judul sheet: "Rentang waktu" (var(--t-lg), font-weight 800).
+     * Opsi baris (tinggi 48px, background var(--ctl), radius var(--r-md)):
+       - "Hari ini" (dengan tanda centang "✓" di kanan jika terpilih)
+       - "Kemarin"
+       - "7 hari terakhir"
+       - "30 hari terakhir"
+       - "Pilih tanggal..."
+     * Tombol aksi primer di bawah: "Terapkan" (.tk-btn-lime atau tombol aksen palet, tinggi 48px).
 
-FASE 5: LAYAR TABLET BAGIAN B
-- Home dengan kartu menu, tahan kartu untuk tandai habis dan tersedia (2, 2b, 2e, 2f).
-- Menu lengkap tampilan pembeli (2c, 2d) dengan Terlaris dari best_sellers.
-- Pesanan, nomor meja, bayar tunai, kembalian (3), struk simpan PNG dan bagikan (4).
-- Riwayat dan rentang waktu (5, 5b).
-Selesai jika: satu transaksi penuh dari memilih menu sampai struk tersimpan di Supabase dengan total dari server.
+4. LAYAR 7d: RINCIAN TRANSAKSI (DETAIL PESANAN)
+   - Tombol kembali di kiri atas: "‹ Rincian" (teks tombol datar tanpa background, saat diketuk kembali ke layar pemanggil).
+   - Sub-header: "Meja {no} · {jam} WITA" (var(--ink-2), var(--t-md)).
+   - Nominal total transaksi sangat besar: "Rp80.000" (var(--t-2xl) atau var(--t-3xl), font-weight 800, var(--ink)).
+   - Baris kasir: "Kasir {namaKasir}" (var(--ink-3), var(--t-sm)).
+   - Kartu Rincian Menu (.g-acrylic atau .tk-phone-list-card):
+     * Setiap item pesanan: {qty} {nama_menu} (kiri) | Rp{subtotal} (kanan)
+     * Catatan jika ada: "Catatan: {catatan}" (var(--ink-3), var(--t-xs))
+     * Garis pemisah tipis
+     * Baris Total: "Total" (kiri) | Rp{total} (kanan, font-weight 800)
+   - Tombol Aksi Bawah (2 Tombol Berdampingan, lebar 50% / 50%):
+     * Tombol Kiri: "Share" (.tk-btn-flat, tinggi 48px, membagikan struk)
+     * Tombol Kanan: "Download PNG" (tombol aksen, tinggi 48px, mengunduh gambar struk)
+   - Floating Navbar Pill tetap ada di bawah.
 
-FASE 6: UJI BETA DI LAPTOP
-- Jalankan seluruh daftar uji di arsitektur.md bagian 10, termasuk enam palet dan dua mode.
-- Perbaiki temuan. Buat laporan uji.
-Selesai jika: semua uji lulus atau pengecualian disetujui pemilik.
+5. LAYAR 7e: AKUN
+   - Simulasi Status Bar atas: jam & sinyal.
+   - Heading: "Akun" (var(--t-xl), font-weight 800).
+   - Hero Card Profil Pemilik (.g-acrylic, radius var(--r-lg)):
+     * Avatar bulat/persegi tumpul dengan inisial "P" (var(--accent)).
+     * Teks peran: "Pemilik" (var(--t-md), font-weight 800).
+     * Nama warung: "Tati’e Kitchen" (var(--t-sm), var(--ink-3)).
+   - Bagian "Kasir":
+     * Judul section: "Kasir" (var(--t-md), font-weight 800, tanpa badge "aktif").
+     * Daftar kasir dalam kartu bersih (.tk-phone-list-card):
+       - Baris nama kasir: "Robertus Amaresi"
+       - Baris nama kasir: "Puspitawati"
+       - Tanpa tombol edit/hapus dan tanpa badge "Aktif" (menjaga kesederhanaan mode pemilik sesuai PDF).
+   - Tombol Pengaturan:
+     * Baris "Tampilan" (dengan dot warna palet aktif di kiri dan panah "▾" di kanan).
+     * Tombol "Cetak menu" (.tk-btn-flat, tinggi 48px).
+     * Tombol "Keluar" (.tk-btn-flat, tinggi 48px, warna var(--ink-2)).
+   - Floating Navbar Pill di bawah.
 
-FASE 7: ONLINE
-- Siapkan build produksi dan konfigurasi Vercel (atau Cloudflare Pages). Variabel lingkungan beta.
-- Panduan deploy langkah demi langkah untuk pemilik. Jangan deploy sendiri tanpa persetujuan.
-- Smoke test dari alamat HTTPS, termasuk dari browser tablet fisik jika ada.
+================================================================================
+RENCANA FASE PENGERJAAN
+================================================================================
 
-FASE 8: APK TABLET
-- Pasang Capacitor sesuai arsitektur.md bagian 9, kunci landscape, plugin share dan device.
-- Skrip build:apk:debug. Panduan memasang APK ke tablet.
-- Panduan keystore untuk APK rilis. Jangan membuat keystore tanpa persetujuan.
-- Pembuatan APK dijalankan di mesin pemilik (butuh Android Studio dan JDK 17); beri daftar perintahnya.
-Selesai jika: app-debug.apk terbentuk dan aplikasi terbuka serta tersambung ke Supabase beta.
+FASE 0: AUDIT & STRUKTUR NAVIGASI
+- Periksa seluruh berkas di src/platform/phone/:
+  * PhoneRoot.tsx
+  * screens/PhoneHomeScreen.tsx
+  * screens/PhoneHistoryScreen.tsx
+  * screens/PhoneOrderDetailScreen.tsx
+  * screens/PhoneAccountScreen.tsx
+  * components/PhoneDateRangeSheet.tsx
+  * components/PhoneThemeSheet.tsx
+  * components/PhonePrintMenuDialog.tsx
+  * src/design/phone.css
+- Di PhoneRoot.tsx, tambahkan state routing untuk mendukung navigasi ke Layar 7d (Rincian Transaksi) saat baris transaksi di Home atau Riwayat diketuk, dengan tombol kembali "‹ Rincian".
+- Tulis daftar perbedaan antara kode saat ini dengan PDF Halaman 17.
+- Tunggu persetujuan pemilik sebelum lanjut ke Fase 1.
 
-DI LUAR TAHAP INI (jangan dikerjakan)
-Web admin laptop dan .exe, Android pemilik, iOS pemilik, Cetak menu, antrean offline.
+FASE 1: REVISI LAYAR HOME (SESUAI FRAME 1 PDF)
+- Bersihkan PhoneHomeScreen.tsx:
+  * Hapus badge "Live" di header.
+  * Hapus tombol "Lihat semua ›".
+  * Hapus dot neon di samping meja.
+  * Hapus label "Lunas".
+  * Pastikan susunan kartu hero dan daftar transaksi terbaru presisi mengikuti Frame 1 PDF.
+  * Hubungkan ketukan baris transaksi agar membuka Layar 7d.
+- Uji tampilan pada viewport HP (390 x 800) dan verifikasi di browser.
+- Tunggu "Lanjut".
 
-FORMAT LAPORAN SETIAP FASE
-Tulis polos: yang dikerjakan, berkas penting yang berubah, hasil uji, perbedaan dari HTML dan alasannya, pertanyaan terbuka, langkah manual untuk pemilik, usulan fase berikutnya.
+FASE 2: REVISI LAYAR RIWAYAT & BOTTOM SHEET RENTANG WAKTU (SESUAI FRAME 2 & 3 PDF)
+- Bersihkan PhoneHistoryScreen.tsx:
+  * Format baris transaksi disamakan persis dengan Home: Meja {no} ({qty} item) di kiri, Rp{total} ({jam}) di kanan.
+  * Pengelompokan tanggal rapi dengan header tanggal bersih.
+  * Hubungkan tombol trigger rentang waktu ke PhoneDateRangeSheet.
+- Pastikan PhoneDateRangeSheet.tsx memiliki opsi: Hari ini, Kemarin, 7 hari terakhir, 30 hari terakhir, Pilih tanggal..., dan tombol primer "Terapkan".
+- Hubungkan ketukan baris transaksi ke Layar 7d.
+- Tunggu "Lanjut".
 
-MULAI SEKARANG DENGAN FASE 0.
+FASE 3: REVISI LAYAR RINCIAN TRANSAKSI (SESUAI FRAME 4 PDF)
+- Rombak PhoneOrderDetailScreen.tsx:
+  * Tombol navigasi atas: "‹ Rincian" (kembali ke layar asal).
+  * Sub-header meja & jam transaksi.
+  * Nominal omzet transaksi sangat besar (Rp80.000).
+  * Baris "Kasir {namaKasir}".
+  * Rincian item pesanan dalam satu daftar bersih beserta catatan dan baris Total.
+  * Dua tombol aksi berdampingan: "Share" (flat) dan "Download PNG" (accent) dengan fungsi ekspor/bagikan struk.
+  * Floating navbar tetap tampil di bagian bawah.
+- Tunggu "Lanjut".
 
-----------------------------------------
-PESAN PENDEK UNTUK FASE BERIKUTNYA (tempel satu per satu)
+FASE 4: REVISI LAYAR AKUN (SESUAI FRAME 5 PDF)
+- Bersihkan PhoneAccountScreen.tsx:
+  * Profil pemilik bersih (avatar P, Pemilik, Tati'e Kitchen).
+  * Section "Kasir": daftar nama kasir polos tanpa badge "Aktif" atau tombol aksi berlebihan.
+  * Baris "Tampilan" dengan pop-up/sheet pilihan tema dan 6 palet warna.
+  * Tombol "Cetak menu" dan tombol "Keluar".
+- Tunggu "Lanjut".
 
-Lanjut Fase 1. Rencana disetujui.
-Lanjut Fase 2.
-Lanjut Fase 3. Proyek Supabase dev sudah dibuat dan .env sudah diisi.
-Lanjut Fase 4.
-Lanjut Fase 5.
-Lanjut Fase 6.
-Lanjut Fase 7. Saya setuju deploy ke Vercel.
-Lanjut Fase 8. Android Studio dan JDK 17 sudah terpasang.
+FASE 5: PENYESUAIAN CSS & VERIFIKASI MULTI-PALET
+- Di src/design/phone.css:
+  * Hapus selector dan styling badge yang tidak terpakai.
+  * Pastikan 100% token discipline: var(--*).
+  * Verifikasi di 6 palet warna (Netflix, Matcha, Samudra, Senja, Blush, Mono) dan 2 mode (Gelap & Terang).
+  * Jalankan audit: npm run build dan npx tsc --noEmit.
+  * Buat tangkapan layar komparasi kelima layar di viewport HP.
+- Tunggu "Lanjut".
 
-Jika ada koreksi: Perbaiki dulu (tulis temuan). Jangan lanjut fase.
+FASE 6: BUILD APK ANDROID (HP)
+- Sinkronisasikan build web ke platform Capacitor Android:
+  * npx cap sync android
+- Kompilasi berkas APK debug:
+  * gradlew assembleDebug (atau npm run build:apk:debug)
+- Konfirmasi file android/app/build/outputs/apk/debug/app-debug.apk siap dipasang di HP pemilik.
+- Tunggu konfirmasi akhir pemilik.
+
+================================================================================
+PESAN PENDEK UNTUK SETIAP FASE (TEMPEL SATU PER SATU)
+================================================================================
+
+Lanjut Fase 1. Rencana Fase 0 disetujui.
+Lanjut Fase 2. Layar Home sudah sesuai PDF.
+Lanjut Fase 3. Layar Riwayat & Rentang Waktu sudah sesuai PDF.
+Lanjut Fase 4. Layar Rincian Transaksi sudah sesuai PDF.
+Lanjut Fase 5. Layar Akun sudah sesuai PDF.
+Lanjut Fase 6. CSS & uji multi-palet disetujui. Siapkan build APK.
+
+Jika ada yang belum sesuai: Perbaiki dulu (tulis temuan). Jangan lanjut fase.
