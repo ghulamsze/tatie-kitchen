@@ -137,7 +137,7 @@ describe('Klasifikasi Perangkat (classifyDevice)', () => {
   });
 
   describe('Capacitor Native', () => {
-    it('harus mendeteksi platform native saat Capacitor aktif', () => {
+    it('harus mendeteksi platform tablet native saat Capacitor aktif di layar lebar', () => {
       const env: DeviceEnv = {
         capacitor: { isNative: true, platform: 'android' },
         screenWidth: 1280,
@@ -146,6 +146,19 @@ describe('Klasifikasi Perangkat (classifyDevice)', () => {
       const result = classifyDevice(env);
       expect(result.platform).toBe('android');
       expect(result.formFactor).toBe('tablet');
+      expect(result.native).toBe(true);
+      expect(result.source).toBe('capacitor');
+    });
+
+    it('harus mendeteksi platform phone native saat Capacitor aktif di smartphone', () => {
+      const env: DeviceEnv = {
+        capacitor: { isNative: true, platform: 'android' },
+        screenWidth: 390,
+        screenHeight: 844,
+      };
+      const result = classifyDevice(env);
+      expect(result.platform).toBe('android');
+      expect(result.formFactor).toBe('phone');
       expect(result.native).toBe(true);
       expect(result.source).toBe('capacitor');
     });

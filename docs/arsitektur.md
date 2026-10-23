@@ -221,7 +221,7 @@ Bucket Supabase Storage menu-photos (privat atau publik baca, sesuai keputusan p
 
 ## 8. Online dan lingkungan
 
-Variabel lingkungan: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_BETA_FRAME, VITE_APP_ENV (dev, beta, prod).
+Variabel lingkungan: SUPABASE_URL / VITE_SUPABASE_URL, SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY (didukung dengan atau tanpa awalan VITE_ untuk kompatibilitas penuh dengan Supabase & Vercel), VITE_BETA_FRAME, VITE_APP_ENV (dev, beta, prod).
 
 Dua proyek Supabase: dev (laptop) dan beta (online). Migrasi lewat Supabase CLI, tidak diubah lewat dashboard.
 

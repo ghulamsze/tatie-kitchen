@@ -98,12 +98,12 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     };
   }
 
-  // 2. Sinyal 2: Capacitor Native (Aplikasi APK Tablet Kasir Tati'e Kitchen)
+  // 2. Sinyal 2: Capacitor Native
   if (isCapacitorNative) {
     const capPlatform = env.capacitor?.platform;
     const platform: Platform = capPlatform === 'android' ? 'android' : capPlatform === 'ios' ? 'ios' : 'unknown';
-    // Aplikasi APK kasir ditargetkan khusus tablet kasir lanskap
-    const formFactor: FormFactor = 'tablet';
+    // Di Android/iOS native: jika shortestSide >= 600 anggap tablet, jika di bawah itu anggap phone
+    const formFactor: FormFactor = shortestSide >= 600 ? 'tablet' : 'phone';
     return {
       platform,
       formFactor,
