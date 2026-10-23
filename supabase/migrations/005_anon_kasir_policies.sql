@@ -30,10 +30,10 @@ grant usage on schema public to anon, authenticated;
 grant select on public.shops to anon, authenticated;
 grant select on public.cashiers to anon, authenticated;
 grant select on public.menu_groups to anon, authenticated;
-grant select on public.menu_items to anon, authenticated;
-grant select, insert on public.orders to anon, authenticated;
-grant select, insert on public.order_items to anon, authenticated;
-grant select, insert, update on public.shop_queue_counters to anon, authenticated;
+grant select, update (available) on public.menu_items to anon, authenticated;
+grant select, insert, delete on public.orders to anon, authenticated;
+grant select, insert, delete on public.order_items to anon, authenticated;
+grant select, insert, update, delete on public.shop_queue_counters to anon, authenticated;
 grant execute on function public.create_order(jsonb) to anon, authenticated;
 grant execute on function public.set_item_availability(uuid, boolean) to anon, authenticated;
 grant execute on function public.add_cashier(uuid, text) to anon, authenticated;
@@ -67,6 +67,14 @@ create policy "Anon & auth: baca menu_items"
   to anon, authenticated
   using (true);
 
+-- Izinkan kasir menandai habis / tersedia item menu langsung ke database
+drop policy if exists "Anon & auth: ubah status menu_items" on public.menu_items;
+create policy "Anon & auth: ubah status menu_items"
+  on public.menu_items for update
+  to anon, authenticated
+  using (true)
+  with check (true);
+
 -- Izinkan kasir membaca transaksi pesanan
 drop policy if exists "Anon & auth: baca orders" on public.orders;
 create policy "Anon & auth: baca orders"
@@ -81,6 +89,13 @@ create policy "Anon & auth: buat orders"
   to anon, authenticated
   with check (true);
 
+-- Izinkan kasir mereset / menghapus riwayat transaksi pesanan
+drop policy if exists "Anon & auth: hapus orders" on public.orders;
+create policy "Anon & auth: hapus orders"
+  on public.orders for delete
+  to anon, authenticated
+  using (true);
+
 -- Izinkan kasir membaca rincian item pesanan
 drop policy if exists "Anon & auth: baca order_items" on public.order_items;
 create policy "Anon & auth: baca order_items"
@@ -94,6 +109,13 @@ create policy "Anon & auth: buat order_items"
   on public.order_items for insert
   to anon, authenticated
   with check (true);
+
+-- Izinkan kasir menghapus rincian item pesanan saat reset
+drop policy if exists "Anon & auth: hapus order_items" on public.order_items;
+create policy "Anon & auth: hapus order_items"
+  on public.order_items for delete
+  to anon, authenticated
+  using (true);
 
 -- Izinkan akses counter antrian
 alter table public.shop_queue_counters enable row level security;
@@ -244,3 +266,22 @@ begin
   return v_created_order;
 end;
 $$;
+
+-- 5. Perbarui RPC set_item_availability untuk kasir POS (tanpa syarat session login auth)
+create or replace function public.set_item_availability(
+  p_item_id uuid,
+  p_available boolean
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.menu_items
+  set available = p_available
+  where id = p_item_id;
+end;
+$$;
+
+grant execute on function public.set_item_availability(uuid, boolean) to anon, authenticated;

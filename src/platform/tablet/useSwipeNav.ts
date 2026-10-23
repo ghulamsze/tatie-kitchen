@@ -5,12 +5,16 @@ export interface UseSwipeNavOptions {
   tabs: NavItem[];
   activeTab: NavItem;
   onTabChange: (tab: NavItem) => void;
+  onRefresh?: () => Promise<void> | void;
 }
+
+export type PullRefreshState = 'idle' | 'pulling' | 'refreshing' | 'success';
 
 export function useSwipeNav({
   tabs,
   activeTab,
   onTabChange,
+  onRefresh,
 }: UseSwipeNavOptions) {
   const activeIndex = Math.max(0, tabs.indexOf(activeTab));
   const activeIndexRef = useRef<number>(activeIndex);
@@ -19,6 +23,7 @@ export function useSwipeNav({
   const [progress, setProgress] = useState<number>(activeIndex);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isNavbarHolding, setIsNavbarHolding] = useState<boolean>(false);
+  const [pullState, setPullState] = useState<PullRefreshState>('idle');
 
   const tRef = useRef<number>(activeIndex);
   const isDraggingRef = useRef<boolean>(false);
@@ -32,6 +37,15 @@ export function useSwipeNav({
   const trackRef = useRef<HTMLDivElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const navbarRef = useRef<HTMLElement | null>(null);
+
+  // References & state untuk Pull to Refresh ultra smooth
+  const pullIndicatorRef = useRef<HTMLDivElement | null>(null);
+  const pullIconRef = useRef<HTMLDivElement | null>(null);
+  const pullTextRef = useRef<HTMLSpanElement | null>(null);
+  const isPullingRef = useRef<boolean>(false);
+  const isRefreshingRef = useRef<boolean>(false);
+  const pullDistanceRef = useRef<number>(0);
+  const scrollableTargetRef = useRef<HTMLElement | null>(null);
 
   // Pointer tracking untuk gesture swipe
   const pointerActiveRef = useRef<boolean>(false);
@@ -94,6 +108,58 @@ export function useSwipeNav({
       });
     }
   }, [tabs.length]);
+
+  // Fungsi hardware-accelerated 60/120 FPS untuk menggerakkan indikator pull-to-refresh
+  const applyPull = useCallback((dist: number, state: PullRefreshState) => {
+    if (!pullIndicatorRef.current) return;
+    const el = pullIndicatorRef.current;
+
+    if (state === 'idle') {
+      el.style.transition = 'transform 280ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease';
+      el.style.transform = 'translate3d(-50%, -70px, 0)';
+      el.style.opacity = '0';
+    } else if (state === 'pulling') {
+      el.style.transition = 'none';
+      // Dari -70px ke 18px saat dist mencapai 52px
+      const y = Math.min(22, -70 + (dist / 52) * 92);
+      el.style.transform = `translate3d(-50%, ${y}px, 0)`;
+      el.style.opacity = String(Math.min(1, Math.max(0, dist / 22)));
+
+      if (pullIconRef.current) {
+        const rot = Math.min(180, (dist / 52) * 180);
+        pullIconRef.current.style.transform = `rotate(${rot}deg)`;
+        pullIconRef.current.classList.remove('spinning');
+      }
+      if (pullTextRef.current) {
+        pullTextRef.current.textContent =
+          dist >= 52 ? 'Lepaskan untuk memuat ulang' : 'Tarik ke bawah untuk memuat ulang...';
+      }
+    } else if (state === 'refreshing') {
+      el.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease';
+      el.style.transform = 'translate3d(-50%, 18px, 0)';
+      el.style.opacity = '1';
+
+      if (pullIconRef.current) {
+        pullIconRef.current.style.transform = '';
+        pullIconRef.current.classList.add('spinning');
+      }
+      if (pullTextRef.current) {
+        pullTextRef.current.textContent = 'Memuat data terbaru...';
+      }
+    } else if (state === 'success') {
+      el.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease';
+      el.style.transform = 'translate3d(-50%, 18px, 0)';
+      el.style.opacity = '1';
+
+      if (pullIconRef.current) {
+        pullIconRef.current.classList.remove('spinning');
+        pullIconRef.current.style.transform = 'rotate(0deg)';
+      }
+      if (pullTextRef.current) {
+        pullTextRef.current.textContent = 'Data berhasil diperbarui âœ“';
+      }
+    }
+  }, []);
 
   // Animasi halus 220ms ease-out (tanpa overshoot) menuju tab target (0 = Home, 1 = Riwayat, 2 = Akun)
   const animateTo = useCallback((targetIndex: number) => {
@@ -164,7 +230,7 @@ export function useSwipeNav({
 
 
   // Scroll mouse horizontal saja (deltaX / trackpad geser kiri-kanan) untuk ganti tab
-  // Scroll vertikal (deltaY) DIABAIKAN — tidak mengganti tab
+  // Scroll vertikal (deltaY) DIABAIKAN â€” tidak mengganti tab
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -343,7 +409,7 @@ export function useSwipeNav({
     animateTo(targetIdx);
   }, [tabs.length, animateTo]);
 
-  // Pointer events untuk swipe halaman layar (Pager)
+  // Pointer events untuk swipe halaman layar (Pager) & Pull-to-Refresh
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
 
@@ -353,7 +419,11 @@ export function useSwipeNav({
     }
 
     // Abaikan klik pada scrollbar vertikal elemen yang scrollable
-    const scrollable = target.closest<HTMLElement>('.tk-order-cart-items, .tk-category-nav, .tk-full-menu-content');
+    const scrollable = target.closest<HTMLElement>(
+      '.tk-order-cart-items, .tk-category-nav, .tk-full-menu-content, .tk-menu-grid, .tk-history-container'
+    );
+    scrollableTargetRef.current = scrollable;
+
     if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
       const rect = scrollable.getBoundingClientRect();
       if (e.clientX > rect.left + scrollable.clientWidth) {
@@ -366,6 +436,8 @@ export function useSwipeNav({
     pointerActiveRef.current = true;
     dragSourceRef.current = 'pager';
     isDraggingRef.current = false;
+    isPullingRef.current = false;
+    pullDistanceRef.current = 0;
     hasDecidedDirectionRef.current = false;
     isLockedOutRef.current = false;
 
@@ -387,21 +459,32 @@ export function useSwipeNav({
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // Deteksi arah geser yang cepat & responsif tanpa perlu tenaga keras
+    // Arbitrasi arah geser: PULL DOWN vs SCROLL VERTIKAL vs SWIPE TAB HORIZONTAL
     if (!hasDecidedDirectionRef.current) {
       if (absDx < 6 && absDy < 6) {
         return;
       }
 
-      // Kunci swipe hanya jika pengguna benar-benar scroll vertikal murni (misal scroll menu tinggi)
-      if (absDy > absDx * 1.5 && absDy > 16) {
+      const isScrollAtTop =
+        !scrollableTargetRef.current || scrollableTargetRef.current.scrollTop <= 0;
+
+      // 1. PULL TO REFRESH: Jari ditarik ke bawah saat di puncak layar/konten
+      if (dy > 8 && dy > absDx * 1.1 && isScrollAtTop && !isRefreshingRef.current) {
+        hasDecidedDirectionRef.current = true;
+        isPullingRef.current = true;
+        setPullState('pulling');
+        try {
+          (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      } else if (absDy > absDx * 1.5 && absDy > 16) {
+        // 2. SCROLL VERTIKAL KONTEN BIASA (tidak memicu refresh atau ganti tab)
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
-      }
-
-      // Aktifkan swipe halaman jika ada pergerakan horizontal wajar (memudahkan gestur miring alami tangan)
-      if (absDx >= 8 && absDx >= absDy * 0.6) {
+      } else if (absDx >= 8 && absDx >= absDy * 0.6) {
+        // 3. SWIPE TAB HORIZONTAL (Home <-> Riwayat <-> Akun)
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -414,6 +497,17 @@ export function useSwipeNav({
       }
     }
 
+    // Jika sedang dalam mode PULL TO REFRESH
+    if (isPullingRef.current) {
+      const rawDy = Math.max(0, e.clientY - startYRef.current);
+      // Kurva elastisitas rubber-band iOS-style yang sangat halus
+      const pullY = Math.min(84, Math.pow(rawDy, 0.82) * 1.6);
+      pullDistanceRef.current = pullY;
+      applyPull(pullY, 'pulling');
+      return;
+    }
+
+    // Jika sedang dalam mode SWIPE HORIZONTAL
     if (isDraggingRef.current) {
       const now = performance.now();
       const dt = Math.max(1, now - lastTimeRef.current);
@@ -441,7 +535,7 @@ export function useSwipeNav({
 
       applyT(clampedT, true);
     }
-  }, [applyT, tabs.length]);
+  }, [applyT, applyPull, tabs.length]);
 
   const handlePagerPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!pointerActiveRef.current || dragSourceRef.current !== 'pager') {
@@ -456,11 +550,7 @@ export function useSwipeNav({
       // ignore
     }
 
-    if (!isDraggingRef.current) {
-      return;
-    }
-
-    // Redam event click yang terpicu tepat setelah drag selesai
+    // Redam event click yang terpicu tepat setelah drag / pull selesai
     const suppressClick = (evt: MouseEvent) => {
       evt.stopPropagation();
       evt.preventDefault();
@@ -469,6 +559,43 @@ export function useSwipeNav({
     setTimeout(() => {
       window.removeEventListener('click', suppressClick, { capture: true });
     }, 120);
+
+    // Tangani pelepasan PULL TO REFRESH
+    if (isPullingRef.current) {
+      isPullingRef.current = false;
+      const finalPull = pullDistanceRef.current;
+      pullDistanceRef.current = 0;
+
+      if (finalPull >= 50 && onRefresh) {
+        isRefreshingRef.current = true;
+        setPullState('refreshing');
+        applyPull(50, 'refreshing');
+
+        (async () => {
+          try {
+            await onRefresh();
+          } catch {
+            // ignore error
+          } finally {
+            setPullState('success');
+            applyPull(50, 'success');
+            setTimeout(() => {
+              setPullState('idle');
+              applyPull(0, 'idle');
+              isRefreshingRef.current = false;
+            }, 650);
+          }
+        })();
+      } else {
+        setPullState('idle');
+        applyPull(0, 'idle');
+      }
+      return;
+    }
+
+    if (!isDraggingRef.current) {
+      return;
+    }
 
     // Kriteria ganti halaman pada tablet yang sangat mulus & tanpa tenaga berlebih:
     // Cukup geser 50px (atau 5% lebar layar) ATAU flick ringan (> 0.14 px/ms dan geser >= 16px).
@@ -498,7 +625,7 @@ export function useSwipeNav({
     setIsDragging(false);
 
     animateTo(targetIndex);
-  }, [animateTo, tabs.length]);
+  }, [animateTo, applyPull, onRefresh, tabs.length]);
 
   // Tangani pembatalan gesture sentuh di tablet (misal gesture sistem Android back/home)
   // Menjamin layar tidak pernah stuck macet di tengah jalan
@@ -514,9 +641,19 @@ export function useSwipeNav({
       // ignore
     }
 
+    if (isPullingRef.current) {
+      isPullingRef.current = false;
+      pullDistanceRef.current = 0;
+      if (!isRefreshingRef.current) {
+        setPullState('idle');
+        applyPull(0, 'idle');
+      }
+      return;
+    }
+
     const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
     animateTo(targetIdx);
-  }, [animateTo, tabs.length]);
+  }, [animateTo, applyPull, tabs.length]);
 
   // Klik langsung tab navbar
   const scrollToTab = useCallback((tab: NavItem) => {
@@ -539,6 +676,10 @@ export function useSwipeNav({
     progress,
     isDragging,
     isNavbarHolding,
+    pullState,
+    pullIndicatorRef,
+    pullIconRef,
+    pullTextRef,
     containerRef,
     trackRef,
     indicatorRef,
@@ -554,3 +695,4 @@ export function useSwipeNav({
     scrollToTab,
   };
 }
+

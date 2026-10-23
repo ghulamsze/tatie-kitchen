@@ -39,6 +39,7 @@ export const TabletRoot: React.FC = () => {
   // Sinkronisasi data awal dan background polling saat online agar database terintegrasi satu kesatuan
   useEffect(() => {
     if (isOnline) {
+      useMenuStore.getState().fetchMenu().catch(() => {});
       useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
       useHistoryStore.getState().fetchOrders().catch(() => {});
       useCashierStore.getState().fetchCashiers().catch(() => {});
@@ -46,6 +47,7 @@ export const TabletRoot: React.FC = () => {
 
     const interval = setInterval(() => {
       if (typeof navigator !== 'undefined' && navigator.onLine) {
+        useMenuStore.getState().fetchMenu().catch(() => {});
         useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
         useHistoryStore.getState().fetchOrders().catch(() => {});
       }
@@ -53,6 +55,16 @@ export const TabletRoot: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [isOnline]);
+
+  // Handler fungsi refresh saat pull-to-refresh ditarik ke bawah
+  const handleRefresh = React.useCallback(async () => {
+    await Promise.allSettled([
+      useMenuStore.getState().fetchMenu(),
+      useHistoryStore.getState().fetchOrders(),
+      useCashierStore.getState().fetchCashiers(),
+      useSyncQueueStore.getState().syncPendingOrders(),
+    ]);
+  }, []);
 
   const handleNavTabChange = (tab: NavItem) => {
     setCurrentScreen((prev) => {
@@ -67,6 +79,10 @@ export const TabletRoot: React.FC = () => {
     progress,
     isDragging,
     isNavbarHolding,
+    pullState,
+    pullIndicatorRef,
+    pullIconRef,
+    pullTextRef,
     containerRef,
     trackRef,
     indicatorRef,
@@ -84,6 +100,7 @@ export const TabletRoot: React.FC = () => {
     tabs: NAV_TABS,
     activeTab: activeNavTab,
     onTabChange: handleNavTabChange,
+    onRefresh: handleRefresh,
   });
 
   const handleIntroFinish = () => {
@@ -217,6 +234,32 @@ export const TabletRoot: React.FC = () => {
             pointerEvents: 'none',
           }}
         />
+      </div>
+
+      {/* Liquid Glass Pull-to-Refresh Indicator Kapsul Melayang */}
+      <div
+        ref={pullIndicatorRef}
+        className="tk-pull-refresh-indicator"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div ref={pullIconRef} className="tk-pull-refresh-icon">
+          {pullState === 'success' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : pullState === 'refreshing' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <polyline points="19 12 12 19 5 12" />
+            </svg>
+          )}
+        </div>
+        <span ref={pullTextRef}>Tarik ke bawah untuk memuat ulang...</span>
       </div>
 
       {/* Horizontal Swipeable Container berbasis transform translate3d (Home, Riwayat, Akun) */}

@@ -1600,5 +1600,65 @@ body.tk-modal-open .tk-navbar,
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
+:root[data-theme="light"] .tk-pull-refresh-indicator {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(198, 241, 53, 0.4);
+  color: #0f172a;
+}
 
+/* ===== 21. PULL TO REFRESH (ULTRA-SMOOTH LIQUID CAPSULE INDICATOR) ===== */
+.tk-pull-refresh-indicator {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translate3d(-50%, -80px, 0);
+  z-index: 950;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 14px;
+  border-radius: var(--r-full, 999px);
+  background: var(--fl-bg, rgba(18, 22, 28, 0.88));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(var(--accent-rgb, 198, 241, 53), 0.2);
+  pointer-events: none;
+  font-size: var(--t-xs, 12px);
+  line-height: var(--l-xs, 16px);
+  font-weight: 700;
+  color: var(--ink, #ffffff);
+  will-change: transform, opacity;
+  user-select: none;
+}
 
+.tk-pull-refresh-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #c6f135);
+  flex-shrink: 0;
+  will-change: transform;
+}
+
+.tk-pull-refresh-icon.spinning {
+  animation: tk-pull-spin 0.75s linear infinite;
+}
+
+@keyframes tk-pull-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-pull-refresh-icon.spinning {
+    animation: none;
+  }
+}

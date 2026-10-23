@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
@@ -1136,14 +1136,23 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       set({ toastMessage: null });
     }, 2500);
 
-    // 2. Kirim ke Supabase RPC jika online
-    if (isSupabaseConfigured()) {
+    // 2. Simpan ke database Supabase secara real-time
+    if (isSupabaseConfigured() && targetItem) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.rpc as any)('set_item_availability', {
-          p_item_id: itemId,
-          p_available: available,
-        });
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId);
+        if (isUuid) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.rpc as any)('set_item_availability', {
+            p_item_id: itemId,
+            p_available: available,
+          });
+        }
+        // Update di database berdasarkan nama menu (karena di database nama unik per item)
+        const { error: patchErr } = await (supabase.from('menu_items') as any).update({ available })
+          .ilike('name', targetItem.name.trim());
+        if (patchErr) {
+          logError('menuStore:update_availability_by_name', patchErr);
+        }
       } catch (err) {
         logError('menuStore:set_item_availability', err);
       }
@@ -1153,13 +1162,33 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   fetchMenu: async (shopId) => {
     if (!isSupabaseConfigured()) return;
     try {
-      let query = supabase.from('menu_items').select('*').eq('active', true).order('sort');
+      let query = (supabase.from('menu_items') as any).select('*').eq('active', true);
       if (shopId) query = query.eq('shop_id', shopId);
       const { data, error } = await query;
       if (error) {
         logError('menuStore:fetchMenu_query', error);
       } else if (data && data.length > 0) {
-        set({ items: data as MenuItem[] });
+        // Sinkronkan status ketersediaan (available) dari Supabase ke state items lokal
+        const availabilityMap = new Map<string, boolean>();
+        (data as any[]).forEach((row: any) => {
+          if (row.name) availabilityMap.set(row.name.trim().toLowerCase(), row.available);
+          if (row.id) availabilityMap.set(row.id, row.available);
+        });
+
+        set((state) => ({
+          items: state.items.map((item) => {
+            const normName = item.name.trim().toLowerCase();
+            const isAvail = availabilityMap.has(item.id)
+              ? availabilityMap.get(item.id)!
+              : availabilityMap.has(normName)
+              ? availabilityMap.get(normName)!
+              : item.available;
+            return {
+              ...item,
+              available: isAvail,
+            };
+          }),
+        }));
       }
     } catch (err) {
       logError('menuStore:fetchMenu_exception', err);
@@ -1176,3 +1205,4 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     };
   },
 }));
+
