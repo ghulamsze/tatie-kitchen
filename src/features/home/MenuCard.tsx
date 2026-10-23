@@ -40,12 +40,35 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
     return () => observer.disconnect();
   }, []);
 
-  const handlePointerDown = () => {
+  const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasMovedRef = useRef<boolean>(false);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    hasMovedRef.current = false;
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
     setIsHolding(true);
     timerRef.current = setTimeout(() => {
-      setIsHolding(false);
-      onHold(item);
-    }, 500); // Tahan kartu ~0,5 detik
+      if (!hasMovedRef.current) {
+        setIsHolding(false);
+        onHold(item);
+      }
+    }, 500); // Tahan kartu ~0,5 detik tanpa bergeser
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!hasMovedRef.current) {
+      const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+      const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+      // Jika digeser lebih dari 8px (scrolling), batalkan hold segera
+      if (dx > 8 || dy > 8) {
+        hasMovedRef.current = true;
+        setIsHolding(false);
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    }
   };
 
   const handlePointerUp = () => {
@@ -56,7 +79,12 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
     }
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Jika pointer bergerak (pengguna sedang scrolling), jangan tambahkan item
+    if (hasMovedRef.current) {
+      e.stopPropagation();
+      return;
+    }
     if (item.available) {
       onAdd(item);
     }
@@ -91,6 +119,7 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
       className={`tk-menu-card ${!item.available ? 'unavailable' : ''} ${isHeld ? 'hold' : ''}`}
       onClick={handleClick}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}

@@ -1629,6 +1629,17 @@ body.tk-modal-open .tk-navbar,
   color: var(--accent, #c6f135);
   will-change: transform, opacity;
   user-select: none;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.tk-pull-refresh-indicator.ready {
+  border-color: var(--accent, #c6f135);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 18px rgba(198, 241, 53, 0.55);
+}
+
+:root[data-theme="light"] .tk-pull-refresh-indicator.ready {
+  border-color: var(--accent, #7da504);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16), 0 0 18px rgba(125, 165, 4, 0.45);
 }
 
 .tk-pull-refresh-icon {

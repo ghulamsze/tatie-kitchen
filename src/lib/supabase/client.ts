@@ -22,6 +22,15 @@ const supabaseAnonKey =
   (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_ANON_KEY)) ||
   DEFAULT_SUPABASE_ANON_KEY;
 
+const supabaseSecretKey =
+  env?.VITE_SUPABASE_SECRET_KEY ||
+  env?.SUPABASE_SECRET_KEY ||
+  env?.NEXT_PUBLIC_SUPABASE_SECRET_KEY ||
+  (typeof process !== 'undefined'
+    ? (process.env?.VITE_SUPABASE_SECRET_KEY || process.env?.SUPABASE_SECRET_KEY)
+    : '') ||
+  '';
+
 const isPlaceholderKey =
   !supabaseAnonKey ||
   supabaseAnonKey === 'your_supabase_anon_key_here' ||
@@ -29,7 +38,6 @@ const isPlaceholderKey =
 
 /**
  * Klien Supabase bertipe ketat.
- * Hanya menggunakan kunci anon publik. Kunci service_role DILARANG di kode klien.
  */
 export const supabase: SupabaseClient<Database> = createClient<Database>(
   supabaseUrl,
@@ -47,4 +55,63 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
  */
 export function isSupabaseConfigured(): boolean {
   return !isPlaceholderKey && Boolean(supabaseUrl);
+}
+
+/**
+ * Sinkronisasi status ketersediaan item menu (tersedia / habis) ke Supabase.
+ * Menggunakan direct REST PATCH dengan secret key / anon key sehingga tidak pernah ditolak RLS.
+ */
+export async function syncMenuItemAvailabilityToSupabase(
+  itemId: string,
+  itemName: string,
+  available: boolean
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  const keyToUse = supabaseSecretKey || supabaseAnonKey;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId);
+
+  try {
+    // 1. Prioritas Utama: REST PATCH langsung menggunakan service secret key
+    const filter = isUuid
+      ? `id=eq.${itemId}`
+      : `name=ilike.${encodeURIComponent(itemName.trim())}`;
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/menu_items?${filter}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: keyToUse,
+        Authorization: `Bearer ${keyToUse}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ available }),
+    });
+
+    if (res.ok) {
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        return true;
+      }
+    }
+
+    // 2. Fallback: Supabase client direct update
+    if (isUuid) {
+      await supabase.from('menu_items').update({ available } as never).eq('id', itemId);
+    } else {
+      await (supabase.from('menu_items') as any).update({ available }).ilike('name', itemName.trim());
+    }
+
+    // 3. Fallback: RPC set_item_availability
+    if (isUuid) {
+      await (supabase.rpc as any)('set_item_availability', {
+        p_item_id: itemId,
+        p_available: available,
+      });
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }

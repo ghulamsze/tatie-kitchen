@@ -219,7 +219,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
             )}
           </div>
           {/* Chip Kategori */}
-          <div style={{ display: 'flex', gap: '8px', flex: 'none', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div
+            className="tk-category-nav tk-chips-bar"
+            data-gesture-isolate="horizontal"
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flex: 'none',
+              overflowX: 'auto',
+              paddingBottom: '4px',
+              touchAction: 'pan-x',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
             {categories.map((cat) => (
               <button
                 key={cat.key}

@@ -1,6 +1,6 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
-import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
+import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
 
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
@@ -1084,8 +1084,19 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
   try {
     const raw = localStorage.getItem('tk_item_availability');
     if (raw) {
-      const map: Record<string, boolean> = JSON.parse(raw);
-      return initialItems.map((it) => (it.id in map ? { ...it, available: map[it.id] } : it));
+      const map: Record<string, boolean | { available: boolean }> = JSON.parse(raw);
+      return initialItems.map((it) => {
+        const normName = it.name.trim().toLowerCase();
+        let val: boolean | undefined;
+        if (it.id in map) {
+          const entry = map[it.id];
+          val = typeof entry === 'object' && entry !== null ? entry.available : Boolean(entry);
+        } else if (normName in map) {
+          const entry = map[normName];
+          val = typeof entry === 'object' && entry !== null ? entry.available : Boolean(entry);
+        }
+        return val !== undefined ? { ...it, available: val } : it;
+      });
     }
   } catch (err) {
     logError('menuStore:loadSavedAvailability', err);
@@ -1107,13 +1118,19 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   setToastMessage: (msg) => set({ toastMessage: msg }),
 
   toggleItemAvailability: async (itemId, available) => {
-    // 1. Update lokal state dulu secara instan dan simpan ke localStorage
+    const targetItem = get().items.find((i) => i.id === itemId);
+    const normName = targetItem ? targetItem.name.trim().toLowerCase() : '';
+
+    // 1. Update lokal state dulu secara instan dan simpan ke localStorage dengan dual key (ID & nama)
     set((state) => {
       const updatedItems = state.items.map((i) => (i.id === itemId ? { ...i, available } : i));
       try {
         const raw = localStorage.getItem('tk_item_availability');
         const map = raw ? JSON.parse(raw) : {};
         map[itemId] = available;
+        if (normName) {
+          map[normName] = available;
+        }
         localStorage.setItem('tk_item_availability', JSON.stringify(map));
       } catch (err) {
         logError('menuStore:persistAvailability', err);
@@ -1124,7 +1141,6 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       };
     });
 
-    const targetItem = get().items.find((i) => i.id === itemId);
     const toast = targetItem
       ? available
         ? `${targetItem.name} tersedia lagi`
@@ -1136,25 +1152,12 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       set({ toastMessage: null });
     }, 2500);
 
-    // 2. Simpan ke database Supabase secara real-time
+    // 2. Simpan ke database Supabase secara real-time via syncMenuItemAvailabilityToSupabase
     if (isSupabaseConfigured() && targetItem) {
       try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId);
-        if (isUuid) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.rpc as any)('set_item_availability', {
-            p_item_id: itemId,
-            p_available: available,
-          });
-        }
-        // Update di database berdasarkan nama menu (karena di database nama unik per item)
-        const { error: patchErr } = await (supabase.from('menu_items') as any).update({ available })
-          .ilike('name', targetItem.name.trim());
-        if (patchErr) {
-          logError('menuStore:update_availability_by_name', patchErr);
-        }
+        await syncMenuItemAvailabilityToSupabase(itemId, targetItem.name, available);
       } catch (err) {
-        logError('menuStore:set_item_availability', err);
+        logError('menuStore:syncMenuItemAvailabilityToSupabase', err);
       }
     }
   },
@@ -1168,24 +1171,60 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       if (error) {
         logError('menuStore:fetchMenu_query', error);
       } else if (data && data.length > 0) {
-        // Sinkronkan status ketersediaan (available) dari Supabase ke state items lokal
-        const availabilityMap = new Map<string, boolean>();
+        // Ambil status ketersediaan lokal tersimpan
+        const localMap: Record<string, boolean> = {};
+        try {
+          const raw = localStorage.getItem('tk_item_availability');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            Object.keys(parsed).forEach((k) => {
+              const v = parsed[k];
+              localMap[k] = typeof v === 'object' && v !== null ? v.available : Boolean(v);
+            });
+          }
+        } catch {
+          // ignore
+        }
+
+        const remoteAvailabilityMap = new Map<string, boolean>();
         (data as any[]).forEach((row: any) => {
-          if (row.name) availabilityMap.set(row.name.trim().toLowerCase(), row.available);
-          if (row.id) availabilityMap.set(row.id, row.available);
+          if (row.name) remoteAvailabilityMap.set(row.name.trim().toLowerCase(), Boolean(row.available));
+          if (row.id) remoteAvailabilityMap.set(row.id, Boolean(row.available));
         });
 
         set((state) => ({
           items: state.items.map((item) => {
             const normName = item.name.trim().toLowerCase();
-            const isAvail = availabilityMap.has(item.id)
-              ? availabilityMap.get(item.id)!
-              : availabilityMap.has(normName)
-              ? availabilityMap.get(normName)!
-              : item.available;
+
+            const localHasId = item.id in localMap;
+            const localHasName = normName in localMap;
+            const localStatus = localHasId ? localMap[item.id] : localHasName ? localMap[normName] : undefined;
+
+            const remoteStatus = remoteAvailabilityMap.has(item.id)
+              ? remoteAvailabilityMap.get(item.id)
+              : remoteAvailabilityMap.has(normName)
+              ? remoteAvailabilityMap.get(normName)
+              : undefined;
+
+            let finalAvailable = item.available;
+
+            // ATURAN INTEGRITAS KETERSEDIAAN:
+            // Jika secara lokal eksplisit ditandai habis (false), JANGAN PERNAH menimpanya menjadi true!
+            if (localStatus === false) {
+              finalAvailable = false;
+              // Sembuhkan Supabase jika remote masih true di database
+              if (remoteStatus === true) {
+                syncMenuItemAvailabilityToSupabase(item.id, item.name, false).catch(() => {});
+              }
+            } else if (remoteStatus !== undefined) {
+              finalAvailable = remoteStatus;
+            } else if (localStatus !== undefined) {
+              finalAvailable = localStatus;
+            }
+
             return {
               ...item,
-              available: isAvail,
+              available: finalAvailable,
             };
           }),
         }));

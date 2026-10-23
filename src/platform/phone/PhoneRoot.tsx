@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavItem, NavbarPill } from '../../design/components/NavbarPill.tsx';
 import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
