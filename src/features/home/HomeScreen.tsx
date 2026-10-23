@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
+import { useHistoryStore } from '../../stores/historyStore.ts';
+import { useCashierStore } from '../../stores/cashierStore.ts';
 import { MenuCard } from './MenuCard.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
@@ -19,7 +21,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   onChangeCashier: _onChangeCashier,
 }) => {
   const [isClearing, setIsClearing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        useMenuStore.getState().fetchMenu(),
+        useHistoryStore.getState().fetchOrders(),
+        useCashierStore.getState().fetchCashiers(),
+      ]);
+      useMenuStore.getState().setToastMessage('Data berhasil diperbarui');
+    } catch {
+      // ignore
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+      setTimeout(() => {
+        useMenuStore.getState().setToastMessage(null);
+      }, 2500);
+    }
+  };
 
   const {
     items,
@@ -162,14 +187,53 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
             <h2 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
               Tati’e Kitchen
             </h2>
-            <Button
-              variant="flat"
-              size="md"
-              onClick={onOpenCustomerMenu}
-              style={{ minHeight: '40px', height: '40px', padding: '0 16px', fontSize: 'var(--t-sm)', boxSizing: 'border-box' }}
-            >
-              Menu lengkap
-            </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Button
+                variant="flat"
+                size="md"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh"
+                title="Refresh"
+                style={{
+                  minHeight: '40px',
+                  height: '40px',
+                  width: '40px',
+                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    animation: isRefreshing ? 'tk-pull-spin 0.75s linear infinite' : 'none',
+                  }}
+                >
+                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                  <path d="M21 21v-5h-5" />
+                </svg>
+              </Button>
+              <Button
+                variant="flat"
+                size="md"
+                onClick={onOpenCustomerMenu}
+                style={{ minHeight: '40px', height: '40px', padding: '0 16px', fontSize: 'var(--t-sm)', boxSizing: 'border-box' }}
+              >
+                Menu lengkap
+              </Button>
+            </div>
           </div>
 
           {/* Input Pencarian Menu Persis Sesuai Gambar Referensi */}

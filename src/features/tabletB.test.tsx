@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MenuCard } from './home/MenuCard.tsx';
 import { HomeScreen } from './home/HomeScreen.tsx';
@@ -133,6 +133,27 @@ describe('Layar Tablet Bagian B (Fase 5)', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Menu lengkap' }));
       expect(handleOpenCustomerMenu).toHaveBeenCalled();
+    });
+
+    it('merender tombol refresh icon di dekat tombol Menu lengkap dengan skala yang sama dan tanpa teks', async () => {
+      render(
+        <HomeScreen
+          onOpenCustomerMenu={vi.fn()}
+          onProceedToPayment={vi.fn()}
+          onChangeCashier={vi.fn()}
+        />
+      );
+
+      const refreshBtn = screen.getByRole('button', { name: 'Refresh' });
+      expect(refreshBtn).toBeInTheDocument();
+      // Tombol satu icon saja, tidak memiliki teks
+      expect(refreshBtn.textContent?.trim()).toBe('');
+      expect(refreshBtn).toHaveClass('tk-btn-flat');
+
+      fireEvent.click(refreshBtn);
+      await waitFor(() => {
+        expect(useMenuStore.getState().toastMessage).toBe('Data berhasil diperbarui');
+      });
     });
   });
 

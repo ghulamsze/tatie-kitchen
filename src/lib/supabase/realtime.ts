@@ -201,37 +201,7 @@ export function initPosRealtimeSync(): () => void {
       }
     });
 
-    // 5. Auto-sync periodik cepat (setiap 4 detik) & saat tab/window aktif kembali
-    const syncAll = () => {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        useMenuStore.getState().fetchMenu().catch(() => {});
-        useHistoryStore.getState().fetchOrders().catch(() => {});
-      }
-    };
-
-    const intervalId = setInterval(syncAll, 4000);
-
-    const handleVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        syncAll();
-      }
-    };
-
-    const handleFocus = () => {
-      syncAll();
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('visibilitychange', handleVisibility);
-      window.addEventListener('focus', handleFocus);
-    }
-
     return () => {
-      clearInterval(intervalId);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('visibilitychange', handleVisibility);
-        window.removeEventListener('focus', handleFocus);
-      }
       if (syncChannel) {
         syncChannel.unsubscribe().catch(() => {});
         syncChannel = null;
