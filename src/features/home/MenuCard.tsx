@@ -9,7 +9,7 @@ export interface MenuCardProps {
   onHold: (item: MenuItem) => void;
 }
 
-export const MenuCard: React.FC<MenuCardProps> = ({
+export const MenuCard: React.FC<MenuCardProps> = React.memo(({
   item,
   isHeld = false,
   onAdd,
@@ -95,4 +95,4 @@ export const MenuCard: React.FC<MenuCardProps> = ({
       </b>
     </div>
   );
-};
+});

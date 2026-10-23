@@ -62,6 +62,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
               overflowY: 'hidden',
               boxSizing: 'border-box',
               position: 'relative',
+              contain: 'layout style paint',
             }}
           >
             {child}

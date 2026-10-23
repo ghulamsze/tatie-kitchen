@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
 import { logError, logInfo } from '../lib/logger/logger.ts';
+import { useHistoryStore } from './historyStore.ts';
 
 export interface PendingOrderPayload {
   id: string;
@@ -127,6 +128,10 @@ export const useSyncQueueStore = create<SyncQueueState>((set, get) => {
 
       persistQueue(remainingQueue);
       set({ queue: remainingQueue, isSyncing: false });
+
+      if (syncedCount > 0) {
+        useHistoryStore.getState().fetchOrders().catch(() => {});
+      }
 
       return { synced: syncedCount, failed: failedCount };
     },

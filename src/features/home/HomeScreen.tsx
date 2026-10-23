@@ -13,7 +13,7 @@ export interface HomeScreenProps {
   onChangeCashier?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({
+export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   onOpenCustomerMenu,
   onProceedToPayment,
   onChangeCashier: _onChangeCashier,
@@ -485,4 +485,4 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       )}
     </div>
   );
-};
+});

@@ -95,9 +95,9 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       const { data, error } = await query;
       if (error) {
         logError('historyStore:fetchOrders_query', error);
-      } else if (data && data.length > 0) {
+      } else if (data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped: HistoryOrderWithItems[] = data.map((d: any) => ({
+        const remoteOrders: HistoryOrderWithItems[] = data.map((d: any) => ({
           order: {
             id: d.id,
             shop_id: d.shop_id,
@@ -108,12 +108,31 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             cash_received_idr: d.cash_received_idr,
             change_idr: d.change_idr,
             status: d.status,
+            queue_no: d.queue_no,
+            business_date: d.business_date,
             created_at: d.created_at,
           },
           items: d.order_items || [],
         }));
 
-        set({ orders: mapped });
+        set((state) => {
+          // Gabungkan pesanan remote dari Supabase dengan pesanan lokal offline yang belum tersinkron
+          const remoteIds = new Set(remoteOrders.map((ro) => ro.order.id));
+          const unsyncedLocal = state.orders.filter((lo) => !remoteIds.has(lo.order.id));
+          const merged = [...unsyncedLocal, ...remoteOrders].sort(
+            (a, b) => new Date(b.order.created_at).getTime() - new Date(a.order.created_at).getTime()
+          );
+
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('tk_order_history', JSON.stringify(merged));
+            }
+          } catch (err) {
+            logError('historyStore:fetchOrders_persist', err);
+          }
+
+          return { orders: merged };
+        });
       }
     } catch (err) {
       logError('historyStore:fetchOrders_exception', err);

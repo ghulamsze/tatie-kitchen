@@ -262,7 +262,8 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
   };
 
   const displayedGroups = MENU_GROUPS_CATALOG.filter((group) => {
-    if (selectedCategory === 'semua') return true;
+    // Sesuai instruksi: saat buka kartu menu "semua", jangan render kartu menu di "snack", "minuman", "makanan" dan seterusnya
+    if (selectedCategory === 'semua') return false;
     return group.category === selectedCategory;
   });
 
@@ -380,44 +381,46 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
           </div>
         )}
 
-        {/* Kolom-Kolom Kartu Kelompok Menu (Grid 3 Kolom Rapi) */}
-        <div className="tk-menu-groups-container">
-          {displayedGroups.map((group) => (
-            <div key={group.title} className="g-acrylic tk-menu-group-card">
-              {/* Header Grup Menu */}
-              <div className="tk-menu-group-header">
-                <span className="tk-menu-icon-box" aria-hidden="true">
-                  {renderGroupIcon(group.iconType)}
-                </span>
-                <h3 className="tk-menu-group-title">
-                  {group.title}
-                </h3>
-              </div>
+        {/* Kolom-Kolom Kartu Kelompok Menu (Hanya dirender jika ada kategori yang dipilih, bukan 'semua') */}
+        {displayedGroups.length > 0 && (
+          <div className="tk-menu-groups-container">
+            {displayedGroups.map((group) => (
+              <div key={group.title} className="g-acrylic tk-menu-group-card">
+                {/* Header Grup Menu */}
+                <div className="tk-menu-group-header">
+                  <span className="tk-menu-icon-box" aria-hidden="true">
+                    {renderGroupIcon(group.iconType)}
+                  </span>
+                  <h3 className="tk-menu-group-title">
+                    {group.title}
+                  </h3>
+                </div>
 
-              {/* List Menu di dalam Grup (Maksimal 7 item per grup) */}
-              <div className="tk-menu-group-list">
-                {group.items.map((item) => {
-                  const info = getItemInfo(item.name, item.defaultPrice);
-                  return (
-                    <div
-                      key={item.name}
-                      className="tk-menu-group-row"
-                      style={{ opacity: info.available ? 1 : 0.5 }}
-                    >
-                      <div className="tk-menu-group-item-head">
-                        <span className="tk-menu-group-bullet" aria-hidden="true" />
-                        <span className="tk-menu-group-item-name">{item.name}</span>
+                {/* List Menu di dalam Grup (Maksimal 7 item per grup) */}
+                <div className="tk-menu-group-list">
+                  {group.items.map((item) => {
+                    const info = getItemInfo(item.name, item.defaultPrice);
+                    return (
+                      <div
+                        key={item.name}
+                        className="tk-menu-group-row"
+                        style={{ opacity: info.available ? 1 : 0.5 }}
+                      >
+                        <div className="tk-menu-group-item-head">
+                          <span className="tk-menu-group-bullet" aria-hidden="true" />
+                          <span className="tk-menu-group-item-name">{item.name}</span>
+                        </div>
+                        <span className="tk-menu-group-item-price">
+                          {formatRupiah(info.price)}
+                        </span>
                       </div>
-                      <span className="tk-menu-group-item-price">
-                        {formatRupiah(info.price)}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

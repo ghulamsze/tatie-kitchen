@@ -9,7 +9,7 @@ export interface AccountScreenProps {
   onChangeCashier: () => void;
 }
 
-export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier }) => {
+export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChangeCashier }) => {
   const { activeCashier, shiftStartTime } = useCashierStore();
   const { isConnected } = usePrinterStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
@@ -136,4 +136,4 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({ onChangeCashier })
       />
     </div>
   );
-};
+});

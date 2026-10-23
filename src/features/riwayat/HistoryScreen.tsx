@@ -1,13 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useHistoryStore, DateRangePreset, HistoryOrderWithItems } from '../../stores/historyStore.ts';
 import { formatRupiah, formatDate, formatTime, getStartOfDayInShopTimezone, formatQueueNo } from '../../lib/format/formatters.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Sheet } from '../../design/components/Sheet.tsx';
 
-export const HistoryScreen: React.FC = () => {
+export const HistoryScreen: React.FC = React.memo(() => {
   const { orders, selectedRange, setRange, selectedOrder, setSelectedOrder } = useHistoryStore();
   const [isRangeSheetOpen, setIsRangeSheetOpen] = useState(false);
   const [tempRange, setTempRange] = useState<DateRangePreset>(selectedRange);
+
+  useEffect(() => {
+    useHistoryStore.getState().fetchOrders().catch(() => {});
+  }, []);
 
   const rangeLabels: Record<DateRangePreset, string> = {
     'hari-ini': 'Hari ini',
@@ -334,4 +338,4 @@ export const HistoryScreen: React.FC = () => {
       </Sheet>
     </div>
   );
-};
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IntroScreen } from '../../features/intro/IntroScreen.tsx';
 import { SelectCashierScreen } from '../../features/profil/SelectCashierScreen.tsx';
 import { AccountScreen } from '../../features/akun/AccountScreen.tsx';
@@ -15,6 +15,8 @@ import { SwipePager } from './SwipePager.tsx';
 import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useMenuStore } from '../../stores/menuStore.ts';
+import { useHistoryStore } from '../../stores/historyStore.ts';
+import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 import { useNetworkStatus } from './useNetworkStatus.ts';
 import { NoInternetNotice } from '../../design/components/NoInternetNotice.tsx';
@@ -33,6 +35,24 @@ export const TabletRoot: React.FC = () => {
 
   const activeNavTab: NavItem =
     currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
+
+  // Sinkronisasi data awal dan background polling saat online agar database terintegrasi satu kesatuan
+  useEffect(() => {
+    if (isOnline) {
+      useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
+      useHistoryStore.getState().fetchOrders().catch(() => {});
+      useCashierStore.getState().fetchCashiers().catch(() => {});
+    }
+
+    const interval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        useSyncQueueStore.getState().syncPendingOrders().catch(() => {});
+        useHistoryStore.getState().fetchOrders().catch(() => {});
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isOnline]);
 
   const handleNavTabChange = (tab: NavItem) => {
     setCurrentScreen((prev) => {
