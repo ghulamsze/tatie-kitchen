@@ -3,6 +3,28 @@
 -- Mengizinkan tablet POS dan web kasir membaca menu, kasir, toko, dan mencatat transaksi order
 -- ============================================================================
 
+-- 0. Pastikan kolom dan tabel pendukung antrian & toko sudah ada
+alter table public.shops
+  add column if not exists queue_reset_time time not null default '00:00',
+  add column if not exists phone_no text default '0812-3456-7890',
+  add column if not exists address text default 'Jl. Tamalate 2 No. 8, Makassar',
+  add column if not exists bank_name text default 'Bank Kaltimtara',
+  add column if not exists bank_account text default '1747037252',
+  add column if not exists bank_account_holder text default 'Hartati Jahri',
+  add column if not exists qris_path text default '/assets/images/qris-clean.png';
+
+alter table public.orders
+  add column if not exists queue_no int,
+  add column if not exists business_date date;
+
+create table if not exists public.shop_queue_counters (
+  shop_id uuid not null references public.shops(id) on delete cascade,
+  business_date date not null,
+  current_number int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (shop_id, business_date)
+);
+
 -- 1. Berikan hak akses skema, tabel, dan fungsi untuk role anon dan authenticated
 grant usage on schema public to anon, authenticated;
 grant select on public.shops to anon, authenticated;
