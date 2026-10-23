@@ -38,14 +38,14 @@ export function useSwipeNav({
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const navbarRef = useRef<HTMLElement | null>(null);
 
-  // References & state untuk Pull to Refresh ultra smooth
+  // References & state untuk Pull to Refresh ultra smooth (Satu Ikon Saja)
   const pullIndicatorRef = useRef<HTMLDivElement | null>(null);
   const pullIconRef = useRef<HTMLDivElement | null>(null);
-  const pullTextRef = useRef<HTMLSpanElement | null>(null);
   const isPullingRef = useRef<boolean>(false);
   const isRefreshingRef = useRef<boolean>(false);
   const pullDistanceRef = useRef<number>(0);
   const scrollableTargetRef = useRef<HTMLElement | null>(null);
+  const isInteractiveTargetRef = useRef<boolean>(false);
 
   // Pointer tracking untuk gesture swipe
   const pointerActiveRef = useRef<boolean>(false);
@@ -109,7 +109,7 @@ export function useSwipeNav({
     }
   }, [tabs.length]);
 
-  // Fungsi hardware-accelerated 60/120 FPS untuk menggerakkan indikator pull-to-refresh
+  // Fungsi hardware-accelerated 60/120 FPS untuk menggerakkan indikator pull-to-refresh (satu ikon circular)
   const applyPull = useCallback((dist: number, state: PullRefreshState) => {
     if (!pullIndicatorRef.current) return;
     const el = pullIndicatorRef.current;
@@ -120,43 +120,34 @@ export function useSwipeNav({
       el.style.opacity = '0';
     } else if (state === 'pulling') {
       el.style.transition = 'none';
-      // Dari -70px ke 18px saat dist mencapai 52px
-      const y = Math.min(22, -70 + (dist / 52) * 92);
+      // Dari -70px ke 16px saat dist mencapai threshold mantap 65px
+      const y = Math.min(20, -70 + (dist / 65) * 86);
       el.style.transform = `translate3d(-50%, ${y}px, 0)`;
-      el.style.opacity = String(Math.min(1, Math.max(0, dist / 22)));
+      // Opacity mulai muncul lembut hanya jika tarikan sudah melewati 15px
+      el.style.opacity = String(Math.min(1, Math.max(0, (dist - 15) / 25)));
 
       if (pullIconRef.current) {
-        const rot = Math.min(180, (dist / 52) * 180);
+        const rot = Math.min(180, (dist / 65) * 180);
         pullIconRef.current.style.transform = `rotate(${rot}deg)`;
         pullIconRef.current.classList.remove('spinning');
       }
-      if (pullTextRef.current) {
-        pullTextRef.current.textContent =
-          dist >= 52 ? 'Lepaskan untuk memuat ulang' : 'Tarik ke bawah untuk memuat ulang...';
-      }
     } else if (state === 'refreshing') {
       el.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease';
-      el.style.transform = 'translate3d(-50%, 18px, 0)';
+      el.style.transform = 'translate3d(-50%, 16px, 0)';
       el.style.opacity = '1';
 
       if (pullIconRef.current) {
         pullIconRef.current.style.transform = '';
         pullIconRef.current.classList.add('spinning');
       }
-      if (pullTextRef.current) {
-        pullTextRef.current.textContent = 'Memuat data terbaru...';
-      }
     } else if (state === 'success') {
       el.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease';
-      el.style.transform = 'translate3d(-50%, 18px, 0)';
+      el.style.transform = 'translate3d(-50%, 16px, 0)';
       el.style.opacity = '1';
 
       if (pullIconRef.current) {
         pullIconRef.current.classList.remove('spinning');
         pullIconRef.current.style.transform = 'rotate(0deg)';
-      }
-      if (pullTextRef.current) {
-        pullTextRef.current.textContent = 'Data berhasil diperbarui âœ“';
       }
     }
   }, []);
@@ -424,6 +415,13 @@ export function useSwipeNav({
     );
     scrollableTargetRef.current = scrollable;
 
+    // Abaikan jika interaksi dimulai dari kartu menu, tombol, chip, atau kontrol qty
+    // Ini memastikan saat kasir mengetuk/menahan menu, tidak pernah salah terpicu pull-to-refresh
+    const isInteractive = Boolean(
+      target.closest('.tk-menu-card, button, .tk-chip, .tk-qty-btn, .tk-navbar-item')
+    );
+    isInteractiveTargetRef.current = isInteractive;
+
     if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
       const rect = scrollable.getBoundingClientRect();
       if (e.clientX > rect.left + scrollable.clientWidth) {
@@ -468,8 +466,20 @@ export function useSwipeNav({
       const isScrollAtTop =
         !scrollableTargetRef.current || scrollableTargetRef.current.scrollTop <= 0;
 
-      // 1. PULL TO REFRESH: Jari ditarik ke bawah saat di puncak layar/konten
-      if (dy > 8 && dy > absDx * 1.1 && isScrollAtTop && !isRefreshingRef.current) {
+      // 1. PULL TO REFRESH:
+      // Syarat ketat agar TIDAK mudah terpicu:
+      // - Bukan dimulai dari kartu menu / tombol interaktif
+      // - Tarikan ke bawah mantap (dy >= 28px)
+      // - Arah dominan vertikal lurus ke bawah (dy >= absDx * 2.2)
+      // - Posisi scroll berada di puncak paling atas (isScrollAtTop)
+      // - Tidak sedang dalam proses refresh
+      if (
+        !isInteractiveTargetRef.current &&
+        dy >= 28 &&
+        dy >= absDx * 2.2 &&
+        isScrollAtTop &&
+        !isRefreshingRef.current
+      ) {
         hasDecidedDirectionRef.current = true;
         isPullingRef.current = true;
         setPullState('pulling');
@@ -566,10 +576,11 @@ export function useSwipeNav({
       const finalPull = pullDistanceRef.current;
       pullDistanceRef.current = 0;
 
-      if (finalPull >= 50 && onRefresh) {
+      // Ambang batas ketat: hanya gerakan yang betul-betul ditarik mantap ke bawah (>= 65px)
+      if (finalPull >= 65 && onRefresh) {
         isRefreshingRef.current = true;
         setPullState('refreshing');
-        applyPull(50, 'refreshing');
+        applyPull(65, 'refreshing');
 
         (async () => {
           try {
@@ -578,12 +589,12 @@ export function useSwipeNav({
             // ignore error
           } finally {
             setPullState('success');
-            applyPull(50, 'success');
+            applyPull(65, 'success');
             setTimeout(() => {
               setPullState('idle');
               applyPull(0, 'idle');
               isRefreshingRef.current = false;
-            }, 650);
+            }, 550);
           }
         })();
       } else {
@@ -679,7 +690,6 @@ export function useSwipeNav({
     pullState,
     pullIndicatorRef,
     pullIconRef,
-    pullTextRef,
     containerRef,
     trackRef,
     indicatorRef,

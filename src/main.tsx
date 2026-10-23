@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './design/tokens.css';
 import './design/components.css';
+import './design/phone.css';
 import { initTheme } from './design/theme.ts';
 
 // Inisialisasi tema dan palet

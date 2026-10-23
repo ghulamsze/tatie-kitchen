@@ -82,7 +82,6 @@ export const TabletRoot: React.FC = () => {
     pullState,
     pullIndicatorRef,
     pullIconRef,
-    pullTextRef,
     containerRef,
     trackRef,
     indicatorRef,
@@ -236,30 +235,29 @@ export const TabletRoot: React.FC = () => {
         />
       </div>
 
-      {/* Liquid Glass Pull-to-Refresh Indicator Kapsul Melayang */}
+      {/* Liquid Glass Pull-to-Refresh Circular Indicator (Satu Ikon Saja, Minimalis & Ultra Smooth) */}
       <div
         ref={pullIndicatorRef}
         className="tk-pull-refresh-indicator"
-        aria-live="polite"
-        aria-atomic="true"
+        aria-label="Memuat ulang halaman"
+        role="status"
       >
         <div ref={pullIconRef} className="tk-pull-refresh-icon">
           {pullState === 'success' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           ) : pullState === 'refreshing' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <polyline points="19 12 12 19 5 12" />
             </svg>
           )}
         </div>
-        <span ref={pullTextRef}>Tarik ke bawah untuk memuat ulang...</span>
       </div>
 
       {/* Horizontal Swipeable Container berbasis transform translate3d (Home, Riwayat, Akun) */}

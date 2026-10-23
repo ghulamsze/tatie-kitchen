@@ -25,10 +25,46 @@ describe('Pull to Refresh & Ketersediaan Menu', () => {
       expect(result.current.pullState).toBe('idle');
       expect(result.current.pullIndicatorRef).toBeDefined();
       expect(result.current.pullIconRef).toBeDefined();
-      expect(result.current.pullTextRef).toBeDefined();
     });
 
-    it('mendeteksi tarikan ke bawah dan memicu callback onRefresh jika melewati ambang batas', async () => {
+    it('tidak terpicu jika gerakan kecil atau tidak disengaja', () => {
+      const onTabChange = vi.fn();
+      const onRefresh = vi.fn();
+
+      const { result } = renderHook(() =>
+        useSwipeNav({
+          tabs: ['Home', 'Riwayat', 'Akun'],
+          activeTab: 'Home',
+          onTabChange,
+          onRefresh,
+        })
+      );
+
+      const mockTarget = document.createElement('div');
+      act(() => {
+        result.current.handlePagerPointerDown({
+          target: mockTarget,
+          clientX: 200,
+          clientY: 50,
+          pointerId: 1,
+          currentTarget: { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn() },
+        } as unknown as React.PointerEvent<HTMLDivElement>);
+      });
+
+      // Gerakan kecil hanya 12px ke bawah
+      act(() => {
+        result.current.handlePagerPointerMove({
+          clientX: 201,
+          clientY: 62,
+          pointerId: 1,
+          currentTarget: { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn() },
+        } as unknown as React.PointerEvent<HTMLDivElement>);
+      });
+
+      expect(result.current.pullState).toBe('idle');
+    });
+
+    it('mendeteksi tarikan ke bawah yang mantap dan memicu callback onRefresh', async () => {
       const onTabChange = vi.fn();
       const onRefresh = vi.fn().mockResolvedValue(undefined);
 
@@ -41,7 +77,7 @@ describe('Pull to Refresh & Ketersediaan Menu', () => {
         })
       );
 
-      // Simulasikan pointer down di area konten
+      // Simulasikan pointer down di area header non-interaktif
       const mockTarget = document.createElement('div');
       const downEvent = {
         target: mockTarget,
@@ -58,10 +94,10 @@ describe('Pull to Refresh & Ketersediaan Menu', () => {
         result.current.handlePagerPointerDown(downEvent);
       });
 
-      // Simulasikan pointer move ditarik ke bawah sebesar 100px (melewati ambang batas)
+      // Simulasikan pointer move ditarik ke bawah secara mantap sebesar 150px
       const moveEvent = {
-        clientX: 202,
-        clientY: 170, // dy = 120px
+        clientX: 201,
+        clientY: 200, // dy = 150px lurus ke bawah
         pointerId: 1,
         currentTarget: {
           setPointerCapture: vi.fn(),
@@ -77,8 +113,8 @@ describe('Pull to Refresh & Ketersediaan Menu', () => {
 
       // Simulasikan pointer dilepas (pointer up)
       const upEvent = {
-        clientX: 202,
-        clientY: 170,
+        clientX: 201,
+        clientY: 200,
         pointerId: 1,
         currentTarget: {
           setPointerCapture: vi.fn(),
