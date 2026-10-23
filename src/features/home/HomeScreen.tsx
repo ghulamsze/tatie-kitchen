@@ -4,6 +4,7 @@ import { useCartStore } from '../../stores/cartStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { MenuCard } from './MenuCard.tsx';
+import { ScreenWireframeRefresh } from './ScreenWireframeRefresh.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
@@ -27,6 +28,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
+    const startTime = Date.now();
     try {
       await Promise.allSettled([
         useMenuStore.getState().fetchMenu(),
@@ -37,9 +39,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     } catch {
       // ignore
     } finally {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 950 - elapsed);
       setTimeout(() => {
         setIsRefreshing(false);
-      }, 500);
+      }, remaining);
       setTimeout(() => {
         useMenuStore.getState().setToastMessage(null);
       }, 2500);
@@ -171,6 +175,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
         padding: '20px 24px 84px 24px',
       }}
     >
+      {/* Visualisasi Wireframe Satu Layar Saat Refresh */}
+      {isRefreshing && <ScreenWireframeRefresh />}
+
       {/* 2. Area Konten Utama: Katalog Menu (Kiri) + Keranjang Pesanan (Kanan) */}
       <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* Sisi Kiri: Header Brand + Cari Menu + Chip Kategori + Grid Kartu Menu */}
