@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './client.ts';
+import { supabase, isSupabaseConfigured, MENU_NAME_ALIASES } from './client.ts';
 import { useMenuStore } from '../../stores/menuStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
@@ -120,8 +120,14 @@ export function initPosRealtimeSync(): () => void {
         // Perbarui menuStore secara instan
         useMenuStore.setState((state) => {
           const normName = name ? name.trim().toLowerCase() : '';
+          const alias = normName ? MENU_NAME_ALIASES[normName] : undefined;
           const updatedItems = state.items.map((it) => {
-            if (it.id === itemId || (normName && it.name.trim().toLowerCase() === normName)) {
+            const itNorm = it.name.trim().toLowerCase();
+            if (
+              it.id === itemId ||
+              (normName && itNorm === normName) ||
+              (alias && itNorm === alias.toLowerCase())
+            ) {
               return { ...it, available };
             }
             return it;
@@ -133,6 +139,7 @@ export function initPosRealtimeSync(): () => void {
             const map = raw ? JSON.parse(raw) : {};
             if (itemId) map[itemId] = available;
             if (normName) map[normName] = available;
+            if (alias) map[alias.toLowerCase()] = available;
             localStorage.setItem('tk_item_availability', JSON.stringify(map));
           } catch (err) {
             logError('realtimeSync:local_persist_err', err);

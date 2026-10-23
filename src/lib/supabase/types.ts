@@ -66,6 +66,7 @@ export interface Order {
   status: string;
   queue_no?: number | null;
   business_date?: string | null;
+  payment_method?: string | null;
   created_at: string;
 }
 

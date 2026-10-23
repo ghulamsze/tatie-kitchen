@@ -17,8 +17,8 @@ import { useSyncQueueStore } from '../../stores/syncQueueStore.ts';
 import { useShopStore } from '../../stores/shopStore.ts';
 
 import { getQuickCashOptions } from './quickCash.ts';
-import { generateUUID } from '../../lib/uuid.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
+import { generateUUID } from '../../lib/uuid.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 

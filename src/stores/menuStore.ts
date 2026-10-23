@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
-import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase } from '../lib/supabase/client.ts';
+import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase, MENU_NAME_ALIASES } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
 import { broadcastMenuAvailability } from '../lib/supabase/realtime.ts';
 
@@ -1088,12 +1088,16 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
       const map: Record<string, boolean | { available: boolean }> = JSON.parse(raw);
       return initialItems.map((it) => {
         const normName = it.name.trim().toLowerCase();
+        const alias = MENU_NAME_ALIASES[normName];
         let val: boolean | undefined;
         if (it.id in map) {
           const entry = map[it.id];
           val = typeof entry === 'object' && entry !== null ? entry.available : Boolean(entry);
         } else if (normName in map) {
           const entry = map[normName];
+          val = typeof entry === 'object' && entry !== null ? entry.available : Boolean(entry);
+        } else if (alias && alias.toLowerCase() in map) {
+          const entry = map[alias.toLowerCase()];
           val = typeof entry === 'object' && entry !== null ? entry.available : Boolean(entry);
         }
         return val !== undefined ? { ...it, available: val } : it;
@@ -1121,8 +1125,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   toggleItemAvailability: async (itemId, available) => {
     const targetItem = get().items.find((i) => i.id === itemId);
     const normName = targetItem ? targetItem.name.trim().toLowerCase() : '';
+    const alias = normName ? MENU_NAME_ALIASES[normName] : undefined;
 
-    // 1. Update lokal state dulu secara instan dan simpan ke localStorage dengan dual key (ID & nama)
+    // 1. Update lokal state dulu secara instan dan simpan ke localStorage dengan dual key (ID & nama & alias)
     set((state) => {
       const updatedItems = state.items.map((i) => (i.id === itemId ? { ...i, available } : i));
       try {
@@ -1131,6 +1136,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         map[itemId] = available;
         if (normName) {
           map[normName] = available;
+        }
+        if (alias) {
+          map[alias.toLowerCase()] = available;
         }
         localStorage.setItem('tk_item_availability', JSON.stringify(map));
       } catch (err) {
@@ -1156,9 +1164,20 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     // 2. Simpan ke database Supabase secara real-time via syncMenuItemAvailabilityToSupabase
     if (isSupabaseConfigured() && targetItem) {
       try {
-        await syncMenuItemAvailabilityToSupabase(itemId, targetItem.name, available);
+        const syncResult = await syncMenuItemAvailabilityToSupabase(itemId, targetItem.name, available);
+        if (syncResult.success && syncResult.updatedId) {
+          try {
+            const raw = localStorage.getItem('tk_item_availability');
+            const map = raw ? JSON.parse(raw) : {};
+            map[syncResult.updatedId] = available;
+            localStorage.setItem('tk_item_availability', JSON.stringify(map));
+          } catch {
+            // ignore
+          }
+        }
         // 3. Broadcast ke seluruh perangkat lain secara real-time (< 100ms)
-        broadcastMenuAvailability(itemId, targetItem.name, available).catch(() => {});
+        const idToBroadcast = syncResult.success && syncResult.updatedId ? syncResult.updatedId : itemId;
+        broadcastMenuAvailability(idToBroadcast, targetItem.name, available).catch(() => {});
       } catch (err) {
         logError('menuStore:syncMenuItemAvailabilityToSupabase', err);
       }
@@ -1175,16 +1194,22 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         logError('menuStore:fetchMenu_query', error);
       } else if (data && data.length > 0) {
         // Ambil pemetaan status ketersediaan langsung dari database Supabase (Single Source of Truth)
-        const remoteMap = new Map<string, boolean>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dbItemsById = new Map<string, any>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dbItemsByName = new Map<string, any>();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (data as any[]).forEach((row: any) => {
-          if (row.name) remoteMap.set(row.name.trim().toLowerCase(), Boolean(row.available));
-          if (row.id) remoteMap.set(row.id, Boolean(row.available));
+          if (row.id) dbItemsById.set(row.id, row);
+          if (row.name) dbItemsByName.set(row.name.trim().toLowerCase(), row);
         });
 
         // Simpan pembaruan status dari database ke localStorage agar tersinkron saat offline
         try {
           const raw = localStorage.getItem('tk_item_availability');
           const localMap = raw ? JSON.parse(raw) : {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (data as any[]).forEach((row: any) => {
             if (row.id) localMap[row.id] = Boolean(row.available);
             if (row.name) localMap[row.name.trim().toLowerCase()] = Boolean(row.available);
@@ -1197,16 +1222,20 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         set((state) => ({
           items: state.items.map((item) => {
             const normName = item.name.trim().toLowerCase();
-            const remoteAvailable = remoteMap.has(item.id)
-              ? remoteMap.get(item.id)!
-              : remoteMap.has(normName)
-              ? remoteMap.get(normName)!
-              : item.available;
+            const alias = MENU_NAME_ALIASES[normName];
+            const matchingRow =
+              dbItemsById.get(item.id) ||
+              dbItemsByName.get(normName) ||
+              (alias ? dbItemsByName.get(alias.trim().toLowerCase()) : undefined);
 
-            return {
-              ...item,
-              available: remoteAvailable,
-            };
+            if (matchingRow) {
+              return {
+                ...item,
+                available: Boolean(matchingRow.available), // Status akurat langsung dari database!
+              };
+            }
+
+            return item;
           }),
         }));
       }
