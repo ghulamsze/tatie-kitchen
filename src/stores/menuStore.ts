@@ -1231,6 +1231,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
             if (matchingRow) {
               return {
                 ...item,
+                id: matchingRow.id || item.id, // Selaraskan ID lokal dengan UUID dari database Supabase
                 available: Boolean(matchingRow.available), // Status akurat langsung dari database!
               };
             }

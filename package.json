@@ -15,6 +15,7 @@
     "audit:visual": "playwright test e2e/design-audit.spec.ts",
     "cap:sync": "npx cap sync",
     "build:apk:debug": "npm run build && npx cap sync && .\\android\\gradlew.bat -p android assembleDebug",
+    "build:apk:phone:debug": "npm run build && npx cap sync && .\\android\\gradlew.bat -p android assembleDebug",
     "build:apk:release": "npm run build && npx cap sync && .\\android\\gradlew.bat -p android assembleRelease"
   },
   "dependencies": {

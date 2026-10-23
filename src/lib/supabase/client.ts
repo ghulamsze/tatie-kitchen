@@ -57,6 +57,7 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
 
 /**
  * Klien Supabase Admin (Service Role) untuk bypass RLS pada sinkronisasi ketersediaan menu & kasir
+ * Menggunakan in-memory storage terisolasi agar tidak pernah membaca/bertabrakan dengan sesi localStorage anonim.
  */
 export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
   supabaseUrl,
@@ -65,6 +66,19 @@ export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
     auth: {
       persistSession: false,
       autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'sb-admin-isolated-token',
+      storage: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      },
+    },
+    global: {
+      headers: {
+        apikey: supabaseSecretKey,
+        Authorization: `Bearer ${supabaseSecretKey}`,
+      },
     },
   }
 );
@@ -88,7 +102,7 @@ export const MENU_NAME_ALIASES: Record<string, string> = {
 
 /**
  * Sinkronisasi status ketersediaan item menu (tersedia / habis) ke Supabase.
- * Menggunakan direct REST PATCH / supabaseAdmin dengan service secret key sehingga langsung masuk database.
+ * Menggunakan direct REST PATCH dengan service secret key sehingga langsung masuk database tanpa terhalang RLS / 401.
  */
 export async function syncMenuItemAvailabilityToSupabase(
   itemId: string,
@@ -103,7 +117,48 @@ export async function syncMenuItemAvailabilityToSupabase(
   const alias = MENU_NAME_ALIASES[normName];
 
   try {
-    // 1. Prioritas Utama: Update via supabaseAdmin menggunakan ID jika UUID
+    // Helper direct REST PATCH dengan service secret key eksplisit
+    const patchRest = async (filter: string): Promise<{ success: boolean; updatedId?: string } | null> => {
+      try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/menu_items?${filter}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: supabaseSecretKey,
+            Authorization: `Bearer ${supabaseSecretKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({ available }),
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (Array.isArray(rows) && rows.length > 0) {
+            return { success: true, updatedId: rows[0].id };
+          }
+        }
+      } catch {
+        // Abaikan fetch error dan lanjutkan ke alternatif berikutnya
+      }
+      return null;
+    };
+
+    // 1. Prioritas Utama: Update via direct REST menggunakan ID jika UUID
+    if (isUuid) {
+      const idRes = await patchRest(`id=eq.${itemId}`);
+      if (idRes) return idRes;
+    }
+
+    // 2. Update via direct REST menggunakan nama item
+    const nameRes = await patchRest(`name=ilike.${encodeURIComponent(cleanName)}`);
+    if (nameRes) return nameRes;
+
+    // 3. Update via direct REST menggunakan alias ejaan nama jika ada variasi
+    if (alias) {
+      const aliasRes = await patchRest(`name=ilike.${encodeURIComponent(alias)}`);
+      if (aliasRes) return aliasRes;
+    }
+
+    // 4. Fallback: supabaseAdmin client SDK
     if (isUuid) {
       const { data, error } = await (supabaseAdmin.from('menu_items') as any)
         .update({ available })
@@ -115,7 +170,6 @@ export async function syncMenuItemAvailabilityToSupabase(
       }
     }
 
-    // 2. Coba update via supabaseAdmin menggunakan nama item
     const { data: nameData, error: nameErr } = await (supabaseAdmin.from('menu_items') as any)
       .update({ available })
       .ilike('name', cleanName)
@@ -125,7 +179,6 @@ export async function syncMenuItemAvailabilityToSupabase(
       return { success: true, updatedId: nameData[0].id };
     }
 
-    // 3. Coba dengan alias nama jika ada variasi ejaan
     if (alias) {
       const { data: aliasData, error: aliasErr } = await (supabaseAdmin.from('menu_items') as any)
         .update({ available })
@@ -134,30 +187,6 @@ export async function syncMenuItemAvailabilityToSupabase(
 
       if (!aliasErr && Array.isArray(aliasData) && aliasData.length > 0) {
         return { success: true, updatedId: aliasData[0].id };
-      }
-    }
-
-    // 4. Fallback: REST PATCH langsung menggunakan service secret key
-    const targetFilterName = alias || cleanName;
-    const filter = isUuid
-      ? `id=eq.${itemId}`
-      : `name=ilike.${encodeURIComponent(targetFilterName)}`;
-
-    const res = await fetch(`${supabaseUrl}/rest/v1/menu_items?${filter}`, {
-      method: 'PATCH',
-      headers: {
-        apikey: supabaseSecretKey,
-        Authorization: `Bearer ${supabaseSecretKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify({ available }),
-    });
-
-    if (res.ok) {
-      const rows = await res.json();
-      if (Array.isArray(rows) && rows.length > 0) {
-        return { success: true, updatedId: rows[0].id };
       }
     }
 

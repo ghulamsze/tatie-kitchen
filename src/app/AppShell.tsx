@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useDevice } from '../lib/device/useDevice.ts';
 import { registerDevice } from '../lib/device/deviceRegistration.ts';
 import { DevFrame } from './DevFrame.tsx';
