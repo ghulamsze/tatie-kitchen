@@ -1,18 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneDateRangeSheet } from './components/PhoneDateRangeSheet.tsx';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
-import { getShopTodayDateStr } from '../../lib/format/formatters.ts';
+import { getStartOfDayInShopTimezone } from '../../lib/format/formatters.ts';
 
 describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
-  const now = new Date();
-  const todayStr = getShopTodayDateStr(now);
-  const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const yesterdayStr = getShopTodayDateStr(yesterdayDate);
-  const fiveDaysAgoDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-  const fiveDaysAgoStr = getShopTodayDateStr(fiveDaysAgoDate);
+  const startOfToday = getStartOfDayInShopTimezone();
+  const todayIso = new Date(startOfToday + 4 * 3600 * 1000).toISOString();
+  const yesterdayIso = new Date(startOfToday - 10 * 3600 * 1000).toISOString();
 
   beforeEach(() => {
     useCashierStore.setState({
@@ -51,7 +48,7 @@ describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
             cash_received_idr: 100000,
             change_idr: 20000,
             status: 'paid',
-            created_at: `${todayStr}T10:01:00.000Z`,
+            created_at: todayIso,
           },
           items: [
             {
@@ -75,7 +72,7 @@ describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
             cash_received_idr: 50000,
             change_idr: 15000,
             status: 'paid',
-            created_at: `${yesterdayStr}T15:30:00.000Z`,
+            created_at: yesterdayIso,
           },
           items: [
             {
@@ -117,7 +114,7 @@ describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
             cash_received_idr: 100000,
             change_idr: 20000,
             status: 'paid',
-            created_at: `${todayStr}T10:01:00.000Z`,
+            created_at: todayIso,
           },
           items: [],
         },
@@ -132,7 +129,7 @@ describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
             cash_received_idr: 100000,
             change_idr: 26000,
             status: 'paid',
-            created_at: `${yesterdayStr}T21:14:00.000Z`,
+            created_at: yesterdayIso,
           },
           items: [],
         },
@@ -178,7 +175,7 @@ describe('PhoneHistoryScreen & PhoneDateRangeSheet (Fase 3)', () => {
             cash_received_idr: 100000,
             change_idr: 5000,
             status: 'paid',
-            created_at: `${todayStr}T12:00:00.000Z`,
+            created_at: todayIso,
           },
           items: [],
         },

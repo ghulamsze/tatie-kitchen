@@ -43,6 +43,7 @@ export function useSwipeNav({
   const pullIconRef = useRef<HTMLDivElement | null>(null);
   const isPullingRef = useRef<boolean>(false);
   const isRefreshingRef = useRef<boolean>(false);
+  const refreshTimerRef = useRef<number | null>(null);
   const pullDistanceRef = useRef<number>(0);
   const scrollableTargetRef = useRef<HTMLElement | null>(null);
   const isInteractiveTargetRef = useRef<boolean>(false);
@@ -590,7 +591,11 @@ export function useSwipeNav({
           } finally {
             setPullState('success');
             applyPull(65, 'success');
-            setTimeout(() => {
+            if (refreshTimerRef.current !== null) {
+              clearTimeout(refreshTimerRef.current);
+            }
+            refreshTimerRef.current = window.setTimeout(() => {
+              refreshTimerRef.current = null;
               setPullState('idle');
               applyPull(0, 'idle');
               isRefreshingRef.current = false;
@@ -676,6 +681,9 @@ export function useSwipeNav({
     return () => {
       if (navbarHoldTimerRef.current !== null) {
         clearTimeout(navbarHoldTimerRef.current);
+      }
+      if (refreshTimerRef.current !== null) {
+        clearTimeout(refreshTimerRef.current);
       }
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
