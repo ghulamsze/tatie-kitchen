@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useHistoryStore, DateRangePreset, HistoryOrderWithItems } from '../../../stores/historyStore.ts';
-import { useCashierStore } from '../../../stores/cashierStore.ts';
 import {
   formatRupiah,
   formatDate,
@@ -15,22 +14,14 @@ export interface PhoneHistoryScreenProps {
 
 export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelectOrder }) => {
   const { orders, selectedRange, setRange, setSelectedOrder } = useHistoryStore();
-  const { cashiers } = useCashierStore();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [customDate, setCustomDate] = useState<string | undefined>(undefined);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Ambil data transaksi terbaru dari Supabase saat layar dibuka
   useEffect(() => {
     useHistoryStore.getState().fetchOrders().catch(() => {});
   }, []);
-
-  const getCashierName = (cashierId?: string) => {
-    if (!cashierId) return 'Kasir';
-    const found = cashiers.find((c) => c.id === cashierId);
-    return found ? found.name : 'Kasir';
-  };
 
   // Label rentang waktu untuk tombol pill trigger
   const triggerLabel = useMemo(() => {
@@ -88,7 +79,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
     });
   }, [orders, selectedRange, customDate]);
 
-  // Kelompokkan pesanan berdasarkan tanggal WITA (format: 23 Okt 2026)
+  // Kelompokkan pesanan berdasarkan tanggal WITA (format: 21 Okt 2026)
   const groupedOrders = useMemo(() => {
     const map = new Map<string, HistoryOrderWithItems[]>();
     for (const item of filteredOrders) {
@@ -105,15 +96,6 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
     setCustomDate(newCustomDate);
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await useHistoryStore.getState().fetchOrders();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleRowClick = (item: HistoryOrderWithItems) => {
     setSelectedOrder(item);
     if (onSelectOrder) {
@@ -123,45 +105,8 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
 
   return (
     <div className="tk-phone-screen">
-      {/* 1. Header Riwayat */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          margin: '4px 4px 12px',
-        }}
-      >
-        <h1 className="tk-phone-title" style={{ margin: 0 }}>
-          Riwayat
-        </h1>
-
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          aria-label="Segarkan riwayat"
-          style={{
-            background: 'var(--ctl)',
-            border: '1px solid var(--ctl-line)',
-            color: 'var(--ink-2)',
-            borderRadius: 'var(--r-pill)',
-            padding: '6px 12px',
-            fontSize: 'var(--t-xs)',
-            lineHeight: 'var(--l-xs)',
-            fontWeight: 700,
-            cursor: isRefreshing ? 'wait' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <span style={{ display: 'inline-block', transform: isRefreshing ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s ease' }}>
-            ↻
-          </span>
-          <span>{isRefreshing ? 'Memuat...' : 'Segarkan'}</span>
-        </button>
-      </div>
+      {/* 1. Header Riwayat Bersih Sesuai Frame 2 PDF */}
+      <h1 className="tk-phone-title">Riwayat</h1>
 
       {/* 2. Tombol Pill Trigger Rentang Waktu (Liquid Glass Style) */}
       <div
@@ -205,11 +150,10 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                 {dateTitle}
               </div>
 
-              {/* Baris Transaksi per Tanggal */}
+              {/* Baris Transaksi per Tanggal Sesuai Frame 2 PDF */}
               {dayOrders.map((item) => {
                 const { order, items } = item;
                 const timeStr = formatTime(order.created_at);
-                const cashierName = getCashierName(order.cashier_id);
                 const totalQty =
                   items?.reduce((sum, it) => sum + (it.qty || 1), 0) || items?.length || 1;
 
@@ -226,18 +170,20 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                       }
                     }}
                   >
+                    {/* Kolom Kiri: Meja & Jumlah Item */}
                     <div>
                       <b
                         style={{
                           display: 'block',
                           fontSize: 'var(--t-md)',
                           lineHeight: 'var(--l-md)',
+                          fontWeight: 800,
                           color: 'var(--ink)',
                         }}
                       >
                         Meja {order.table_no || '-'}
                       </b>
-                      <small
+                      <span
                         style={{
                           display: 'block',
                           color: 'var(--ink-3)',
@@ -246,10 +192,11 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                           marginTop: '2px',
                         }}
                       >
-                        {timeStr} · {cashierName} · {totalQty} item
-                      </small>
+                        {totalQty} item
+                      </span>
                     </div>
 
+                    {/* Kolom Kanan: Nominal Rupiah & Jam Transaksi */}
                     <div style={{ textAlign: 'right' }}>
                       <b
                         style={{
@@ -262,7 +209,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                       >
                         {formatRupiah(order.total_idr)}
                       </b>
-                      <small
+                      <span
                         style={{
                           display: 'block',
                           color: 'var(--ink-3)',
@@ -271,8 +218,8 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                           marginTop: '2px',
                         }}
                       >
-                        Lunas
-                      </small>
+                        {timeStr} WITA
+                      </span>
                     </div>
                   </div>
                 );

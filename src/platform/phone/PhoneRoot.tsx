@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { NavItem, NavbarPill } from '../../design/components/NavbarPill.tsx';
 import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
+import { PhoneOrderDetailScreen } from './screens/PhoneOrderDetailScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 
 export const PhoneRoot: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('Home');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
   useEffect(() => {
@@ -39,11 +41,22 @@ export const PhoneRoot: React.FC = () => {
           flexDirection: 'column',
         }}
       >
-        {activeTab === 'Home' && (
-          <PhoneHomeScreen onNavigateToHistory={() => setActiveTab('Riwayat')} />
+        {selectedOrderId ? (
+          <PhoneOrderDetailScreen onBack={() => setSelectedOrderId(null)} />
+        ) : (
+          <>
+            {activeTab === 'Home' && (
+              <PhoneHomeScreen
+                onNavigateToHistory={() => setActiveTab('Riwayat')}
+                onSelectOrder={(id) => setSelectedOrderId(id)}
+              />
+            )}
+            {activeTab === 'Riwayat' && (
+              <PhoneHistoryScreen onSelectOrder={(id) => setSelectedOrderId(id)} />
+            )}
+            {activeTab === 'Akun' && <PhoneAccountScreen />}
+          </>
         )}
-        {activeTab === 'Riwayat' && <PhoneHistoryScreen />}
-        {activeTab === 'Akun' && <PhoneAccountScreen />}
       </div>
 
       {/* Floating Liquid Glass Pill Navbar di Bagian Bawah */}
@@ -62,7 +75,10 @@ export const PhoneRoot: React.FC = () => {
       >
         <NavbarPill
           activeItem={activeTab}
-          onSelect={(item) => setActiveTab(item)}
+          onSelect={(item) => {
+            setSelectedOrderId(null);
+            setActiveTab(item);
+          }}
         />
       </div>
     </div>

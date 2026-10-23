@@ -29,7 +29,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     if (onLogout) {
       onLogout();
     } else {
-      window.location.search = '';
+      window.location.search = '?device=tablet';
     }
   };
 
@@ -40,10 +40,10 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
 
   return (
     <div className="tk-phone-screen">
-      {/* 1. Judul Layar */}
+      {/* 1. Judul Layar Sesuai Frame 5 PDF */}
       <h1 className="tk-phone-title">Akun</h1>
 
-      {/* 2. Hero Card Profil Pemilik */}
+      {/* 2. Hero Card Profil Pemilik Sesuai Frame 5 PDF */}
       <div
         className="g-acrylic tk-phone-hero"
         style={{
@@ -84,7 +84,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
           style={{
             fontSize: 'var(--t-sm)',
             lineHeight: 'var(--l-sm)',
-            color: 'var(--ink-2)',
+            color: 'var(--ink-3)',
             marginTop: '2px',
           }}
         >
@@ -92,28 +92,11 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </span>
       </div>
 
-      {/* 3. Daftar Kasir Bertugas */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          margin: '16px 4px 8px',
-        }}
-      >
+      {/* 3. Daftar Kasir Sesuai Frame 5 PDF (Tanpa Badge Counter & Tanpa Badge Aktif) */}
+      <div style={{ margin: '16px 4px 8px' }}>
         <h2 className="tk-phone-section-title" style={{ margin: 0 }}>
           Kasir
         </h2>
-        <span
-          style={{
-            fontSize: 'var(--t-xs)',
-            lineHeight: 'var(--l-xs)',
-            color: 'var(--ink-3)',
-            fontWeight: 600,
-          }}
-        >
-          {activeCashiers.length} aktif
-        </span>
       </div>
 
       <div className="tk-phone-list-card" style={{ marginBottom: '16px' }}>
@@ -126,7 +109,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               fontSize: 'var(--t-sm)',
             }}
           >
-            Belum ada kasir aktif
+            Belum ada kasir
           </div>
         ) : (
           activeCashiers.map((cashier) => (
@@ -139,30 +122,18 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                 style={{
                   fontSize: 'var(--t-md)',
                   lineHeight: 'var(--l-md)',
+                  fontWeight: 600,
                   color: 'var(--ink)',
                 }}
               >
                 {cashier.name}
               </b>
-              <span
-                style={{
-                  color: 'var(--accent)',
-                  fontSize: 'var(--t-xs)',
-                  lineHeight: 'var(--l-xs)',
-                  fontWeight: 700,
-                  background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--r-pill)',
-                }}
-              >
-                Aktif
-              </span>
             </div>
           ))
         )}
       </div>
 
-      {/* 4. Tombol Pengaturan Tampilan Tema & Palet (.rg.g.vb) */}
+      {/* 4. Tombol Pengaturan Tampilan Tema & Palet Sesuai Frame 5 PDF */}
       <div
         className="tk-phone-range-trigger rg g vb"
         onClick={() => setIsThemeOpen(true)}
@@ -183,7 +154,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         <span style={{ color: 'var(--ink-3)' }}>▾</span>
       </div>
 
-      {/* 5. Tombol Cetak Menu (Fase 6) */}
+      {/* 5. Tombol Cetak Menu */}
       <button
         type="button"
         className="tk-btn-flat"
@@ -226,7 +197,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         onPrint={handleApplyPrint}
       />
 
-      {/* 9. Target Dokumen Cetak A4 (Aktif saat mode cetak printer) */}
+      {/* 9. Target Dokumen Cetak A4 */}
       <PrintMenuDocument
         isMargin4433={printOptions.isMargin4433}
         isInkSaver={printOptions.isInkSaver}

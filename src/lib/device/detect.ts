@@ -43,12 +43,16 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
 
   if (env.urlSearch) {
     const params = new URLSearchParams(env.urlSearch);
-    const paramDevice = params.get('device');
+    const paramDevice = params.get('device')?.toLowerCase();
     if (paramDevice === 'auto') {
       isAutoReset = true;
       overrideVal = null;
-    } else if (paramDevice === 'tablet' || paramDevice === 'laptop' || paramDevice === 'phone') {
-      overrideVal = paramDevice;
+    } else if (paramDevice === 'tablet' || paramDevice === 'tab') {
+      overrideVal = 'tablet';
+    } else if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+      overrideVal = 'phone';
+    } else if (paramDevice === 'laptop') {
+      overrideVal = 'laptop';
     }
   }
 
@@ -208,7 +212,7 @@ export function getCurrentDevice(): DeviceInfo {
   const search = window.location.search;
   if (search) {
     const params = new URLSearchParams(search);
-    const paramDevice = params.get('device');
+    const paramDevice = params.get('device')?.toLowerCase();
     if (paramDevice === 'auto') {
       try {
         localStorage.removeItem(DEVICE_OVERRIDE_KEY);
@@ -216,13 +220,27 @@ export function getCurrentDevice(): DeviceInfo {
         // ignore
       }
       storedOverride = null;
-    } else if (paramDevice === 'tablet' || paramDevice === 'laptop' || paramDevice === 'phone') {
+    } else if (paramDevice === 'tablet' || paramDevice === 'tab') {
       try {
-        localStorage.setItem(DEVICE_OVERRIDE_KEY, paramDevice);
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'tablet');
       } catch {
         // ignore
       }
-      storedOverride = paramDevice;
+      storedOverride = 'tablet';
+    } else if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+      try {
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
+      } catch {
+        // ignore
+      }
+      storedOverride = 'phone';
+    } else if (paramDevice === 'laptop') {
+      try {
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'laptop');
+      } catch {
+        // ignore
+      }
+      storedOverride = 'laptop';
     }
   }
 

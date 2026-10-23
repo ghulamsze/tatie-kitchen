@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DeviceInfo } from '../lib/device/detect.ts';
+import { DeviceInfo, setDeviceOverride } from '../lib/device/detect.ts';
 
 export interface DevFrameProps {
   device: DeviceInfo;
@@ -18,8 +18,6 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
 
   useEffect(() => {
     if (!isBetaFrameEnabled) return;
-
-  
 
     const handleResize = () => {
       // 1024 x 640 ditambah margin padding
@@ -56,6 +54,58 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
         overflow: 'hidden',
       }}
     >
+      {/* Pemilih Perangkat di Browser Web Laptop (Di luar canvas layar aplikasi) */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 9999,
+          display: 'flex',
+          gap: '4px',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          padding: '4px',
+          borderRadius: '999px',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setDeviceOverride('tablet')}
+          style={{
+            border: 'none',
+            background: 'var(--accent)',
+            color: 'var(--on-accent)',
+            padding: '6px 14px',
+            borderRadius: '999px',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          Tablet
+        </button>
+        <button
+          type="button"
+          onClick={() => setDeviceOverride('phone')}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--ink-2)',
+            padding: '6px 14px',
+            borderRadius: '999px',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          Android HP
+        </button>
+      </div>
       {/* Bingkai Tablet 1024 x 640 */}
       <div
         className="dev-frame-wrapper"

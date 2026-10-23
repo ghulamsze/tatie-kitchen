@@ -1,7 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 import { useLiveOrders } from '../hooks/useLiveOrders.ts';
-import { useCashierStore } from '../../../stores/cashierStore.ts';
-import { formatRupiah } from '../../../lib/format/formatters.ts';
+import { useHistoryStore } from '../../../stores/historyStore.ts';
+import { formatRupiah, formatDate } from '../../../lib/format/formatters.ts';
 
 export interface PhoneHomeScreenProps {
   onNavigateToHistory?: () => void;
@@ -12,59 +12,27 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
   onNavigateToHistory,
   onSelectOrder,
 }) => {
-  const {
-    totalOmzet,
-    totalCount,
-    recentOrders,
-    isLoading,
-    isRealtimeActive,
-  } = useLiveOrders();
-  const { cashiers } = useCashierStore();
+  const { totalOmzet, totalCount, recentOrders, isLoading } = useLiveOrders();
 
-  const getCashierName = (cashierId?: string) => {
-    if (!cashierId) return 'Kasir';
-    const found = cashiers.find((c) => c.id === cashierId);
-    return found ? found.name : 'Kasir';
+  const handleRowClick = (item: { order: any; items: any[] }) => {
+    useHistoryStore.getState().setSelectedOrder({
+      order: item.order,
+      items: item.items || [],
+    });
+    if (onSelectOrder) {
+      onSelectOrder(item.order.id);
+    } else if (onNavigateToHistory) {
+      onNavigateToHistory();
+    }
   };
 
   return (
     <div className="tk-phone-screen">
-      {/* Header dengan indikator sinkronisasi langsung */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          margin: '4px 4px 12px',
-        }}
-      >
-        <h1 className="tk-phone-title" style={{ margin: 0 }}>
-          Home
-        </h1>
+      {/* 1. Header Bersih Sesuai Frame 1 PDF */}
+      <h1 className="tk-phone-title">Home</h1>
 
-        {isRealtimeActive && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: 'var(--t-xs)',
-              lineHeight: 'var(--l-xs)',
-              color: 'var(--accent)',
-              fontWeight: 700,
-              background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-              padding: '4px 10px',
-              borderRadius: 'var(--r-pill)',
-            }}
-          >
-            <span className="tk-phone-dot" style={{ width: '6px', height: '6px' }} />
-            <span>Live</span>
-          </div>
-        )}
-      </div>
-
-      {/* Hero Card Ringkasan Omzet Hari Ini */}
-      <div className="g-acrylic tk-phone-hero hi">
+      {/* 2. Hero Card Total Transaksi Hari Ini */}
+      <div className="g-acrylic tk-phone-hero">
         <span
           style={{
             fontSize: 'var(--t-sm)',
@@ -79,7 +47,12 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
         {isLoading ? (
           <div
             className="tk-skeleton"
-            style={{ height: '36px', width: '200px', margin: '6px 0', borderRadius: 'var(--r-sm)' }}
+            style={{
+              height: '36px',
+              width: '200px',
+              margin: '6px 0',
+              borderRadius: 'var(--r-sm)',
+            }}
           />
         ) : (
           <b className="tk-phone-hero-amount">
@@ -99,50 +72,37 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
         </span>
       </div>
 
-      {/* Bagian Transaksi Terbaru */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          margin: '16px 4px 8px',
-        }}
-      >
+      {/* 3. Bagian Transaksi Terbaru */}
+      <div style={{ margin: '16px 4px 6px' }}>
         <h2 className="tk-phone-section-title" style={{ margin: 0 }}>
           Terbaru
         </h2>
-        {onNavigateToHistory && (
-          <button
-            type="button"
-            onClick={onNavigateToHistory}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--accent)',
-              fontSize: 'var(--t-xs)',
-              lineHeight: 'var(--l-xs)',
-              fontWeight: 700,
-              cursor: 'pointer',
-              padding: '4px 8px',
-            }}
-          >
-            Lihat semua ›
-          </button>
-        )}
+        <span
+          style={{
+            fontSize: 'var(--t-xs)',
+            lineHeight: 'var(--l-xs)',
+            color: 'var(--ink-3)',
+            fontWeight: 600,
+            display: 'block',
+            marginTop: '2px',
+          }}
+        >
+          {formatDate(new Date())}
+        </span>
       </div>
 
-      {/* Daftar Transaksi Terbaru */}
+      {/* 4. Daftar Transaksi Terbaru */}
       <div className="tk-phone-list-card">
         {isLoading && recentOrders.length === 0 ? (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div className="tk-skeleton" style={{ height: '44px', borderRadius: 'var(--r-sm)' }} />
-            <div className="tk-skeleton" style={{ height: '44px', borderRadius: 'var(--r-sm)' }} />
-            <div className="tk-skeleton" style={{ height: '44px', borderRadius: 'var(--r-sm)' }} />
+            <div className="tk-skeleton" style={{ height: '48px', borderRadius: 'var(--r-sm)' }} />
+            <div className="tk-skeleton" style={{ height: '48px', borderRadius: 'var(--r-sm)' }} />
+            <div className="tk-skeleton" style={{ height: '48px', borderRadius: 'var(--r-sm)' }} />
           </div>
         ) : recentOrders.length === 0 ? (
           <div
             style={{
-              padding: '28px 16px',
+              padding: '32px 16px',
               textAlign: 'center',
               color: 'var(--ink-3)',
               fontSize: 'var(--t-sm)',
@@ -152,48 +112,60 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
             Belum ada transaksi hari ini
           </div>
         ) : (
-          recentOrders.map(({ order, items }) => {
+          recentOrders.map((item) => {
+            const { order, items } = item;
             const timeStr = order.created_at
               ? new Date(order.created_at).toLocaleTimeString('id-ID', {
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: 'Asia/Makassar',
                 })
               : '00.00';
-            const cashierName = getCashierName(order.cashier_id);
-            const totalQty = items?.reduce((sum, it) => sum + (it.qty || 1), 0) || items?.length || 1;
+            const totalQty =
+              items?.reduce((sum: number, it: any) => sum + (it.qty || 1), 0) ||
+              items?.length ||
+              1;
 
             return (
               <div
                 key={order.id}
                 className="tk-phone-row"
-                onClick={() => {
-                  if (onSelectOrder) {
-                    onSelectOrder(order.id);
-                  } else if (onNavigateToHistory) {
-                    onNavigateToHistory();
+                onClick={() => handleRowClick(item)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleRowClick(item);
                   }
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="tk-phone-dot" />
-                  <div>
-                    <b style={{ display: 'block', fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)' }}>
-                      Meja {order.table_no}
-                    </b>
-                    <small
-                      style={{
-                        display: 'block',
-                        color: 'var(--ink-3)',
-                        fontSize: 'var(--t-xs)',
-                        lineHeight: 'var(--l-xs)',
-                        marginTop: '2px',
-                      }}
-                    >
-                      {timeStr} WITA · {cashierName} · {totalQty} item
-                    </small>
-                  </div>
+                {/* Kolom Kiri: Meja & Jumlah Item */}
+                <div>
+                  <b
+                    style={{
+                      display: 'block',
+                      fontSize: 'var(--t-md)',
+                      lineHeight: 'var(--l-md)',
+                      fontWeight: 800,
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    Meja {order.table_no || '-'}
+                  </b>
+                  <span
+                    style={{
+                      display: 'block',
+                      color: 'var(--ink-3)',
+                      fontSize: 'var(--t-xs)',
+                      lineHeight: 'var(--l-xs)',
+                      marginTop: '2px',
+                    }}
+                  >
+                    {totalQty} item
+                  </span>
                 </div>
 
+                {/* Kolom Kanan: Nominal Rupiah & Jam Transaksi */}
                 <div style={{ textAlign: 'right' }}>
                   <b
                     style={{
@@ -206,7 +178,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                   >
                     {formatRupiah(order.total_idr)}
                   </b>
-                  <small
+                  <span
                     style={{
                       display: 'block',
                       color: 'var(--ink-3)',
@@ -215,8 +187,8 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                       marginTop: '2px',
                     }}
                   >
-                    Lunas
-                  </small>
+                    {timeStr} WITA
+                  </span>
                 </div>
               </div>
             );
@@ -226,3 +198,5 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
     </div>
   );
 };
+
+export default PhoneHomeScreen;
