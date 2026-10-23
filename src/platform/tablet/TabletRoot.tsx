@@ -46,6 +46,7 @@ export const TabletRoot: React.FC = () => {
   const {
     progress,
     isDragging,
+    isNavbarHolding,
     containerRef,
     trackRef,
     indicatorRef,
@@ -221,6 +222,7 @@ export const TabletRoot: React.FC = () => {
           onSelect={scrollToTab}
           progress={progress}
           isDragging={isDragging}
+          isHolding={isNavbarHolding}
           navRef={navbarRef}
           indicatorRef={indicatorRef}
           onPointerDown={handleNavbarPointerDown}

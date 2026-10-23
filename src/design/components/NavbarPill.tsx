@@ -8,6 +8,7 @@ export interface NavbarPillProps {
   scrollProgress?: number;
   progress?: number;
   isDragging?: boolean;
+  isHolding?: boolean;
   navRef?: React.Ref<HTMLElement>;
   indicatorRef?: React.Ref<HTMLDivElement>;
   onPointerDown?: (e: React.PointerEvent<HTMLElement>) => void;
@@ -24,6 +25,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   scrollProgress,
   progress,
   isDragging: externalIsDragging,
+  isHolding: externalIsHolding,
   navRef: externalNavRef,
   indicatorRef: externalIndicatorRef,
   onPointerDown: externalOnPointerDown,
@@ -42,8 +44,12 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   const tabMeasurementsRef = useRef<{ left: number; width: number }[]>([]);
 
   const [internalIsDragging, setInternalIsDragging] = useState(false);
+  const [internalIsHolding, setInternalIsHolding] = useState(false);
   const [dragProgress, setDragProgress] = useState(activeIndex);
   const isDraggingRef = useRef(false);
+  const internalHoldTimerRef = useRef<number | null>(null);
+  const internalStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const internalPointerDownRef = useRef(false);
 
   // Ukur offsetLeft dan offsetWidth setiap tab dari DOM layout
   const measureTabs = useCallback((): { left: number; width: number }[] => {
@@ -136,26 +142,62 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     } catch {
       // ignore
     }
-    isDraggingRef.current = true;
-    setInternalIsDragging(true);
-    const p = calculateProgress(e.clientX);
-    setDragProgress(p);
-    applyIndicatorGeometry(p, false);
-    onDragProgress?.(p);
+    internalPointerDownRef.current = true;
+    internalStartPosRef.current = { x: e.clientX, y: e.clientY };
+
+    if (internalHoldTimerRef.current !== null) {
+      clearTimeout(internalHoldTimerRef.current);
+      internalHoldTimerRef.current = null;
+    }
+
+    // Deteksi HOLD jika ditekan >= 160ms
+    internalHoldTimerRef.current = window.setTimeout(() => {
+      if (internalPointerDownRef.current) {
+        isDraggingRef.current = true;
+        setInternalIsDragging(true);
+        setInternalIsHolding(true);
+        const p = calculateProgress(e.clientX);
+        setDragProgress(p);
+        applyIndicatorGeometry(p, false);
+        onDragProgress?.(p);
+      }
+    }, 160);
   };
 
   const handleInternalPointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    if (!isDraggingRef.current || isBlocked) return;
-    const p = calculateProgress(e.clientX);
-    setDragProgress(p);
-    applyIndicatorGeometry(p, false);
-    onDragProgress?.(p);
+    if (!internalPointerDownRef.current || isBlocked) return;
+    const dx = Math.abs(e.clientX - internalStartPosRef.current.x);
+    const dy = Math.abs(e.clientY - internalStartPosRef.current.y);
+
+    if (!isDraggingRef.current && (dx > 6 || dy > 6)) {
+      if (internalHoldTimerRef.current !== null) {
+        clearTimeout(internalHoldTimerRef.current);
+        internalHoldTimerRef.current = null;
+      }
+      isDraggingRef.current = true;
+      setInternalIsDragging(true);
+      setInternalIsHolding(true);
+    }
+
+    if (isDraggingRef.current) {
+      const p = calculateProgress(e.clientX);
+      setDragProgress(p);
+      applyIndicatorGeometry(p, false);
+      onDragProgress?.(p);
+    }
   };
 
   const handleInternalPointerUp = (e: React.PointerEvent<HTMLElement>) => {
-    if (!isDraggingRef.current) return;
+    if (internalHoldTimerRef.current !== null) {
+      clearTimeout(internalHoldTimerRef.current);
+      internalHoldTimerRef.current = null;
+    }
+
+    const wasHolding = isDraggingRef.current;
+    internalPointerDownRef.current = false;
     isDraggingRef.current = false;
     setInternalIsDragging(false);
+    setInternalIsHolding(false);
 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -163,11 +205,14 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       // ignore
     }
 
-    const p = calculateProgress(e.clientX);
-    const nearestIndex = Math.max(0, Math.min(items.length - 1, Math.round(p)));
-    onSelect(items[nearestIndex]);
+    if (wasHolding) {
+      const p = calculateProgress(e.clientX);
+      const nearestIndex = Math.max(0, Math.min(items.length - 1, Math.round(p)));
+      onSelect(items[nearestIndex]);
+    }
   };
 
+  const isHolding = externalIsHolding !== undefined ? externalIsHolding : internalIsHolding;
   const activeDragging = externalIsDragging !== undefined ? externalIsDragging : internalIsDragging;
 
   // Nilai progress kontinu t (0..2)
@@ -225,8 +270,6 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
 
   const isRealtimeMoving = activeDragging || Math.abs(effectiveProgress - activeIndex) > 0.005;
 
-  const [isPressed, setIsPressed] = useState(false);
-
   return (
     <nav
       ref={(el) => {
@@ -239,21 +282,18 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
           }
         }
       }}
-      className={`g-liquid tk-navbar ${isBlocked ? 'blocked' : ''}`}
+      className={`g-liquid tk-navbar ${isBlocked ? 'blocked' : ''} ${isHolding ? 'holding' : ''}`}
       aria-label="Navigasi Utama"
       onPointerDown={(e) => {
-        setIsPressed(true);
         if (externalOnPointerDown) externalOnPointerDown(e);
         else handleInternalPointerDown(e);
       }}
       onPointerMove={externalOnPointerMove || handleInternalPointerMove}
       onPointerUp={(e) => {
-        setIsPressed(false);
         if (externalOnPointerUp) externalOnPointerUp(e);
         else handleInternalPointerUp(e);
       }}
       onPointerCancel={(e) => {
-        setIsPressed(false);
         if (externalOnPointerCancel) externalOnPointerCancel(e);
         else if (externalOnPointerUp) externalOnPointerUp(e);
         else handleInternalPointerUp(e);
@@ -264,8 +304,8 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
         pointerEvents: isBlocked ? 'none' : 'auto',
         filter: isBlocked ? 'blur(3px)' : 'none',
         opacity: isBlocked ? 0.45 : 1,
-        transform: `translateX(-50%) scale(${isPressed ? 0.96 : 1})`,
-        transition: 'opacity 0.25s ease, filter 0.25s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transform: `translateX(-50%) scale(${isHolding ? 0.95 : 1})`,
+        transition: 'opacity 0.25s ease, filter 0.25s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease',
         overflow: 'hidden',
       }}
     >
@@ -289,9 +329,11 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
         const diff = Math.abs(effectiveProgress - idx);
         const weight = Math.max(0, 1 - diff);
         const isCurrentActive = activeItem === item;
-        const baseOpacity = 0.65 + weight * 0.35;
-        const finalOpacity = isPressed ? baseOpacity * 0.72 : baseOpacity;
-        const scale = 1 + weight * 0.16;
+        const baseOpacity = 0.7 + weight * 0.3;
+        // Saat hold: item yang tidak disentuh (weight rendah) lebih redup agar item yang di-hold fokus
+        const finalOpacity = isHolding ? (0.45 + weight * 0.55) : baseOpacity;
+        // Saat hold: perbesar pembesaran item yang dilewati jari (1 + weight * 0.18), saat normal sedikit lebih kalem (1 + weight * 0.1)
+        const scale = isHolding ? (1 + weight * 0.18) : (1 + weight * 0.1);
 
         return (
           <button
@@ -300,7 +342,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
               tabRefs.current[idx] = el;
             }}
             type="button"
-            className={`tk-navbar-item ${isCurrentActive ? 'active' : ''}`}
+            className={`tk-navbar-item ${isCurrentActive ? 'active' : ''} ${isHolding ? 'in-hold' : ''}`}
             style={{
               opacity: finalOpacity,
               fontWeight: 700,

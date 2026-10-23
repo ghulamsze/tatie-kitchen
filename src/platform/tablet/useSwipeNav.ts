@@ -18,9 +18,14 @@ export function useSwipeNav({
 
   const [progress, setProgress] = useState<number>(activeIndex);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isNavbarHolding, setIsNavbarHolding] = useState<boolean>(false);
 
   const tRef = useRef<number>(activeIndex);
   const isDraggingRef = useRef<boolean>(false);
+  const navbarHoldTimerRef = useRef<number | null>(null);
+  const navbarPointerStartXRef = useRef<number>(0);
+  const navbarPointerStartYRef = useRef<number>(0);
+  const isNavbarPointerDownRef = useRef<boolean>(false);
 
   // References ke elemen DOM untuk manipulasi langsung hardware-accelerated 60/120 FPS
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -180,7 +185,20 @@ export function useSwipeNav({
     return Math.max(0, Math.min(tabs.length - 1, p));
   }, [tabs.length]);
 
-  // Interaksi pada navbar: bergerak mulus mengikuti sentuhan jari 1:1
+  // Hitung tab terdekat dari koordinat horizontal clientX di navbar
+  const getNearestTabIndexFromClientX = useCallback((clientX: number): number => {
+    if (!navbarRef.current) return activeIndexRef.current;
+    const rect = navbarRef.current.getBoundingClientRect();
+    const padding = 4;
+    const innerWidth = rect.width - padding * 2;
+    if (innerWidth <= 0) return activeIndexRef.current;
+    const relativeX = clientX - rect.left - padding;
+    const itemWidth = innerWidth / tabs.length;
+    const index = Math.floor(relativeX / itemWidth);
+    return Math.max(0, Math.min(tabs.length - 1, Math.max(0, index)));
+  }, [tabs.length]);
+
+  // Interaksi pada navbar: membedakan antara KETUKAN BIASA dan HOLD/DRAG
   const handleNavbarPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     cancelOngoingAnimation();
 
@@ -190,25 +208,66 @@ export function useSwipeNav({
       // ignore
     }
 
-    isDraggingRef.current = true;
+    isNavbarPointerDownRef.current = true;
+    navbarPointerStartXRef.current = e.clientX;
+    navbarPointerStartYRef.current = e.clientY;
     dragSourceRef.current = 'navbar';
-    setIsDragging(true);
 
-    const progressT = getContinuousProgressFromClientX(e.clientX);
-    applyT(progressT, true);
+    if (navbarHoldTimerRef.current !== null) {
+      clearTimeout(navbarHoldTimerRef.current);
+      navbarHoldTimerRef.current = null;
+    }
+
+    // Deteksi HOLD: jika ditekan dan ditahan >= 160ms tanpa dilepas, baru masuk mode hold/scrubbing
+    navbarHoldTimerRef.current = window.setTimeout(() => {
+      if (isNavbarPointerDownRef.current) {
+        isDraggingRef.current = true;
+        dragSourceRef.current = 'navbar';
+        setIsDragging(true);
+        setIsNavbarHolding(true);
+        const progressT = getContinuousProgressFromClientX(e.clientX);
+        applyT(progressT, true);
+      }
+    }, 160);
   }, [cancelOngoingAnimation, getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
-    const progressT = getContinuousProgressFromClientX(e.clientX);
-    applyT(progressT, true);
+    if (!isNavbarPointerDownRef.current || dragSourceRef.current !== 'navbar') return;
+
+    const dx = Math.abs(e.clientX - navbarPointerStartXRef.current);
+    const dy = Math.abs(e.clientY - navbarPointerStartYRef.current);
+
+    // Jika jari bergeser > 6px, segera aktifkan mode hold & drag 1:1 tanpa menunggu timer 160ms
+    if (!isDraggingRef.current && (dx > 6 || dy > 6)) {
+      if (navbarHoldTimerRef.current !== null) {
+        clearTimeout(navbarHoldTimerRef.current);
+        navbarHoldTimerRef.current = null;
+      }
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      setIsNavbarHolding(true);
+    }
+
+    if (isDraggingRef.current) {
+      const progressT = getContinuousProgressFromClientX(e.clientX);
+      applyT(progressT, true);
+    }
   }, [getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    if (!isDraggingRef.current || dragSourceRef.current !== 'navbar') return;
+    if (dragSourceRef.current !== 'navbar') return;
+
+    if (navbarHoldTimerRef.current !== null) {
+      clearTimeout(navbarHoldTimerRef.current);
+      navbarHoldTimerRef.current = null;
+    }
+
+    const wasHolding = isDraggingRef.current;
+    isNavbarPointerDownRef.current = false;
     isDraggingRef.current = false;
     dragSourceRef.current = null;
     setIsDragging(false);
+    setIsNavbarHolding(false);
 
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -216,10 +275,17 @@ export function useSwipeNav({
       // ignore
     }
 
-    // Meluncur halus (smooth snap) ke tab terdekat yang dipilih
-    const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
-    animateTo(targetIdx);
-  }, [tabs.length, animateTo]);
+    if (wasHolding) {
+      // Selesai HOLD/DRAG: meluncur halus (smooth snap) ke tab terdekat yang dipilih
+      const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
+      animateTo(targetIdx);
+    } else {
+      // KETUKAN BIASA: pengguna hanya mengetuk tab secara cepat!
+      // Hitung tab berdasarkan koordinat sentuhan dan animasikan langsung ke tab target
+      const targetIdx = getNearestTabIndexFromClientX(e.clientX);
+      animateTo(targetIdx);
+    }
+  }, [tabs.length, animateTo, getNearestTabIndexFromClientX]);
 
   // Pointer events untuk swipe halaman layar (Pager)
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -381,9 +447,18 @@ export function useSwipeNav({
     animateTo(targetIndex);
   }, [animateTo, tabs]);
 
+  useEffect(() => {
+    return () => {
+      if (navbarHoldTimerRef.current !== null) {
+        clearTimeout(navbarHoldTimerRef.current);
+      }
+    };
+  }, []);
+
   return {
     progress,
     isDragging,
+    isNavbarHolding,
     containerRef,
     trackRef,
     indicatorRef,

@@ -321,6 +321,13 @@
   user-select: none;
   isolation: isolate;
   overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Saat navbar di-HOLD: frame tertekan ke dalam (tactile glass depression) & bayangan lebih dalam */
+.tk-navbar.holding {
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.55) !important;
 }
 
 .tk-nav-elastic-indicator {
@@ -366,8 +373,15 @@
   transition: color 0.2s ease, transform 0.15s ease;
 }
 
-.tk-navbar-item:active {
-  transform: scale(0.95);
+/* Ketukan biasa (tap): respons fisik instan mikro pada tombol yang disentuh tanpa menekan frame navbar */
+.tk-navbar-item:active:not(.in-hold) {
+  transform: scale(0.92) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* Saat di-hold: tombol yang dilewati jari dikendalikan oleh dynamic magnification 1.18x di inline style */
+.tk-navbar-item.in-hold {
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.12s ease !important;
 }
 
 .tk-navbar-item.active {
@@ -1492,6 +1506,11 @@ body.tk-modal-open .tk-navbar,
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
   contain: paint;
+}
+
+:root[data-theme="light"] .tk-navbar.holding {
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.08), 0 10px 32px rgba(15, 23, 42, 0.14) !important;
 }
 
 :root[data-theme="light"] .tk-nav-elastic-indicator {
