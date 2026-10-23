@@ -20,7 +20,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 }) => {
   const [isClearing, setIsClearing] = useState(false);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const touchStartXRef = useRef<number | null>(null);
 
   const {
     items,
@@ -234,26 +233,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
             ))}
           </div>
 
-          {/* Grid Kartu Menu dengan Dukungan Swipe Horizontal Antar Kategori */}
+          {/* Grid Kartu Menu */}
           <div
             className="tk-menu-grid"
-            onTouchStart={(e) => {
-              touchStartXRef.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={(e) => {
-              if (touchStartXRef.current === null) return;
-              const diff = e.changedTouches[0].clientX - touchStartXRef.current;
-              touchStartXRef.current = null;
-              if (Math.abs(diff) > 40) {
-                const keys = ['Semua', 'Snack', 'Makanan', 'Mie', 'Minuman'];
-                const curIdx = keys.indexOf(selectedCategory);
-                if (diff < 0 && curIdx < keys.length - 1) {
-                  setCategory(keys[curIdx + 1]);
-                } else if (diff > 0 && curIdx > 0) {
-                  setCategory(keys[curIdx - 1]);
-                }
-              }
-            }}
             style={{
               flex: 1,
               minHeight: 0,

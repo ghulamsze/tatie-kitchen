@@ -18,7 +18,7 @@ import { useShopStore } from '../../stores/shopStore.ts';
 
 import { getQuickCashOptions } from './quickCash.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
-import { generateUUID } from '../../lib/uuid.ts';
+import { generateUUID, ensureUUID } from '../../lib/uuid.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
@@ -139,8 +139,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
       setErrorMessage('');
 
       const orderId = generateUUID();
-      const cashierId = activeCashier?.id || 'c-001';
-      const shopId = activeCashier?.shop_id || 'shop-001';
+      const cashierId = ensureUUID(activeCashier?.id, '00000000-0000-0000-0000-000000000002');
+      const shopId = ensureUUID(activeCashier?.shop_id || shop?.id, '00000000-0000-0000-0000-000000000001');
 
       let recordedOrder: Order;
       let recordedItems: OrderItem[];
@@ -154,6 +154,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         cash_received_idr: effectiveCash,
         items: lines.map((l) => ({
           menu_item_id: l.item.id,
+          name_snapshot: l.item.name,
+          price_snapshot_idr: l.item.price_idr,
           qty: l.qty,
         })),
       };
@@ -194,8 +196,59 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               playPaymentSound();
               onSuccess();
               return;
-            } else if (error) {
-              logError('PaymentScreen:create_order_rpc_error', error);
+            } else {
+              // Jika RPC gagal, coba fallback direct insert ke tabel orders dan order_items
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { data: insertedOrder, error: insErr } = await (supabase.from('orders') as any)
+                  .insert({
+                    id: orderId,
+                    shop_id: shopId,
+                    cashier_id: cashierId,
+                    table_no: finalTableNo,
+                    total_idr: total,
+                    cash_received_idr: effectiveCash,
+                    change_idr: change,
+                    status: 'paid',
+                  })
+                  .select()
+                  .single();
+
+                if (!insErr && insertedOrder) {
+                  recordedOrder = insertedOrder as Order;
+                  recordedItems = lines.map((l) => ({
+                    id: generateUUID(),
+                    order_id: recordedOrder.id,
+                    menu_item_id: l.item.id,
+                    name_snapshot: l.item.name,
+                    price_snapshot_idr: l.item.price_idr,
+                    qty: l.qty,
+                  }));
+
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('order_items') as any).insert(
+                    recordedItems.map((it) => ({
+                      order_id: recordedOrder.id,
+                      name_snapshot: it.name_snapshot,
+                      price_snapshot_idr: it.price_snapshot_idr,
+                      qty: it.qty,
+                    }))
+                  );
+
+                  setLastOrder(recordedOrder, recordedItems);
+                  useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
+                  clearCart();
+                  playPaymentSound();
+                  onSuccess();
+                  return;
+                }
+              } catch (directErr) {
+                logError('PaymentScreen:direct_insert_fallback_error', directErr);
+              }
+
+              if (error) {
+                logError('PaymentScreen:create_order_rpc_error', error);
+              }
               useSyncQueueStore.getState().enqueue(orderPayload);
             }
           } catch (err) {

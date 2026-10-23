@@ -98,12 +98,12 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     };
   }
 
-  // 2. Sinyal 2: Capacitor Native
+  // 2. Sinyal 2: Capacitor Native (Aplikasi APK Tablet Kasir Tati'e Kitchen)
   if (isCapacitorNative) {
     const capPlatform = env.capacitor?.platform;
     const platform: Platform = capPlatform === 'android' ? 'android' : capPlatform === 'ios' ? 'ios' : 'unknown';
-    // Di Android/iOS native, cek lebar layar untuk formFactor
-    const formFactor: FormFactor = shortestSide >= 600 ? 'tablet' : 'phone';
+    // Aplikasi APK kasir ditargetkan khusus tablet kasir lanskap
+    const formFactor: FormFactor = 'tablet';
     return {
       platform,
       formFactor,
@@ -222,13 +222,19 @@ export function getCurrentDevice(): DeviceInfo {
     }
   }
 
+  // Gunakan screen.width & screen.height fisik agar tidak mengecil saat virtual keyboard muncul di tablet/browser
+  const physWidth = typeof window !== 'undefined' && window.screen ? window.screen.width : window.innerWidth;
+  const physHeight = typeof window !== 'undefined' && window.screen ? window.screen.height : window.innerHeight;
+  const screenW = Math.max(physWidth, window.innerWidth);
+  const screenH = Math.max(physHeight, window.innerHeight);
+
   const env: DeviceEnv = {
     urlSearch: search,
     storedOverride,
     userAgent: navigator.userAgent,
     maxTouchPoints: navigator.maxTouchPoints || 0,
-    screenWidth: window.innerWidth,
-    screenHeight: window.innerHeight,
+    screenWidth: screenW,
+    screenHeight: screenH,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userAgentData: (navigator as any).userAgentData,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

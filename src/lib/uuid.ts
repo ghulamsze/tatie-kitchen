@@ -12,3 +12,18 @@ export const generateUUID = (): string => {
     return v.toString(16);
   });
 };
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const isValidUUID = (str: string): boolean => {
+  return UUID_REGEX.test(str);
+};
+
+export const ensureUUID = (
+  val?: string | null,
+  fallback = '00000000-0000-0000-0000-000000000001'
+): string => {
+  if (val && isValidUUID(val)) return val;
+  return fallback;
+};
+

@@ -15,7 +15,7 @@ export interface ShopSettings {
 }
 
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
-  id: 'shop-001',
+  id: '00000000-0000-0000-0000-000000000001',
   name: "Tati’e Kitchen",
   timezone: 'Asia/Makassar',
   phone_no: '0812-3456-7890',

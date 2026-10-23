@@ -44,12 +44,11 @@ export function useSwipeNav({
   const velocityRef = useRef<number>(0);
   const hasDecidedDirectionRef = useRef<boolean>(false);
   const isLockedOutRef = useRef<boolean>(false);
+  const rafIdRef = useRef<number | null>(null);
 
-  // Terapkan nilai t langsung ke DOM transform, background, dan tombol navbar
+  // Terapkan nilai t langsung ke DOM transform, background, indicator, dan tombol navbar
   const applyT = useCallback((t: number, dragging: boolean) => {
     tRef.current = t;
-    setProgress(t);
-    setIsDragging(dragging);
 
     if (containerRef.current) {
       containerRef.current.style.setProperty('--bg-t', String(t));
@@ -62,6 +61,20 @@ export function useSwipeNav({
       trackRef.current.style.transform = `translate3d(calc(-${t} * 100%), 0, 0)`;
     }
 
+    // Manipulasi indikator navbar langsung secara hardware-accelerated 60/120fps tanpa blocking React render
+    if (indicatorRef.current && navbarRef.current) {
+      const navW = navbarRef.current.offsetWidth || 320;
+      const padding = 4;
+      const innerW = navW - padding * 2;
+      const itemW = innerW / tabs.length;
+      const left = padding + t * itemW;
+      indicatorRef.current.style.transition = dragging
+        ? 'none'
+        : 'transform 220ms cubic-bezier(0, 0, 0.2, 1), width 220ms cubic-bezier(0, 0, 0.2, 1)';
+      indicatorRef.current.style.transform = `translate3d(${left}px, 0, 0)`;
+      indicatorRef.current.style.width = `${itemW}px`;
+    }
+
     // Perbarui opacity tombol tab navbar secara proporsional tanpa mengubah lebar teks
     if (navbarRef.current) {
       const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
@@ -72,10 +85,23 @@ export function useSwipeNav({
         btn.style.fontWeight = '700'; // Selalu 700 agar tidak memicu resize navbar
       });
     }
-  }, []);
+
+    // Throttle React state setProgress dengan requestAnimationFrame agar UI tidak lag saat drag/hold
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        setProgress(tRef.current);
+      });
+    }
+  }, [tabs.length]);
 
   // Animasi halus 220ms ease-out (tanpa overshoot) menuju tab target (0 = Home, 1 = Riwayat, 2 = Akun)
   const animateTo = useCallback((targetIndex: number) => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+
     const clampedTarget = Math.max(0, Math.min(tabs.length - 1, targetIndex));
     tRef.current = clampedTarget;
     setProgress(clampedTarget);
@@ -88,6 +114,17 @@ export function useSwipeNav({
     if (trackRef.current) {
       trackRef.current.style.transition = 'transform 220ms cubic-bezier(0, 0, 0.2, 1)';
       trackRef.current.style.transform = `translate3d(calc(-${clampedTarget} * 100%), 0, 0)`;
+    }
+
+    if (indicatorRef.current && navbarRef.current) {
+      const navW = navbarRef.current.offsetWidth || 320;
+      const padding = 4;
+      const innerW = navW - padding * 2;
+      const itemW = innerW / tabs.length;
+      const left = padding + clampedTarget * itemW;
+      indicatorRef.current.style.transition = 'transform 220ms cubic-bezier(0, 0, 0.2, 1), width 220ms cubic-bezier(0, 0, 0.2, 1)';
+      indicatorRef.current.style.transform = `translate3d(${left}px, 0, 0)`;
+      indicatorRef.current.style.width = `${itemW}px`;
     }
 
     onTabChange(tabs[clampedTarget]);
@@ -287,6 +324,25 @@ export function useSwipeNav({
     }
   }, [tabs.length, animateTo, getNearestTabIndexFromClientX]);
 
+  const handleNavbarPointerCancel = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    if (navbarHoldTimerRef.current !== null) {
+      clearTimeout(navbarHoldTimerRef.current);
+      navbarHoldTimerRef.current = null;
+    }
+    isNavbarPointerDownRef.current = false;
+    isDraggingRef.current = false;
+    dragSourceRef.current = null;
+    setIsDragging(false);
+    setIsNavbarHolding(false);
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
+    animateTo(targetIdx);
+  }, [tabs.length, animateTo]);
+
   // Pointer events untuk swipe halaman layar (Pager)
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -331,27 +387,30 @@ export function useSwipeNav({
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // 6px dead zone — lebih ringan sebelum drag horizontal mulai
+    // Dead zone 10px / 12px agar tidak sensitif goyangan awal jari di layar tablet
     if (!hasDecidedDirectionRef.current) {
-      if (absDx <= 6 && absDy <= 6) {
+      if (absDx < 10 && absDy < 10) {
         return;
       }
 
-      hasDecidedDirectionRef.current = true;
-
-      // Hanya drag horizontal (|dx| > |dy|) sehingga vertical scrolling di dalam menu card tetap berfungsi
-      if (absDy > absDx) {
+      // Jika dominan vertikal (pengguna sedang scroll menu ke bawah/atas), kunci swipe agar scroll lancar
+      if (absDy > absDx && absDy > 14) {
+        hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      isDraggingRef.current = true;
-      setIsDragging(true);
+      // Jika dominan horizontal, aktifkan swipe halaman
+      if (absDx >= 12 && absDx >= absDy) {
+        hasDecidedDirectionRef.current = true;
+        isDraggingRef.current = true;
+        setIsDragging(true);
 
-      try {
-        (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-      } catch {
-        // ignore
+        try {
+          (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
       }
     }
 
@@ -411,16 +470,16 @@ export function useSwipeNav({
       window.removeEventListener('click', suppressClick, { capture: true });
     }, 120);
 
-    // Kriteria ganti halaman:
-    // Drag melewati 20% lebar layar (min 60px) ATAU flick ringan (> 0.4 px/ms DAN >= 30px).
+    // Kriteria ganti halaman pada tablet:
+    // Drag melewati 15% lebar layar (min 45px) ATAU flick ringan (> 0.3 px/ms DAN >= 25px).
     const totalDx = e.clientX - startXRef.current;
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
     const containerWidth = containerRef.current?.clientWidth || 1024;
-    const threshold20 = Math.max(60, containerWidth * 0.20);
+    const threshold15 = Math.max(45, containerWidth * 0.15);
 
-    const isFlick = velocity > 0.4 && Math.abs(totalDx) >= 30;
-    const isLongSwipe = Math.abs(totalDx) >= threshold20;
+    const isFlick = velocity > 0.3 && Math.abs(totalDx) >= 25;
+    const isLongSwipe = Math.abs(totalDx) >= threshold15;
 
     const currIdx = activeIndexRef.current;
     let targetIndex = currIdx;
@@ -441,6 +500,24 @@ export function useSwipeNav({
     animateTo(targetIndex);
   }, [animateTo, tabs.length]);
 
+  // Tangani pembatalan gesture sentuh di tablet (misal gesture sistem Android back/home)
+  // Menjamin layar tidak pernah stuck macet di tengah jalan
+  const handlePagerPointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    pointerActiveRef.current = false;
+    dragSourceRef.current = null;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+
+    try {
+      (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
+    animateTo(targetIdx);
+  }, [animateTo, tabs.length]);
+
   // Klik langsung tab navbar
   const scrollToTab = useCallback((tab: NavItem) => {
     const targetIndex = Math.max(0, tabs.indexOf(tab));
@@ -451,6 +528,9 @@ export function useSwipeNav({
     return () => {
       if (navbarHoldTimerRef.current !== null) {
         clearTimeout(navbarHoldTimerRef.current);
+      }
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
       }
     };
   }, []);
@@ -466,9 +546,11 @@ export function useSwipeNav({
     handleNavbarPointerDown,
     handleNavbarPointerMove,
     handleNavbarPointerUp,
+    handleNavbarPointerCancel,
     handlePagerPointerDown,
     handlePagerPointerMove,
     handlePagerPointerUp,
+    handlePagerPointerCancel,
     scrollToTab,
   };
 }

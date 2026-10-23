@@ -109,14 +109,44 @@ export const useSyncQueueStore = create<SyncQueueState>((set, get) => {
             p_order: item.payload,
           });
 
-          if (error) {
-            logError(`syncQueueStore:syncOrder:${item.id}`, error);
-            item.retryCount += 1;
-            remainingQueue.push(item);
-            failedCount += 1;
-          } else {
+          if (!error) {
             syncedCount += 1;
-            logInfo('syncQueueStore', `Order ${item.id} berhasil disinkronkan ke Supabase database!`);
+            logInfo('syncQueueStore', `Order ${item.id} berhasil disinkronkan ke Supabase via RPC!`);
+          } else {
+            // Coba fallback direct insert ke tabel orders dan order_items
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: insErr } = await (supabase.from('orders') as any).insert({
+              id: item.payload.id,
+              shop_id: item.payload.shop_id,
+              cashier_id: item.payload.cashier_id,
+              table_no: item.payload.table_no,
+              total_idr: item.payload.cash_received_idr,
+              cash_received_idr: item.payload.cash_received_idr,
+              change_idr: 0,
+              status: 'paid',
+            });
+
+            if (!insErr) {
+              if (item.payload.items && item.payload.items.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('order_items') as any).insert(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  item.payload.items.map((it: any) => ({
+                    order_id: item.payload.id,
+                    name_snapshot: it.name_snapshot || 'Menu',
+                    price_snapshot_idr: it.price_snapshot_idr || 0,
+                    qty: it.qty,
+                  }))
+                );
+              }
+              syncedCount += 1;
+              logInfo('syncQueueStore', `Order ${item.id} berhasil disinkronkan via direct insert!`);
+            } else {
+              logError(`syncQueueStore:syncOrder:${item.id}`, error);
+              item.retryCount += 1;
+              remainingQueue.push(item);
+              failedCount += 1;
+            }
           }
         } catch (err) {
           logError(`syncQueueStore:syncOrderException:${item.id}`, err);

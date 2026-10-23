@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { MenuItem } from '../../lib/supabase/types.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 
@@ -15,9 +15,30 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
   onAdd,
   onHold,
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isHolding, setIsHolding] = useState(false);
   const hue = item.hue || 28;
+
+  // Optimasi Performa: Hanya render kartu yang berada di layar (viewport)
+  // Kartu di luar layar dimatikan agar hemat memori GPU dan tidak lag
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { rootMargin: '120px 0px 120px 0px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handlePointerDown = () => {
     setIsHolding(true);
@@ -41,12 +62,32 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
     }
   };
 
+  // Jika kartu berada di luar layar, render wadah ringan tanpa decode foto / blur GPU
+  if (!isVisible) {
+    return (
+      <div
+        ref={cardRef}
+        className={`tk-menu-card tk-menu-card-offscreen ${!item.available ? 'unavailable' : ''}`}
+        aria-hidden="true"
+        style={{
+          minHeight: '136px',
+          height: '136px',
+          position: 'relative',
+          background: 'var(--surface-sunken)',
+          contentVisibility: 'auto',
+          containIntrinsicSize: '136px',
+        }}
+      />
+    );
+  }
+
   const backgroundGradient = `radial-gradient(circle at 45% 48%, hsl(${hue} 85% 62%) 0 22%, transparent 48%), radial-gradient(circle at 68% 60%, hsl(${hue + 25} 75% 42%) 0 20%, transparent 46%), hsl(${hue} 42% 20%)`;
 
   const hasPhotoUrl = Boolean(item.photo_path && item.photo_path.trim().length > 0);
 
   return (
     <div
+      ref={cardRef}
       className={`tk-menu-card ${!item.available ? 'unavailable' : ''} ${isHeld ? 'hold' : ''}`}
       onClick={handleClick}
       onPointerDown={handlePointerDown}
@@ -59,6 +100,8 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
       style={{
         minHeight: '136px',
         position: 'relative',
+        contentVisibility: 'auto',
+        containIntrinsicSize: '136px',
       }}
     >
       {/* Animasi Garis Memutari Menu saat di-Hold */}

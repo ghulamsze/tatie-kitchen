@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
-import { DeviceInfo, setDeviceOverride } from '../lib/device/detect.ts';
+import React, { useState, useEffect, useRef } from 'react';
+import { DeviceInfo } from '../lib/device/detect.ts';
 
 export interface DevFrameProps {
   device: DeviceInfo;
@@ -21,10 +21,10 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
 
   
 
-  const handleResize = () => {
+    const handleResize = () => {
       // 1024 x 640 ditambah margin padding
       const availableWidth = window.innerWidth - 32;
-      const availableHeight = window.innerHeight - 84; // Menyisakan ruang untuk bilah info simulasi
+      const availableHeight = window.innerHeight - 32;
 
       const scaleX = availableWidth / 1024;
       const scaleY = availableHeight / 640;
@@ -56,74 +56,6 @@ export const DevFrame: React.FC<DevFrameProps> = ({ device, children }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Bilah Kontrol Simulasi DevFrame */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: `${1024 * scale}px`,
-          maxWidth: '100%',
-          marginBottom: '12px',
-          padding: '6px 16px',
-          background: 'rgba(255, 255, 255, 0.08)',
-          borderRadius: '999px',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          fontSize: 'var(--t-xs)',
-          lineHeight: 'var(--l-xs)',
-          color: '#ffffff',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: 'var(--accent)',
-              boxShadow: '0 0 6px var(--accent)',
-            }}
-          />
-          <b>Simulasi Tablet Kasir</b>
-          <span style={{ opacity: 0.6 }}>1024 × 640 (Skala {Math.round(scale * 100)}%)</span>
-        </div>
-
-        {/* Pengalih Cepat Perangkat */}
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <span style={{ opacity: 0.6, marginRight: '4px' }}>Ubah Perangkat:</span>
-          {(['tablet', 'laptop', 'phone', 'auto'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setDeviceOverride(m)}
-              style={{
-                background:
-                  (m === 'auto' && device.source !== 'override') ||
-                  (device.source === 'override' && device.formFactor === m)
-                    ? 'var(--accent)'
-                    : 'rgba(255, 255, 255, 0.12)',
-                color:
-                  (m === 'auto' && device.source !== 'override') ||
-                  (device.source === 'override' && device.formFactor === m)
-                    ? 'var(--on-accent)'
-                    : '#ffffff',
-                border: 'none',
-                borderRadius: '999px',
-                padding: '2px 10px',
-                fontFamily: 'inherit',
-                fontSize: 'var(--t-xs)',
-                lineHeight: 'var(--l-xs)',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              {m === 'tablet' ? 'Tablet' : m === 'laptop' ? 'Laptop' : m === 'phone' ? 'Ponsel' : 'Otomatis'}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Bingkai Tablet 1024 x 640 */}
       <div
         className="dev-frame-wrapper"

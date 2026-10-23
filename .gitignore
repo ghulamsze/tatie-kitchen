@@ -38,6 +38,7 @@ Thumbs.db
 
 # Android build outputs & caches
 android/.gradle/
+supabase/.temp/
 android/app/build/
 
 # Keystores & Signing

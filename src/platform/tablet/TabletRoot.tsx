@@ -74,9 +74,11 @@ export const TabletRoot: React.FC = () => {
     handleNavbarPointerDown,
     handleNavbarPointerMove,
     handleNavbarPointerUp,
+    handleNavbarPointerCancel,
     handlePagerPointerDown,
     handlePagerPointerMove,
     handlePagerPointerUp,
+    handlePagerPointerCancel,
     scrollToTab,
   } = useSwipeNav({
     tabs: NAV_TABS,
@@ -225,6 +227,7 @@ export const TabletRoot: React.FC = () => {
         onPointerDown={handlePagerPointerDown}
         onPointerMove={handlePagerPointerMove}
         onPointerUp={handlePagerPointerUp}
+        onPointerCancel={handlePagerPointerCancel}
       >
         <HomeScreen
           onOpenCustomerMenu={() => setIsCustomerMenuOpen(true)}
@@ -248,6 +251,7 @@ export const TabletRoot: React.FC = () => {
           onPointerDown={handleNavbarPointerDown}
           onPointerMove={handleNavbarPointerMove}
           onPointerUp={handleNavbarPointerUp}
+          onPointerCancel={handleNavbarPointerCancel}
           isBlocked={isModalActive}
         />
       )}
