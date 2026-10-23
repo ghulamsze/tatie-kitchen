@@ -112,7 +112,7 @@ export function useSwipeNav({
     }
 
     if (trackRef.current) {
-      trackRef.current.style.transition = 'transform 220ms cubic-bezier(0, 0, 0.2, 1)';
+      trackRef.current.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1)';
       trackRef.current.style.transform = `translate3d(calc(-${clampedTarget} * 100%), 0, 0)`;
     }
 
@@ -122,7 +122,7 @@ export function useSwipeNav({
       const innerW = navW - padding * 2;
       const itemW = innerW / tabs.length;
       const left = padding + clampedTarget * itemW;
-      indicatorRef.current.style.transition = 'transform 220ms cubic-bezier(0, 0, 0.2, 1), width 220ms cubic-bezier(0, 0, 0.2, 1)';
+      indicatorRef.current.style.transition = 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1), width 260ms cubic-bezier(0.2, 0.9, 0.3, 1)';
       indicatorRef.current.style.transform = `translate3d(${left}px, 0, 0)`;
       indicatorRef.current.style.width = `${itemW}px`;
     }
@@ -387,21 +387,21 @@ export function useSwipeNav({
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // Dead zone 10px / 12px agar tidak sensitif goyangan awal jari di layar tablet
+    // Deteksi arah geser yang cepat & responsif tanpa perlu tenaga keras
     if (!hasDecidedDirectionRef.current) {
-      if (absDx < 10 && absDy < 10) {
+      if (absDx < 6 && absDy < 6) {
         return;
       }
 
-      // Jika dominan vertikal (pengguna sedang scroll menu ke bawah/atas), kunci swipe agar scroll lancar
-      if (absDy > absDx && absDy > 14) {
+      // Kunci swipe hanya jika pengguna benar-benar scroll vertikal murni (misal scroll menu tinggi)
+      if (absDy > absDx * 1.5 && absDy > 16) {
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      // Jika dominan horizontal, aktifkan swipe halaman
-      if (absDx >= 12 && absDx >= absDy) {
+      // Aktifkan swipe halaman jika ada pergerakan horizontal wajar (memudahkan gestur miring alami tangan)
+      if (absDx >= 8 && absDx >= absDy * 0.6) {
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -470,23 +470,23 @@ export function useSwipeNav({
       window.removeEventListener('click', suppressClick, { capture: true });
     }, 120);
 
-    // Kriteria ganti halaman pada tablet:
-    // Drag melewati 15% lebar layar (min 45px) ATAU flick ringan (> 0.3 px/ms DAN >= 25px).
+    // Kriteria ganti halaman pada tablet yang sangat mulus & tanpa tenaga berlebih:
+    // Cukup geser 50px (atau 5% lebar layar) ATAU flick ringan (> 0.14 px/ms dan geser >= 16px).
     const totalDx = e.clientX - startXRef.current;
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
     const containerWidth = containerRef.current?.clientWidth || 1024;
-    const threshold15 = Math.max(45, containerWidth * 0.15);
+    const threshold = Math.min(55, Math.max(40, containerWidth * 0.05));
 
-    const isFlick = velocity > 0.3 && Math.abs(totalDx) >= 25;
-    const isLongSwipe = Math.abs(totalDx) >= threshold15;
+    const isFlick = velocity > 0.14 && Math.abs(totalDx) >= 16;
+    const isSwipe = Math.abs(totalDx) >= threshold;
 
     const currIdx = activeIndexRef.current;
     let targetIndex = currIdx;
 
-    if (isFlick || isLongSwipe) {
+    if (isFlick || isSwipe) {
       if (totalDx < 0) {
-        // Swipe kiri = halaman berikutnya
+        // Swipe kiri = halaman berikutnya (Home -> Riwayat -> Akun)
         targetIndex = Math.min(tabs.length - 1, currIdx + 1);
       } else if (totalDx > 0) {
         // Swipe kanan = halaman sebelumnya

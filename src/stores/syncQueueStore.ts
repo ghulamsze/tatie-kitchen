@@ -29,10 +29,16 @@ interface SyncQueueState {
 }
 
 const STORAGE_KEY = 'tk_sync_queue';
+const SYNC_RESET_KEY = 'tk_sync_queue_reset_20261023_v5';
 
 function loadStoredQueue(): SyncQueueItem[] {
   if (typeof window === 'undefined') return [];
   try {
+    if (!localStorage.getItem(SYNC_RESET_KEY)) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(SYNC_RESET_KEY, 'true');
+      return [];
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (err) {

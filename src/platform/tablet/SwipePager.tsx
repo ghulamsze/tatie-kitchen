@@ -47,7 +47,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
           width: '100%',
           height: '100%',
           transform: `translate3d(calc(-${progress} * 100%), 0, 0)`,
-          transition: isDragging ? 'none' : 'transform 220ms cubic-bezier(0, 0, 0.2, 1)',
+          transition: isDragging ? 'none' : 'transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1)',
           willChange: 'transform',
         }}
       >

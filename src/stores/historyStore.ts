@@ -13,7 +13,7 @@ export type DateRangePreset = 'hari-ini' | 'kemarin' | '7-hari' | '30-hari' | 's
 // Riwayat transaksi default dikosongkan sesuai permintaan
 export const SEED_HISTORY_ORDERS: HistoryOrderWithItems[] = [];
 
-const HISTORY_RESET_KEY = 'tk_history_reset_20261023';
+const HISTORY_RESET_KEY = 'tk_history_reset_20261023_v5';
 
 const loadSavedOrders = (): HistoryOrderWithItems[] => {
   try {

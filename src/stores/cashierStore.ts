@@ -33,7 +33,17 @@ export const isImmutableCashier = (id: string, name?: string): boolean => {
   return false;
 };
 
-const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023';
+export const deduplicateCashiers = (list: Cashier[]): Cashier[] => {
+  const seen = new Set<string>();
+  return list.filter((c) => {
+    const norm = (c.name || '').trim().toLowerCase();
+    if (!norm || seen.has(norm)) return false;
+    seen.add(norm);
+    return true;
+  });
+};
+
+const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023_v4';
 
 const loadSavedCashiers = (): Cashier[] => {
   try {
@@ -46,7 +56,7 @@ const loadSavedCashiers = (): Cashier[] => {
       const raw = localStorage.getItem('tk_cashiers');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return deduplicateCashiers(parsed);
       }
     }
   } catch (err) {
@@ -89,7 +99,15 @@ export const useCashierStore = create<CashierState>((set) => ({
       if (error) {
         logError('cashierStore:fetchCashiers_query', error);
       } else if (data && data.length > 0) {
-        set({ cashiers: data as Cashier[] });
+        const unique = deduplicateCashiers(data as Cashier[]);
+        set({ cashiers: unique });
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('tk_cashiers', JSON.stringify(unique));
+          }
+        } catch {
+          // ignore
+        }
       }
     } catch (err) {
       logError('cashierStore:fetchCashiers_exception', err);
