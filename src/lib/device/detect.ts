@@ -52,15 +52,19 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     }
   }
 
-  if (!isAutoReset && !overrideVal && env.storedOverride) {
-    if (env.storedOverride === 'tablet' || env.storedOverride === 'laptop' || env.storedOverride === 'phone') {
-      overrideVal = env.storedOverride;
-    }
-  }
-
   // Tentukan platform dasar dari userAgent/Capacitor/Hints
   let basePlatform: Platform = 'unknown';
   const isCapacitorNative = Boolean(env.capacitor?.isNative);
+
+  if (!isAutoReset && !overrideVal && env.storedOverride) {
+    // Jangan biarkan storedOverride memaksa mode tablet di HP fisik:
+    // Jika perangkat adalah Capacitor native atau layar fisik < 600px, abaikan paksaan tablet lama
+    if (env.storedOverride === 'tablet' && (isCapacitorNative || (shortestSide > 0 && shortestSide < 600))) {
+      // Abaikan paksaan tablet pada ponsel fisik
+    } else if (env.storedOverride === 'tablet' || env.storedOverride === 'laptop' || env.storedOverride === 'phone') {
+      overrideVal = env.storedOverride;
+    }
+  }
 
   if (env.capacitor?.platform === 'android') {
     basePlatform = 'android';
@@ -227,6 +231,22 @@ export function getCurrentDevice(): DeviceInfo {
   const physHeight = typeof window !== 'undefined' && window.screen ? window.screen.height : window.innerHeight;
   const screenW = Math.max(physWidth, window.innerWidth);
   const screenH = Math.max(physHeight, window.innerHeight);
+
+  // Jika perangkat fisik adalah ponsel (< 600px) atau Capacitor native tanpa parameter ?device=...,
+  // bersihkan storedOverride lama agar tidak pernah memaksakan mode tablet di HP Android
+  if (storedOverride === 'tablet' && !search) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isNativeCap = typeof window !== 'undefined' && Boolean((window as any).Capacitor?.isNativePlatform?.());
+    const isPhysPhone = Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600;
+    if (isNativeCap || isPhysPhone) {
+      try {
+        localStorage.removeItem(DEVICE_OVERRIDE_KEY);
+      } catch {
+        // ignore
+      }
+      storedOverride = null;
+    }
+  }
 
   const env: DeviceEnv = {
     urlSearch: search,

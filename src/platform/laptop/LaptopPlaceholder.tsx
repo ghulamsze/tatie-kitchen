@@ -99,8 +99,15 @@ export const LaptopPlaceholder: React.FC<LaptopPlaceholderProps> = ({ device }) 
           >
             Buka Simulasi Tablet Kasir (1024 × 640)
           </Button>
+          <Button
+            variant="flat"
+            onClick={() => setDeviceOverride('phone')}
+            style={{ width: '100%' }}
+          >
+            Buka Simulasi HP Pemilik (Portrait)
+          </Button>
           <span style={{ fontSize: 'var(--t-xs)', lineHeight: 'var(--l-xs)', color: 'var(--ink-3)' }}>
-            Menambahkan parameter ?device=tablet untuk simulasi di laptop.
+            Gunakan ?device=tablet atau ?device=phone untuk simulasi di laptop.
           </span>
         </div>
       </div>

@@ -24,11 +24,11 @@ test.describe('Routing dan Deteksi Perangkat (AppShell & DevFrame)', () => {
     await expect(page.locator('.tk-intro-container, h2')).toBeVisible();
   });
 
-  test('dengan ?device=phone: menampilkan layar sementara ponsel', async ({ page }) => {
+  test('dengan ?device=phone: menampilkan antarmuka ponsel pemilik (PhoneRoot & PhoneDevFrame)', async ({ page }) => {
     await page.goto('/?device=phone');
 
-    await expect(page.locator('h1')).toContainText('Tati’e Kitchen untuk Ponsel');
-    await expect(page.locator('text=Aplikasi Ponsel Pemilik')).toBeVisible();
+    await expect(page.locator('.tk-phone-root')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Home');
   });
 
   test('tombol Buka Simulasi Tablet di laptop mengalihkan ke mode tablet', async ({ page }) => {

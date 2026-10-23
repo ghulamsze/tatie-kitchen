@@ -3,7 +3,8 @@ import { useDevice } from '../lib/device/useDevice.ts';
 import { registerDevice } from '../lib/device/deviceRegistration.ts';
 import { DevFrame } from './DevFrame.tsx';
 import { LaptopPlaceholder } from '../platform/laptop/LaptopPlaceholder.tsx';
-import { PhonePlaceholder } from '../platform/phone/PhonePlaceholder.tsx';
+import { PhoneDevFrame } from './PhoneDevFrame.tsx';
+import { PhoneRoot } from '../platform/phone/PhoneRoot.tsx';
 import { ComponentGallery } from '../dev/ComponentGallery.tsx';
 import { TabletRoot } from '../platform/tablet/TabletRoot.tsx';
 
@@ -54,7 +55,11 @@ export const AppShell: React.FC = () => {
   }
 
   if (device.formFactor === 'phone') {
-    return <PhonePlaceholder device={device} />;
+    return (
+      <PhoneDevFrame device={device}>
+        <PhoneRoot />
+      </PhoneDevFrame>
+    );
   }
 
   // Tablet Kasir (di laptop akan otomatis dibungkus DevFrame 1024 x 640)
