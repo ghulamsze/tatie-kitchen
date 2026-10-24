@@ -17,6 +17,7 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
 }) => {
   const [isMargin4433, setIsMargin4433] = useState(initialMargin4433);
   const [isInkSaver, setIsInkSaver] = useState(initialInkSaver);
+  const [scrollTop, setScrollTop] = useState(0);
 
   // Pastikan class modal terpasang saat preview aktif
   useEffect(() => {
@@ -55,6 +56,11 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
       )
     : null;
 
+  const progress = Math.min(1, Math.max(0, scrollTop / 140));
+  const translateY = -progress * 260;
+  const opacity = Math.max(0, 1 - progress * 1.3);
+  const isCollapsed = progress > 0.8;
+
   return (
     <>
       {portalContent}
@@ -70,48 +76,89 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
           background: 'var(--scr-bg)',
         }}
       >
-        {/* 1. Navigasi Kembali di Kiri Atas (100% Konsisten dengan Layar Rincian: ‹  Cetak menu) */}
-        <div style={{ margin: '8px 16px 14px 16px' }}>
+        {/* Floating Back Button saat Bagian Atas Memudar/Naik */}
+        {isCollapsed && (
           <button
             type="button"
             onClick={onClose}
+            aria-label="Kembali"
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--ink-2)',
-              fontSize: 'var(--t-sm)',
-              lineHeight: 'var(--l-sm)',
-              fontWeight: 700,
+              position: 'absolute',
+              top: '12px',
+              left: '16px',
+              zIndex: 35,
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              background: 'var(--fl-bg)',
+              border: '1px solid var(--ctl-line)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+              display: 'grid',
+              placeItems: 'center',
+              color: 'var(--ink)',
+              fontSize: 'var(--t-md)',
+              fontWeight: 800,
               cursor: 'pointer',
-              padding: '6px 0',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
+              animation: 'tk-fade-in 0.2s ease-out',
             }}
           >
-            <span>‹</span>
-            <span>Cetak menu</span>
+            ‹
           </button>
-        </div>
+        )}
 
-        {/* 2. Kartu Pengaturan Berdesain Akrilik (Konsisten dengan Kartu Rincian, Tanpa Bubble/Chips) */}
+        {/* Bagian Atas: Navigasi dan Pengaturan Cetak (Naik dan Fade Perlahan saat Slide Kebawah) */}
         <div
-          className="g-acrylic"
           style={{
-            borderRadius: 'var(--r-xl)',
-            padding: '16px 20px',
-            margin: '0 16px 12px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '14px',
+            transform: `translateY(${translateY}px)`,
+            opacity: opacity,
+            marginBottom: `${translateY}px`,
+            pointerEvents: isCollapsed ? 'none' : 'auto',
+            transition: 'transform 0.12s ease-out, opacity 0.12s ease-out, margin-bottom 0.12s ease-out',
+            zIndex: 10,
             flexShrink: 0,
           }}
         >
-          <div>
-            <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
-              Pengaturan Dokumen Cetak
-            </b>
+          {/* 1. Navigasi Kembali di Kiri Atas (100% Konsisten dengan Layar Rincian: ‹  Cetak menu) */}
+          <div style={{ margin: '8px 16px 14px 16px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--ink-2)',
+                fontSize: 'var(--t-sm)',
+                lineHeight: 'var(--l-sm)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '6px 0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span>‹</span>
+              <span>Cetak menu</span>
+            </button>
           </div>
+
+          {/* 2. Kartu Pengaturan Berdesain Akrilik */}
+          <div
+            className="g-acrylic"
+            style={{
+              borderRadius: 'var(--r-xl)',
+              padding: '16px 20px',
+              margin: '0 16px 12px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+            }}
+          >
+            <div>
+              <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
+                Pengaturan Dokumen Cetak
+              </b>
+            </div>
 
           {/* Opsi Tata Letak Margin */}
           <div>
@@ -151,7 +198,7 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
                   transition: 'all 0.15s ease',
                 }}
               >
-                Margin 4433 (Jilid)
+                Margin 4433
               </button>
             </div>
           </div>
@@ -234,9 +281,11 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
             <span>Cetak dokumen A4</span>
           </button>
         </div>
+      </div>
 
         {/* 3. Area Pratinjau Dokumen Cetak A4 */}
         <div
+          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
           style={{
             flex: 1,
             overflowY: 'auto',

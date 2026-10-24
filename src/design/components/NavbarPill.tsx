@@ -328,12 +328,15 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       {items.map((item, idx) => {
         const diff = Math.abs(effectiveProgress - idx);
         const weight = Math.max(0, 1 - diff);
-        const isCurrentActive = activeItem === item;
+        const hoveredIdx = (isHolding || activeDragging) ? Math.round(effectiveProgress) : activeIndex;
+        const isCurrentActive = (isHolding || activeDragging) ? (idx === hoveredIdx) : (activeItem === item);
+        const isCurrentHovered = (isHolding || activeDragging) ? (idx === hoveredIdx) : false;
+
         const baseOpacity = 0.7 + weight * 0.3;
         // Saat hold: item yang tidak disentuh (weight rendah) lebih redup agar item yang di-hold fokus
-        const finalOpacity = isHolding ? (0.45 + weight * 0.55) : baseOpacity;
+        const finalOpacity = (isHolding || activeDragging) ? (isCurrentActive ? 1 : 0.45 + weight * 0.25) : baseOpacity;
         // Saat hold: perbesar pembesaran item yang dilewati jari (1 + weight * 0.18), saat normal sedikit lebih kalem (1 + weight * 0.1)
-        const scale = isHolding ? (1 + weight * 0.18) : (1 + weight * 0.1);
+        const scale = (isHolding || activeDragging) ? (1 + weight * 0.18) : (1 + weight * 0.1);
 
         return (
           <button
@@ -342,13 +345,13 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
               tabRefs.current[idx] = el;
             }}
             type="button"
-            className={`tk-navbar-item ${isCurrentActive ? 'active' : ''} ${isHolding ? 'in-hold' : ''}`}
+            className={`tk-navbar-item ${isCurrentActive ? 'active' : ''} ${isCurrentHovered ? 'hovered' : ''} ${(isHolding || activeDragging) ? 'in-hold' : ''}`}
             style={{
               opacity: finalOpacity,
-              fontWeight: 700,
+              fontWeight: isCurrentActive ? 800 : 700,
               transform: `scale(${scale})`,
               transformOrigin: 'center center',
-              transition: 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease',
+              transition: activeDragging ? 'none' : 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease',
             }}
             onClick={() => {
               if (!isBlocked) onSelect(item);

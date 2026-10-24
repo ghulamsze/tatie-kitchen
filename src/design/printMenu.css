@@ -9,15 +9,15 @@
 }
 
 #mp {
-  /* CMYK-Friendly Gamut (SWOP & ISO Coated v2 print standard) */
-  --pb: #141416;
+  /* Default CMYK-Friendly Print Variables */
+  --pb: #141112;
   --pf: #f5f5f7;
   --pm: #9ca3af;
-  --pa: #c59b27;
-  --pd: #c59b27;
+  --pa: #c4141c;
+  --pd: #c4141c;
   --pl: 255 255 255;
-  --g1: #25181a;
-  --g2: #191620;
+  --g1: #2e080b;
+  --g2: #1c0608;
   --mt: 25.4mm;
   --mr: 25.4mm;
   --mb: 25.4mm;
@@ -37,9 +37,133 @@
   --pb: #ffffff;
   --pf: #111827;
   --pm: #4b5563;
-  --pa: #b91c1c;
-  --pd: #374151;
+  --pa: #b3121a;
+  --pd: #b3121a;
   --pl: 0 0 0;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* ==========================================================================
+   PALET CMYK DOKUMEN CETAK SESUAI TEMA AKTIF (SWOP / ISO COATED V2 STANDARDS)
+   ========================================================================== */
+
+/* 1. NETFLIX: CMYK Process Red C0 M98 Y95 K15 (#c4141c) */
+:root[data-palette="netflix"] #mp {
+  --pb: #141112;
+  --pf: #f5f5f7;
+  --pm: #9ca3af;
+  --pa: #c4141c;
+  --pd: #c4141c;
+  --g1: #2e080b;
+  --g2: #1c0608;
+}
+:root[data-palette="netflix"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #111827;
+  --pm: #4b5563;
+  --pa: #b3121a;
+  --pd: #b3121a;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* 2. SAMUDRA: CMYK Warm Amber/Gold (#f59e0b) & Ocean Blue (#0284c7) */
+:root[data-palette="samudra"] #mp {
+  --pb: #051428;
+  --pf: #eef6ff;
+  --pm: #93c5fd;
+  --pa: #f59e0b;
+  --pd: #f59e0b;
+  --g1: #09264c;
+  --g2: #051933;
+}
+:root[data-palette="samudra"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #0f172a;
+  --pm: #475569;
+  --pa: #0284c7;
+  --pd: #0369a1;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* 3. HIJAU: CMYK Emerald Fresh (#a3e635 / #059669) */
+:root[data-palette="hijau"] #mp {
+  --pb: #04201f;
+  --pf: #f0fdf4;
+  --pm: #86efac;
+  --pa: #a3e635;
+  --pd: #a3e635;
+  --g1: #073836;
+  --g2: #031b1a;
+}
+:root[data-palette="hijau"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #064e3b;
+  --pm: #475569;
+  --pa: #059669;
+  --pd: #047857;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* 4. MONO: CMYK Neutral Titanium (#e5e5e5 / #111827) */
+:root[data-palette="mono"] #mp {
+  --pb: #0b0b0c;
+  --pf: #f5f5f5;
+  --pm: #9ca3af;
+  --pa: #e5e5e5;
+  --pd: #e5e5e5;
+  --g1: #1a1a1c;
+  --g2: #121214;
+}
+:root[data-palette="mono"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #0f172a;
+  --pm: #4b5563;
+  --pa: #111827;
+  --pd: #374151;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* 5. SENJA: CMYK Teal (#2dd4bf) & Warm Dusk (#ea580c) */
+:root[data-palette="senja"] #mp {
+  --pb: #1f0b0e;
+  --pf: #fff7ed;
+  --pm: #fed7aa;
+  --pa: #2dd4bf;
+  --pd: #2dd4bf;
+  --g1: #381218;
+  --g2: #240a0e;
+}
+:root[data-palette="senja"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #431407;
+  --pm: #57534e;
+  --pa: #ea580c;
+  --pd: #c2410c;
+  --g1: transparent;
+  --g2: transparent;
+}
+
+/* 6. BLUSH: CMYK Process Rose/Berry (#f472b6 / #e11d48) */
+:root[data-palette="blush"] #mp {
+  --pb: #1d1015;
+  --pf: #fff1f2;
+  --pm: #fbcfe8;
+  --pa: #f472b6;
+  --pd: #f472b6;
+  --g1: #381422;
+  --g2: #220d16;
+}
+:root[data-palette="blush"] #mp.ink {
+  --pb: #ffffff;
+  --pf: #4c0519;
+  --pm: #64748b;
+  --pa: #e11d48;
+  --pd: #be123c;
   --g1: transparent;
   --g2: transparent;
 }

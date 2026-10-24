@@ -210,20 +210,38 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           </b>
         </div>
 
-        {/* Info Kasir */}
+        {/* Info Kasir & Pembayaran */}
         <div
           style={{
             fontSize: 'var(--t-xs)',
             color: 'var(--ink-3)',
             fontWeight: 500,
-            borderTop: '1px solid rgb(var(--w) / 0.08)',
+            borderTop: '1px solid var(--ctl-line)',
             paddingTop: '10px',
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
           <span>Kasir: {cashierName}</span>
-          <span>{dateStr}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 'var(--r-full)',
+                background: 'var(--surface-active)',
+                color: 'var(--ink-2)',
+                border: '1px solid var(--ctl-line)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {order.payment_method?.toUpperCase() === 'QRIS' ? 'QRIS' : order.payment_method?.toLowerCase() === 'transfer' ? 'Transfer' : 'Tunai'}
+            </span>
+            <span>{dateStr}</span>
+          </div>
         </div>
       </div>
 

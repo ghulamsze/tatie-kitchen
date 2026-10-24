@@ -77,14 +77,29 @@ export function useSwipeNav({
       indicatorRef.current.style.width = `${itemW}px`;
     }
 
-    // Perbarui opacity tombol tab navbar secara proporsional tanpa mengubah lebar teks
+    // Perbarui opacity dan status active/hovered tombol tab navbar secara proporsional
     if (navbarRef.current) {
+      const nearestIdx = Math.round(t);
       const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
       buttons.forEach((btn, idx) => {
         const diff = Math.abs(t - idx);
         const weight = Math.max(0, 1 - diff);
-        btn.style.opacity = String(0.65 + weight * 0.35);
-        btn.style.fontWeight = '700';
+        const isNear = idx === nearestIdx;
+
+        if (dragging) {
+          if (isNear) {
+            btn.classList.add('active', 'hovered');
+            btn.style.opacity = '1';
+            btn.style.transform = `scale(${1 + weight * 0.18})`;
+          } else {
+            btn.classList.remove('active', 'hovered');
+            btn.style.opacity = String(0.45 + weight * 0.25);
+            btn.style.transform = `scale(${1 + weight * 0.18})`;
+          }
+        } else {
+          btn.style.opacity = String(0.65 + weight * 0.35);
+        }
+        btn.style.fontWeight = isNear ? '800' : '700';
       });
     }
 
@@ -128,6 +143,24 @@ export function useSwipeNav({
       indicatorRef.current.style.transition = 'transform 240ms cubic-bezier(0.2, 0.9, 0.3, 1), width 240ms cubic-bezier(0.2, 0.9, 0.3, 1)';
       indicatorRef.current.style.transform = `translate3d(${left}px, 0, 0)`;
       indicatorRef.current.style.width = `${itemW}px`;
+    }
+
+    if (navbarRef.current) {
+      const buttons = navbarRef.current.querySelectorAll<HTMLButtonElement>('.tk-navbar-item');
+      buttons.forEach((btn, idx) => {
+        if (idx === clampedTarget) {
+          btn.classList.add('active');
+          btn.classList.remove('hovered');
+          btn.style.opacity = '1';
+          btn.style.transform = 'scale(1.1)';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active', 'hovered');
+          btn.style.opacity = '0.7';
+          btn.style.transform = 'scale(1)';
+          btn.style.fontWeight = '700';
+        }
+      });
     }
 
     onTabChange(tabs[clampedTarget]);

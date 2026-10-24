@@ -214,7 +214,12 @@ export const HistoryScreen: React.FC = React.memo(() => {
                             borderRadius: '4px',
                           }}
                         >
-                          Tunai
+                          {(() => {
+                            const pm = (order.payment_method || 'tunai').toLowerCase();
+                            if (pm === 'qris') return 'QRIS';
+                            if (pm === 'transfer') return 'Transfer';
+                            return 'Tunai';
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -319,13 +324,28 @@ export const HistoryScreen: React.FC = React.memo(() => {
                 <span>{formatRupiah(selectedOrder.order.total_idr)}</span>
               </div>
               <div className="row-between" style={{ fontSize: '12px' }}>
-                <span>Tunai:</span>
-                <span>{formatRupiah(selectedOrder.order.cash_received_idr)}</span>
+                <span>Metode Pembayaran:</span>
+                <span style={{ fontWeight: 700 }}>
+                  {(() => {
+                    const pm = (selectedOrder.order.payment_method || 'tunai').toLowerCase();
+                    if (pm === 'qris') return 'QRIS';
+                    if (pm === 'transfer') return 'Transfer Bank';
+                    return 'Tunai';
+                  })()}
+                </span>
               </div>
-              <div className="row-between" style={{ fontSize: '12px' }}>
-                <span>Kembalian:</span>
-                <span>{formatRupiah(selectedOrder.order.change_idr)}</span>
-              </div>
+              {selectedOrder.order.payment_method !== 'qris' && selectedOrder.order.payment_method !== 'transfer' ? (
+                <>
+                  <div className="row-between" style={{ fontSize: '12px' }}>
+                    <span>Tunai:</span>
+                    <span>{formatRupiah(selectedOrder.order.cash_received_idr)}</span>
+                  </div>
+                  <div className="row-between" style={{ fontSize: '12px' }}>
+                    <span>Kembalian:</span>
+                    <span>{formatRupiah(selectedOrder.order.change_idr)}</span>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>

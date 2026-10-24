@@ -227,7 +227,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                           marginTop: '2px',
                         }}
                       >
-                        {timeStr}
+                        {timeStr} · {order.payment_method?.toUpperCase() === 'QRIS' ? 'QRIS' : order.payment_method?.toLowerCase() === 'transfer' ? 'Transfer' : 'Tunai'}
                       </span>
                     </div>
                   </div>

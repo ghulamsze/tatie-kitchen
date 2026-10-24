@@ -203,26 +203,28 @@
 
 :root[data-palette="hijau"][data-theme="light"] {
   --bg: #f8fafc;
-  --fg: #064e3b;
-  --mut: #475569;
+  --fg: #0f172a;
+  --mut: #64748b;
   --scr-bg: #f0fdf4;
-  --b1: rgba(16, 185, 129, 0.04);
-  --b2: rgba(220, 252, 231, 0.4);
-  --b3: rgba(16, 185, 129, 0.03);
-  --ink: #064e3b;
-  --ink-2: #065f46;
-  --ink-3: #047857;
+  --b1: rgba(16, 185, 129, 0.05);
+  --b2: rgba(220, 252, 231, 0.45);
+  --b3: rgba(16, 185, 129, 0.04);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
   --w: 255 255 255;
-  --sh: 6 78 59;
-  --accent: #10b981;
+  --sh: 15 23 42;
+  --accent: #059669;
   --on-accent: #ffffff;
   --accent-ink: #047857;
   --ring: #047857;
-  --fl-bg: rgba(255, 255, 255, 0.92);
-  --ov: rgba(6, 78, 59, 0.4);
+  --fl-bg: rgba(255, 255, 255, 0.94);
+  --ov: rgba(15, 23, 42, 0.4);
   --mc-bg: #f8fafc;
   --solid: #ffffff;
-  --ctl-line: rgba(6, 78, 59, 0.08);
+  --ctl: rgba(15, 23, 42, 0.04);
+  --ctl-line: rgba(15, 23, 42, 0.08);
+  --sel: rgba(15, 23, 42, 0.06);
 }
 
 /* ===== PALET: SAMUDRA ===== */
@@ -251,25 +253,28 @@
 
 :root[data-palette="samudra"][data-theme="light"] {
   --bg: #f8fafc;
-  --fg: #0c4a6e;
-  --mut: #475569;
+  --fg: #0f172a;
+  --mut: #64748b;
   --scr-bg: #f0f9ff;
-  --b1: rgba(14, 165, 233, 0.04);
-  --b2: rgba(224, 242, 254, 0.4);
-  --b3: rgba(14, 165, 233, 0.03);
-  --ink: #0c4a6e;
-  --ink-2: #075985;
-  --ink-3: #0369a1;
+  --b1: rgba(14, 165, 233, 0.05);
+  --b2: rgba(224, 242, 254, 0.45);
+  --b3: rgba(14, 165, 233, 0.04);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
   --w: 255 255 255;
-  --sh: 12 74 110;
-  --ov: rgba(12, 74, 110, 0.4);
-  --mc-bg: #f8fafc;
-  --solid: #ffffff;
+  --sh: 15 23 42;
   --accent: #0284c7;
   --on-accent: #ffffff;
   --accent-ink: #0369a1;
   --ring: #0369a1;
-  --ctl-line: rgba(12, 74, 110, 0.08);
+  --fl-bg: rgba(255, 255, 255, 0.94);
+  --ov: rgba(15, 23, 42, 0.4);
+  --mc-bg: #f8fafc;
+  --solid: #ffffff;
+  --ctl: rgba(15, 23, 42, 0.04);
+  --ctl-line: rgba(15, 23, 42, 0.08);
+  --sel: rgba(15, 23, 42, 0.06);
 }
 
 /* ===== PALET: SENJA ===== */
@@ -298,25 +303,28 @@
 
 :root[data-palette="senja"][data-theme="light"] {
   --bg: #f8fafc;
-  --fg: #431407;
+  --fg: #0f172a;
   --mut: #57534e;
   --scr-bg: #fff7ed;
-  --b1: rgba(249, 115, 22, 0.04);
-  --b2: rgba(254, 237, 213, 0.4);
-  --b3: rgba(249, 115, 22, 0.03);
-  --ink: #431407;
-  --ink-2: #7c2d12;
-  --ink-3: #9a3412;
+  --b1: rgba(249, 115, 22, 0.05);
+  --b2: rgba(254, 237, 213, 0.45);
+  --b3: rgba(249, 115, 22, 0.04);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
   --w: 255 255 255;
-  --sh: 67 20 7;
-  --ov: rgba(67, 20, 7, 0.4);
-  --mc-bg: #f8fafc;
-  --solid: #ffffff;
+  --sh: 15 23 42;
   --accent: #ea580c;
   --on-accent: #ffffff;
   --accent-ink: #c2410c;
   --ring: #c2410c;
-  --ctl-line: rgba(67, 20, 7, 0.08);
+  --fl-bg: rgba(255, 255, 255, 0.94);
+  --ov: rgba(15, 23, 42, 0.4);
+  --mc-bg: #f8fafc;
+  --solid: #ffffff;
+  --ctl: rgba(15, 23, 42, 0.04);
+  --ctl-line: rgba(15, 23, 42, 0.08);
+  --sel: rgba(15, 23, 42, 0.06);
 }
 
 /* ===== PALET: BLUSH ===== */
@@ -345,30 +353,79 @@
 
 :root[data-palette="blush"][data-theme="light"] {
   --bg: #f8fafc;
-  --fg: #4c0519;
+  --fg: #0f172a;
   --mut: #64748b;
   --scr-bg: #fff1f2;
-  --b1: rgba(244, 63, 94, 0.04);
-  --b2: rgba(255, 228, 230, 0.4);
-  --b3: rgba(244, 63, 94, 0.03);
-  --ink: #4c0519;
-  --ink-2: #881337;
-  --ink-3: #9f1239;
+  --b1: rgba(244, 63, 94, 0.05);
+  --b2: rgba(255, 228, 230, 0.45);
+  --b3: rgba(244, 63, 94, 0.04);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
   --w: 255 255 255;
-  --sh: 76 5 25;
-  --ov: rgba(76, 5, 25, 0.4);
-  --mc-bg: #f8fafc;
-  --solid: #ffffff;
+  --sh: 15 23 42;
   --accent: #e11d48;
   --on-accent: #ffffff;
   --accent-ink: #be123c;
   --ring: #be123c;
-  --ctl-line: rgba(76, 5, 25, 0.08);
+  --fl-bg: rgba(255, 255, 255, 0.94);
+  --ov: rgba(15, 23, 42, 0.4);
+  --mc-bg: #f8fafc;
+  --solid: #ffffff;
+  --ctl: rgba(15, 23, 42, 0.04);
+  --ctl-line: rgba(15, 23, 42, 0.08);
+  --sel: rgba(15, 23, 42, 0.06);
 }
 
 /* Light mode swatch border styling */
 :root[data-theme="light"] .swb {
   --a: #ffffff !important;
+}
+
+/* Light mode glassmorphism and material overrides */
+:root[data-theme="light"] .g-liquid {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.74) 100%),
+              rgb(var(--tint) / var(--a-tint));
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+              0 14px 34px rgba(15, 23, 42, 0.08);
+  color: var(--ink);
+}
+
+:root[data-theme="light"] .g-liquid::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
+}
+
+:root[data-theme="light"] .g-acrylic {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8),
+              0 12px 30px rgba(15, 23, 42, 0.07);
+  color: var(--ink);
+}
+
+:root[data-theme="light"] .g-acrylic.hi {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, #ffffff) 0%, #ffffff 100%);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+:root[data-theme="light"] .tk-navbar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+              0 12px 32px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme="light"] .tk-nav-elastic-indicator {
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+:root[data-theme="light"] .tk-navbar-item.active {
+  color: var(--on-accent) !important;
+  text-shadow: none;
 }
 
 /* ===== RESET & DASAR ===== */

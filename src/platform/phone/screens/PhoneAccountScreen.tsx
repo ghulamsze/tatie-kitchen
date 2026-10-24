@@ -225,7 +225,15 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </button>
       </div>
 
-      <div className="tk-phone-list-card" style={{ marginBottom: '16px' }}>
+      <div
+        className="tk-phone-list-card"
+        style={{
+          marginBottom: '16px',
+          maxHeight: displayCashiers.length > 5 ? '252px' : undefined,
+          overflowY: displayCashiers.length > 5 ? 'auto' : undefined,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {displayCashiers.map((cashier) => (
           <div
             key={cashier.id}
@@ -239,18 +247,18 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               WebkitUserSelect: 'none',
             }}
           >
-            <b
+            <span
               className={rejectingCashierId === cashier.id ? 'tk-text-rejecting' : ''}
               style={{
                 fontSize: 'var(--t-md)',
                 lineHeight: 'var(--l-md)',
-                fontWeight: 600,
+                fontWeight: 500,
                 color: 'var(--ink)',
                 display: 'inline-block',
               }}
             >
               {cashier.name}
-            </b>
+            </span>
           </div>
         ))}
       </div>

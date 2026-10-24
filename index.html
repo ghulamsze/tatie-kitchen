@@ -4,10 +4,19 @@
   <meta charset="utf-8" />
   <script>
     try {
+      if (localStorage.getItem("tk-theme-v2") !== "1") {
+        if (localStorage.getItem("tk-theme") === "light") {
+          localStorage.setItem("tk-theme", "system");
+        }
+        localStorage.setItem("tk-theme-v2", "1");
+      }
       var q = localStorage.getItem("tk-pal");
       document.documentElement.dataset.palette = /^(netflix|mono|hijau|samudra|senja|blush)$/.test(q) ? q : "netflix";
-      var m = localStorage.getItem("tk-theme") || "dark";
-      document.documentElement.dataset.theme = m === "system" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : m;
+      var m = localStorage.getItem("tk-theme") || "system";
+      var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+      var eff = m === "system" ? (isDark ? "dark" : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) : m;
+      document.documentElement.dataset.theme = eff;
+      document.documentElement.style.colorScheme = eff;
     } catch(e) {
       document.documentElement.dataset.theme = "dark";
       document.documentElement.dataset.palette = "netflix";

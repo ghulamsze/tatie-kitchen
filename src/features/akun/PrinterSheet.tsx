@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Sheet } from '../../design/components/Sheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { usePrinterStore } from '../../stores/printerStore.ts';
@@ -82,10 +83,10 @@ export const PrinterSheet: React.FC<PrinterSheetProps> = ({ isOpen, onClose }) =
           >
             <div>
               <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', display: 'block' }}>
-                Status Koneksi (58mm / 32 Kolom)
+                Status Koneksi
               </span>
               <b style={{ fontSize: 'var(--t-sm)', color: isConnected ? 'var(--accent-ink)' : 'var(--ink-3)' }}>
-                {isConnected ? `● Terhubung: ${selectedDevice?.name || 'VSC MP-58X'}` : '○ Belum Terhubung'}
+                {isConnected ? `Terhubung: ${selectedDevice?.name || 'VSC MP-58X'}` : 'Belum Terhubung'}
               </b>
             </div>
 
@@ -223,10 +224,11 @@ export const PrinterSheet: React.FC<PrinterSheetProps> = ({ isOpen, onClose }) =
         </div>
       </Sheet>
 
-      {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
+      {toastMessage && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 100000, pointerEvents: 'none' }}>
           <Toast message={toastMessage} />
-        </div>
+        </div>,
+        document.getElementById('tk-portal-root') || document.body
       )}
     </>
   );

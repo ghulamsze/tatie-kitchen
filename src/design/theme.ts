@@ -20,15 +20,32 @@ export const PALETTES: PaletteInfo[] = [
 const THEME_STORAGE_KEY = 'tk-theme';
 const PALETTE_STORAGE_KEY = 'tk-pal';
 
-export function getStoredTheme(): ThemeMode {
+export function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'dark';
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+    return 'light';
+  }
+  return 'dark';
+}
+
+export function getStoredTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'system';
   try {
+    if (localStorage.getItem('tk-theme-v2') !== '1') {
+      if (localStorage.getItem(THEME_STORAGE_KEY) === 'light') {
+        localStorage.setItem(THEME_STORAGE_KEY, 'system');
+      }
+      localStorage.setItem('tk-theme-v2', '1');
+    }
     const val = localStorage.getItem(THEME_STORAGE_KEY);
     if (val === 'system' || val === 'light' || val === 'dark') return val;
   } catch {
     // fallback
   }
-  return 'dark';
+  return 'system';
 }
 
 export function getStoredPalette(): Palette {
@@ -44,8 +61,7 @@ export function getStoredPalette(): Palette {
 
 export function applyTheme(mode: ThemeMode): void {
   if (typeof document === 'undefined') return;
-  const isSystemLight = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches;
-  const effectiveTheme = mode === 'system' ? (isSystemLight ? 'light' : 'dark') : mode;
+  const effectiveTheme = mode === 'system' ? getSystemTheme() : mode;
   document.documentElement.dataset.theme = effectiveTheme;
   document.documentElement.style.colorScheme = effectiveTheme;
   try {
@@ -72,11 +88,15 @@ export function initTheme(): { theme: ThemeMode; palette: Palette } {
   applyPalette(palette);
 
   if (typeof window !== 'undefined') {
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    const darkMql = window.matchMedia('(prefers-color-scheme: dark)');
+    const lightMql = window.matchMedia('(prefers-color-scheme: light)');
+    const handleMediaChange = () => {
       if (getStoredTheme() === 'system') {
         applyTheme('system');
       }
-    });
+    };
+    darkMql.addEventListener('change', handleMediaChange);
+    lightMql.addEventListener('change', handleMediaChange);
   }
 
   return { theme, palette };

@@ -373,7 +373,8 @@
   transition: color 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
 }
 
-.tk-navbar-item:hover {
+.tk-navbar-item:hover,
+.tk-navbar-item.hovered {
   color: var(--ink);
 }
 
@@ -472,6 +473,25 @@ body.tk-modal-open .tk-navbar,
   background-clip: text;
   animation: tk-iin 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 0.03s) both,
              tk-igl 0.5s ease-out calc(0.3s + var(--i) * 0.03s) both;
+}
+
+/* Intro Liquid Glass di Mode Terang (Bukan hitam, melainkan kristal liquid glass cerah & aksen) */
+:root[data-theme="light"] .tk-intro-wordmark {
+  border-radius: var(--r-xl);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.65) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.08), inset 0 1px 0 #ffffff;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  filter: drop-shadow(0 12px 32px color-mix(in srgb, var(--accent) 25%, rgba(15, 23, 42, 0.1)));
+}
+
+:root[data-theme="light"] .tk-intro-letter {
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--accent) 70%, rgba(15, 23, 42, 0.35));
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%) 130% 0 / 260% 100% no-repeat,
+              linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 75%, #0f172a) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .tk-intro-space {
@@ -1559,6 +1579,11 @@ body.tk-modal-open .tk-navbar,
 
 :root[data-theme="light"] .tk-navbar-item {
   color: #64748b;
+}
+
+:root[data-theme="light"] .tk-navbar-item:hover,
+:root[data-theme="light"] .tk-navbar-item.hovered {
+  color: #0f172a;
 }
 
 :root[data-theme="light"] .tk-navbar-item.active {

@@ -176,6 +176,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         cash_received_idr: effectiveCash,
         queue_no: nextQueueNo,
         business_date: todayDateStr,
+        payment_method: paymentMethod,
         items: lines.map((l) => ({
           menu_item_id: l.item.id,
           name_snapshot: l.item.name,
@@ -236,6 +237,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                     status: 'paid',
                     queue_no: nextQueueNo,
                     business_date: todayDateStr,
+                    payment_method: paymentMethod,
                   })
                   .select()
                   .single();
@@ -297,6 +299,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         status: 'paid',
         queue_no: nextQueueNo,
         business_date: todayDateStr,
+        payment_method: paymentMethod,
         created_at: new Date().toISOString(),
       };
 

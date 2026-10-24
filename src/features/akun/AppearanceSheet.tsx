@@ -78,6 +78,7 @@ export const AppearanceSheet: React.FC<AppearanceSheetProps> = ({
             <button
               key={p.id}
               type="button"
+              className="tk-theme-swatch"
               onClick={() => handlePaletteChange(p.id)}
               aria-label={p.name}
               aria-pressed={isSelected}
