@@ -37,6 +37,9 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const cashReceived = lastOrder?.cash_received_idr || total;
   const change = lastOrder?.change_idr || 0;
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
+  const paymentMethod = lastOrder?.payment_method || 'Tunai';
+  const isQris = paymentMethod.toUpperCase() === 'QRIS';
+  const isTransfer = paymentMethod.toLowerCase().includes('transfer');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -49,7 +52,13 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
       .map((item) => `${item.qty}x ${item.name_snapshot} (${formatRupiah(item.price_snapshot_idr * item.qty)})`)
       .join('\n');
 
-    const shareText = `*${shop.name}*\n${shop.address}\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}\n\nTerima kasih atas pesanan Anda!`;
+    const paymentLine = isQris
+      ? 'Metode: QRIS'
+      : isTransfer
+      ? 'Metode: Transfer Bank'
+      : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}`;
+
+    const shareText = `*${shop.name}*\n${shop.address}\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\n${paymentLine}\n\nTerima kasih atas pesanan Anda!`;
 
     if (navigator.share) {
       try {
@@ -215,14 +224,28 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           <span>Total:</span>
           <span>{formatRupiah(total || 20000)}</span>
         </div>
-        <div className="row-between">
-          <span>Tunai:</span>
-          <span>{formatRupiah(cashReceived || 50000)}</span>
-        </div>
-        <div className="row-between" style={{ fontWeight: 700 }}>
-          <span>Kembalian:</span>
-          <span>{formatRupiah(change || 30000)}</span>
-        </div>
+        {isQris ? (
+          <div className="row-between" style={{ fontWeight: 700 }}>
+            <span>Metode:</span>
+            <span>QRIS</span>
+          </div>
+        ) : isTransfer ? (
+          <div className="row-between" style={{ fontWeight: 700 }}>
+            <span>Metode:</span>
+            <span>Transfer Bank</span>
+          </div>
+        ) : (
+          <>
+            <div className="row-between">
+              <span>Tunai:</span>
+              <span>{formatRupiah(cashReceived || 50000)}</span>
+            </div>
+            <div className="row-between" style={{ fontWeight: 700 }}>
+              <span>Kembalian:</span>
+              <span>{formatRupiah(change || 30000)}</span>
+            </div>
+          </>
+        )}
 
         <hr />
 

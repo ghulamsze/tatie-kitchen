@@ -132,6 +132,7 @@ export const useSyncQueueStore = create<SyncQueueState>((set, get) => {
               status: 'paid',
               queue_no: (item.payload as any).queue_no || 1,
               business_date: (item.payload as any).business_date || new Date().toISOString().slice(0, 10),
+              payment_method: (item.payload as any).payment_method || 'Tunai',
             });
 
             if (!insErr) {

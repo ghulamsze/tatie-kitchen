@@ -135,11 +135,21 @@ export function buildReceiptEscPos(data: ReceiptPrintData): Uint8Array {
   addLine(formatTwoCols('Total:', formatRupiah(order.total_idr)));
   parts.push(CMD_BOLD_OFF);
 
-  addLine(formatTwoCols('Tunai:', formatRupiah(order.cash_received_idr)));
-
-  parts.push(CMD_BOLD_ON);
-  addLine(formatTwoCols('Kembalian:', formatRupiah(order.change_idr)));
-  parts.push(CMD_BOLD_OFF);
+  const pm = (order.payment_method || 'tunai').toLowerCase();
+  if (pm === 'qris') {
+    parts.push(CMD_BOLD_ON);
+    addLine(formatTwoCols('Metode:', 'QRIS'));
+    parts.push(CMD_BOLD_OFF);
+  } else if (pm.includes('transfer')) {
+    parts.push(CMD_BOLD_ON);
+    addLine(formatTwoCols('Metode:', 'Transfer Bank'));
+    parts.push(CMD_BOLD_OFF);
+  } else {
+    addLine(formatTwoCols('Tunai:', formatRupiah(order.cash_received_idr)));
+    parts.push(CMD_BOLD_ON);
+    addLine(formatTwoCols('Kembalian:', formatRupiah(order.change_idr)));
+    parts.push(CMD_BOLD_OFF);
+  }
 
   addLine(getDividerLine());
 

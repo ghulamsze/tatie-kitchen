@@ -179,8 +179,16 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
         </span>
       </div>
 
-      {/* 4. Daftar Transaksi Terbaru */}
-      <div className="tk-phone-list-card">
+      {/* 4. Daftar Transaksi Terbaru (Slider aktif jika lebih dari 3 transaksi) */}
+      <div
+        className={`tk-phone-list-card ${recentOrders.length > 3 ? 'tk-custom-slider' : ''}`}
+        style={{
+          maxHeight: recentOrders.length > 3 ? '210px' : undefined,
+          overflowY: recentOrders.length > 3 ? 'auto' : undefined,
+          WebkitOverflowScrolling: 'touch',
+          paddingRight: recentOrders.length > 3 ? '4px' : undefined,
+        }}
+      >
         {isLoading && recentOrders.length === 0 ? (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="tk-skeleton" style={{ height: '48px', borderRadius: 'var(--r-sm)' }} />
@@ -213,6 +221,13 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
               items?.reduce((sum: number, it: any) => sum + (it.qty || 1), 0) ||
               items?.length ||
               1;
+            const pm = (order.payment_method || 'tunai').toLowerCase();
+            const methodLabel =
+              pm === 'qris'
+                ? 'QRIS'
+                : pm.includes('transfer')
+                ? 'Transfer Bank'
+                : 'Tunai';
 
             return (
               <div
@@ -253,7 +268,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                   </span>
                 </div>
 
-                {/* Kolom Kanan: Nominal Rupiah & Jam Transaksi */}
+                {/* Kolom Kanan: Nominal Rupiah, Jam Transaksi, & Metode Pembayaran */}
                 <div style={{ textAlign: 'right' }}>
                   <b
                     style={{
@@ -275,7 +290,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                       marginTop: '2px',
                     }}
                   >
-                    {timeStr} · {order.payment_method?.toUpperCase() === 'QRIS' ? 'QRIS' : order.payment_method?.toLowerCase() === 'transfer' ? 'Transfer' : 'Tunai'}
+                    {timeStr} · {methodLabel}
                   </span>
                 </div>
               </div>

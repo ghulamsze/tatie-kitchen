@@ -88,6 +88,40 @@ interface CashierState {
 
 export const DEFAULT_SHOP_ID = '40f91c30-2e23-476b-bdd7-5e0605b1f812';
 
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
+
+const REMOVED_CASHIERS_KEY = 'tk_removed_cashiers_v1';
+
+function getRemovedCashierIds(): Set<string> {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(REMOVED_CASHIERS_KEY);
+      if (raw) return new Set(JSON.parse(raw));
+    }
+  } catch {}
+  return new Set();
+}
+
+function markCashierRemovedLocally(id: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const ids = getRemovedCashierIds();
+      ids.add(id);
+      localStorage.setItem(REMOVED_CASHIERS_KEY, JSON.stringify(Array.from(ids)));
+    }
+  } catch {}
+}
+
+function unmarkCashierRemovedLocally(id: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const ids = getRemovedCashierIds();
+      ids.delete(id);
+      localStorage.setItem(REMOVED_CASHIERS_KEY, JSON.stringify(Array.from(ids)));
+    }
+  } catch {}
+}
+
 export const useCashierStore = create<CashierState>((set) => ({
   cashiers: loadSavedCashiers(),
   activeCashier: null,
@@ -109,8 +143,12 @@ export const useCashierStore = create<CashierState>((set) => ({
 
       if (error) {
         logError('cashierStore:fetchCashiers_query', error);
-      } else if (data && data.length > 0) {
-        const unique = deduplicateCashiers(data as Cashier[]);
+      } else if (data) {
+        const removedIds = getRemovedCashierIds();
+        const saved = loadSavedCashiers();
+        // Gabungkan data Supabase dengan kasir tersimpan lokal, tanpa kasir yang sudah dihapus
+        const combined = [...(data as Cashier[]), ...saved].filter((c) => !removedIds.has(c.id));
+        const unique = deduplicateCashiers(combined);
         set({ cashiers: unique });
         try {
           if (typeof localStorage !== 'undefined') {
@@ -147,101 +185,119 @@ export const useCashierStore = create<CashierState>((set) => ({
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Nama kasir tidak boleh kosong.');
 
-    if (isSupabaseConfigured()) {
-      try {
-        const secretKey = getSupabaseSecretKey();
-        const res = await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers`, {
-          method: 'POST',
-          headers: {
-            apikey: secretKey,
-            Authorization: `Bearer ${secretKey}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify({
-            shop_id: shopId,
-            name: trimmed,
-            active: true,
-          }),
-        });
-
-        if (res.ok) {
-          const rows = await res.json();
-          if (Array.isArray(rows) && rows.length > 0) {
-            const newCashier = rows[0] as Cashier;
-            set((state) => {
-              const updated = deduplicateCashiers([...state.cashiers, newCashier]);
-              try {
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.setItem('tk_cashiers', JSON.stringify(updated));
-                }
-              } catch {
-                // ignore
-              }
-              return { cashiers: updated };
-            });
-            broadcastCashierChanged('add', newCashier.id, trimmed).catch(() => {});
-            return newCashier;
-          }
-        }
-      } catch (err) {
-        logError('cashierStore:add_cashier_rest_exception', err);
-      }
-    }
-
-    // Pembuatan lokal fallback
+    const tempId = 'c-' + Math.random().toString(36).substring(2, 9);
     const localCashier: Cashier = {
-      id: 'c-' + Math.random().toString(36).substring(2, 9),
+      id: tempId,
       shop_id: shopId,
       name: trimmed,
       active: true,
       created_at: new Date().toISOString(),
     };
 
+    // Update state lokal dan bersihkan dari riwayat hapus
+    unmarkCashierRemovedLocally(tempId);
     set((state) => {
       const updated = deduplicateCashiers([...state.cashiers, localCashier]);
       try {
-        localStorage.setItem('tk_cashiers', JSON.stringify(updated));
-      } catch (err) {
-        logError('cashierStore:addNewCashier_persist', err);
-      }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+        }
+      } catch {}
       return { cashiers: updated };
     });
 
+    // Simpan ke Supabase secara native atau REST
+    if (isSupabaseConfigured()) {
+      try {
+        const secretKey = getSupabaseSecretKey();
+        const payload = {
+          shop_id: shopId,
+          name: trimmed,
+          active: true,
+        };
+
+        if (Capacitor.isNativePlatform()) {
+          // Native Android HTTP request: lolos dari batasan browser user-agent
+          const res = await CapacitorHttp.request({
+            url: 'https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers',
+            method: 'POST',
+            headers: {
+              apikey: secretKey,
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=representation',
+              'User-Agent': 'TatieKitchenPOS/1.0',
+            },
+            data: payload,
+          });
+
+          if (res.status === 201 || res.status === 200) {
+            const rows = Array.isArray(res.data) ? res.data : [res.data];
+            if (rows.length > 0 && rows[0]?.id) {
+              const remoteCashier = rows[0] as Cashier;
+              set((state) => {
+                const updated = deduplicateCashiers(
+                  state.cashiers.map((c) => (c.id === tempId ? remoteCashier : c))
+                );
+                try {
+                  localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+                } catch {}
+                return { cashiers: updated };
+              });
+              broadcastCashierChanged('add', remoteCashier.id, trimmed).catch(() => {});
+              return remoteCashier;
+            }
+          }
+        } else {
+          // Browser fetch
+          const res = await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers`, {
+            method: 'POST',
+            headers: {
+              apikey: secretKey,
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=representation',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows) && rows.length > 0) {
+              const remoteCashier = rows[0] as Cashier;
+              set((state) => {
+                const updated = deduplicateCashiers(
+                  state.cashiers.map((c) => (c.id === tempId ? remoteCashier : c))
+                );
+                try {
+                  localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+                } catch {}
+                return { cashiers: updated };
+              });
+              broadcastCashierChanged('add', remoteCashier.id, trimmed).catch(() => {});
+              return remoteCashier;
+            }
+          }
+        }
+      } catch (err) {
+        logError('cashierStore:add_cashier_exception', err);
+      }
+    }
+
     // Broadcast ke device lain secara instan
     broadcastCashierChanged('add', localCashier.id, trimmed).catch(() => {});
-
     return localCashier;
   },
 
   removeCashier: async (id: string) => {
     const currentList = useCashierStore.getState().cashiers;
-    // Jangan izinkan jika kasir tersisa tinggal 1 agar data kasir tidak kosong
     if (currentList.length <= 1) {
       return;
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const secretKey = getSupabaseSecretKey();
-        await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`, {
-          method: 'PATCH',
-          headers: {
-            apikey: secretKey,
-            Authorization: `Bearer ${secretKey}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify({ active: false }),
-        });
-      } catch (err) {
-        logError('cashierStore:removeCashier_rest_exception', err);
-      }
-    }
+    markCashierRemovedLocally(id);
 
-    // Broadcast ke seluruh device (Tablet/HP)
-    broadcastCashierChanged('remove', id).catch(() => {});
-
+    // Update state lokal seketika
     set((state) => {
       const remaining = state.cashiers.filter((c) => c.id !== id);
       const isCurrentActive = state.activeCashier?.id === id;
@@ -258,6 +314,41 @@ export const useCashierStore = create<CashierState>((set) => ({
         activeCashier: isCurrentActive ? (remaining[0] ?? null) : state.activeCashier,
       };
     });
+
+    // Broadcast ke seluruh device (Tablet/HP)
+    broadcastCashierChanged('remove', id).catch(() => {});
+
+    if (isSupabaseConfigured()) {
+      try {
+        const secretKey = getSupabaseSecretKey();
+        if (Capacitor.isNativePlatform()) {
+          await CapacitorHttp.request({
+            url: `https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`,
+            method: 'PATCH',
+            headers: {
+              apikey: secretKey,
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'TatieKitchenPOS/1.0',
+            },
+            data: { active: false },
+          });
+        } else {
+          await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+              apikey: secretKey,
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=representation',
+            },
+            body: JSON.stringify({ active: false }),
+          });
+        }
+      } catch (err) {
+        logError('cashierStore:removeCashier_rest_exception', err);
+      }
+    }
   },
 
   resetToDefaultCashiers: () => {

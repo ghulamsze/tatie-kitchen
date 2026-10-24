@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useHistoryStore, HistoryOrderWithItems } from '../../../stores/historyStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase/client.ts';
@@ -106,10 +106,10 @@ export function useLiveOrders(): UseLiveOrdersReturn {
 
   const totalCount = todayOrders.length;
 
-  // 4 transaksi terbaru (prioritas hari ini, jika kosong tampilkan riwayat terbaru)
+  // Daftar transaksi terbaru (prioritas hari ini, jika kosong tampilkan riwayat terbaru)
   const recentOrders = useMemo(() => {
     const list = todayOrders.length > 0 ? todayOrders : orders;
-    return list.slice(0, 4);
+    return list.slice(0, 15);
   }, [todayOrders, orders]);
 
   const refresh = async () => {

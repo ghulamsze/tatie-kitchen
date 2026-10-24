@@ -99,7 +99,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     if (e && pointerStartPosRef.current) {
       const dx = Math.abs(e.clientX - pointerStartPosRef.current.x);
       const dy = Math.abs(e.clientY - pointerStartPosRef.current.y);
-      if (dx > 12 || dy > 12) {
+      if (dx > 25 || dy > 25) {
         if (holdTimerRef.current) {
           clearTimeout(holdTimerRef.current);
           holdTimerRef.current = null;
@@ -226,12 +226,13 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
       </div>
 
       <div
-        className={`tk-phone-list-card ${displayCashiers.length > 5 ? 'tk-custom-slider' : ''}`}
+        className="tk-phone-list-card tk-custom-slider"
         style={{
           marginBottom: '16px',
-          maxHeight: displayCashiers.length > 5 ? '252px' : undefined,
-          overflowY: displayCashiers.length > 5 ? 'auto' : undefined,
+          maxHeight: '184px',
+          overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
+          paddingRight: '4px',
         }}
       >
         {displayCashiers.map((cashier) => (
@@ -245,6 +246,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
             style={{
               userSelect: 'none',
               WebkitUserSelect: 'none',
+              touchAction: 'pan-y',
             }}
           >
             <span

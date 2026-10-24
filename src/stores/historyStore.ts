@@ -114,6 +114,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             queue_no: d.queue_no,
             business_date: d.business_date,
             created_at: d.created_at,
+            payment_method: d.payment_method || 'Tunai',
           },
           items: d.order_items || [],
         }));

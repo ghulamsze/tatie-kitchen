@@ -6,13 +6,9 @@ import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneOrderDetailScreen } from './screens/PhoneOrderDetailScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
 import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
-import { SwipePager } from '../tablet/SwipePager.tsx';
-import { useSwipeNav } from '../tablet/useSwipeNav.ts';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
-
-const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Riwayat', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(true);
@@ -28,29 +24,6 @@ export const PhoneRoot: React.FC = () => {
       cleanup();
     };
   }, []);
-
-  const {
-    progress,
-    isDragging,
-    isNavbarHolding,
-    containerRef,
-    trackRef,
-    indicatorRef,
-    navbarRef,
-    handleNavbarPointerDown,
-    handleNavbarPointerMove,
-    handleNavbarPointerUp,
-    handleNavbarPointerCancel,
-    handlePagerPointerDown,
-    handlePagerPointerMove,
-    handlePagerPointerUp,
-    handlePagerPointerCancel,
-    scrollToTab,
-  } = useSwipeNav({
-    tabs: PHONE_NAV_TABS,
-    activeTab,
-    onTabChange: setActiveTab,
-  });
 
   const isModalOrOverlayActive = Boolean(selectedOrderId || isPrintMenuOpen);
 
@@ -69,13 +42,16 @@ export const PhoneRoot: React.FC = () => {
       }
       // 3. Jika sedang di tab selain Beranda, kembali ke Beranda
       if (activeTab !== 'Beranda') {
-        scrollToTab('Beranda');
+        setActiveTab('Beranda');
         return true;
       }
       // 4. Jika di Beranda dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
       return true;
     }, 10);
-  }, [selectedOrderId, isPrintMenuOpen, activeTab, scrollToTab]);
+  }, [selectedOrderId, isPrintMenuOpen, activeTab]);
+
+  // Nilai posisi gradasi latar dinamis: 0 (Beranda), 0.5 (Riwayat), 1 (Akun)
+  const bgT = activeTab === 'Beranda' ? 0 : activeTab === 'Riwayat' ? 0.5 : 1;
 
   // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
   if (showIntro) {
@@ -87,7 +63,12 @@ export const PhoneRoot: React.FC = () => {
   }
 
   return (
-    <div ref={containerRef} className="tk-phone-root">
+    <div
+      className="tk-phone-root"
+      style={{
+        '--bg-t': bgT,
+      } as React.CSSProperties}
+    >
       {/* Seamless Global Dynamic Background seperti di tablet: bergerak halus sesuai nilai t (--bg-t), tidak patah, tidak terpotong */}
       <div
         className="tk-global-bg"
@@ -113,11 +94,12 @@ export const PhoneRoot: React.FC = () => {
             `,
             filter: 'blur(26px)',
             pointerEvents: 'none',
+            transition: 'background 0.3s ease',
           }}
         />
       </div>
 
-      {/* Area Layar Utama Swipeable */}
+      {/* Area Layar Utama (Navigasi Beranda, Riwayat, Akun via Tab Bar Bawah tanpa Geser Layar) */}
       <div
         style={{
           flex: 1,
@@ -128,22 +110,26 @@ export const PhoneRoot: React.FC = () => {
           zIndex: 1,
         }}
       >
-        <SwipePager
-          trackRef={trackRef}
-          progress={progress}
-          isDragging={isDragging}
-          onPointerDown={isModalOrOverlayActive ? undefined : handlePagerPointerDown}
-          onPointerMove={isModalOrOverlayActive ? undefined : handlePagerPointerMove}
-          onPointerUp={isModalOrOverlayActive ? undefined : handlePagerPointerUp}
-          onPointerCancel={isModalOrOverlayActive ? undefined : handlePagerPointerCancel}
-        >
-          <PhoneHomeScreen
-            onNavigateToHistory={() => scrollToTab('Riwayat')}
-            onSelectOrder={(id) => setSelectedOrderId(id)}
-          />
-          <PhoneHistoryScreen onSelectOrder={(id) => setSelectedOrderId(id)} />
-          <PhoneAccountScreen onOpenPrintMenu={() => setIsPrintMenuOpen(true)} />
-        </SwipePager>
+        {activeTab === 'Beranda' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <PhoneHomeScreen
+              onNavigateToHistory={() => setActiveTab('Riwayat')}
+              onSelectOrder={(id) => setSelectedOrderId(id)}
+            />
+          </div>
+        )}
+
+        {activeTab === 'Riwayat' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <PhoneHistoryScreen onSelectOrder={(id) => setSelectedOrderId(id)} />
+          </div>
+        )}
+
+        {activeTab === 'Akun' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <PhoneAccountScreen onOpenPrintMenu={() => setIsPrintMenuOpen(true)} />
+          </div>
+        )}
 
         {/* Overlay Detail Pesanan jika dipilih */}
         {selectedOrderId && (
@@ -162,7 +148,7 @@ export const PhoneRoot: React.FC = () => {
           </div>
         )}
 
-        {/* Overlay Pratinjau Cetak Menu Fisik A4 (Layar Terkunci & Tidak Bisa Digeser) */}
+        {/* Overlay Pratinjau Cetak Menu Fisik A4 */}
         {isPrintMenuOpen && (
           <div
             style={{
@@ -188,16 +174,7 @@ export const PhoneRoot: React.FC = () => {
         <div className="tk-phone-navbar-wrap">
           <NavbarPill
             activeItem={activeTab}
-            onSelect={scrollToTab}
-            progress={progress}
-            isDragging={isDragging}
-            isHolding={isNavbarHolding}
-            navRef={navbarRef}
-            indicatorRef={indicatorRef}
-            onPointerDown={handleNavbarPointerDown}
-            onPointerMove={handleNavbarPointerMove}
-            onPointerUp={handleNavbarPointerUp}
-            onPointerCancel={handleNavbarPointerCancel}
+            onSelect={(item) => setActiveTab(item)}
           />
         </div>
       )}

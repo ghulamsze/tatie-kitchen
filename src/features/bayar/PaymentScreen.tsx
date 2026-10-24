@@ -164,6 +164,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         .reduce((max, o) => Math.max(max, o.order.queue_no || 0), 0);
       const nextQueueNo = maxLocalQueue + 1;
 
+      const normalizedPaymentMethod =
+        paymentMethod === 'qris'
+          ? 'QRIS'
+          : paymentMethod === 'transfer'
+          ? 'Transfer Bank'
+          : 'Tunai';
+
       let recordedOrder: Order;
       let recordedItems: OrderItem[];
 
@@ -176,7 +183,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         cash_received_idr: effectiveCash,
         queue_no: nextQueueNo,
         business_date: todayDateStr,
-        payment_method: paymentMethod,
+        payment_method: normalizedPaymentMethod,
         items: lines.map((l) => ({
           menu_item_id: l.item.id,
           name_snapshot: l.item.name,
@@ -205,7 +212,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
             const { data, error } = await (Promise.race([rpcPromise, timeoutPromise]) as Promise<any>);
 
             if (!error && data) {
-              recordedOrder = data as Order;
+              recordedOrder = {
+                ...(data as Order),
+                payment_method: normalizedPaymentMethod,
+              };
               recordedItems = lines.map((l) => ({
                 id: generateUUID(),
                 order_id: recordedOrder.id,
@@ -214,6 +224,14 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                 price_snapshot_idr: l.item.price_idr,
                 qty: l.qty,
               }));
+
+              // Pastikan kolom payment_method di baris database tersimpan dengan nilai yang dipilih
+              try {
+                (supabase.from('orders') as any)
+                  .update({ payment_method: normalizedPaymentMethod })
+                  .eq('id', recordedOrder.id)
+                  .then(() => {});
+              } catch {}
 
               setLastOrder(recordedOrder, recordedItems);
               useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
@@ -237,13 +255,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                     status: 'paid',
                     queue_no: nextQueueNo,
                     business_date: todayDateStr,
-                    payment_method: paymentMethod,
+                    payment_method: normalizedPaymentMethod,
                   })
                   .select()
                   .single();
 
                 if (!insErr && insertedOrder) {
-                  recordedOrder = insertedOrder as Order;
+                  recordedOrder = {
+                    ...(insertedOrder as Order),
+                    payment_method: normalizedPaymentMethod,
+                  };
                   recordedItems = lines.map((l) => ({
                     id: generateUUID(),
                     order_id: recordedOrder.id,
@@ -299,7 +320,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         status: 'paid',
         queue_no: nextQueueNo,
         business_date: todayDateStr,
-        payment_method: paymentMethod,
+        payment_method: normalizedPaymentMethod,
         created_at: new Date().toISOString(),
       };
 

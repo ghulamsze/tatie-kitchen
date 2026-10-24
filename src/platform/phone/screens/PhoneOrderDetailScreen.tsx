@@ -57,6 +57,9 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   const totalItemCount = items.reduce((acc, it) => acc + (it.qty || 1), 0);
   const cashReceived = order.cash_received_idr || order.total_idr;
   const changeAmount = order.change_idr || 0;
+  const paymentMethod = order.payment_method || 'Tunai';
+  const isQris = paymentMethod.toUpperCase() === 'QRIS';
+  const isTransfer = paymentMethod.toLowerCase().includes('transfer');
 
   // 1. Bagikan Ringkasan Struk
   const handleShare = async () => {
@@ -67,7 +70,13 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
       )
       .join('\n');
 
-    const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}\n\nTerima kasih atas kunjungan Anda!`;
+    const paymentLine = isQris
+      ? 'Metode: QRIS'
+      : isTransfer
+      ? 'Metode: Transfer Bank'
+      : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}`;
+
+    const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\n${paymentLine}\n\nTerima kasih atas kunjungan Anda!`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -526,14 +535,28 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             <span>Total:</span>
             <span>{formatRupiah(order.total_idr)}</span>
           </div>
-          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Tunai:</span>
-            <span>{formatRupiah(cashReceived)}</span>
-          </div>
-          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-            <span>Kembalian:</span>
-            <span>{formatRupiah(changeAmount)}</span>
-          </div>
+          {isQris ? (
+            <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+              <span>Metode:</span>
+              <span>QRIS</span>
+            </div>
+          ) : isTransfer ? (
+            <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+              <span>Metode:</span>
+              <span>Transfer Bank</span>
+            </div>
+          ) : (
+            <>
+              <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Tunai:</span>
+                <span>{formatRupiah(cashReceived)}</span>
+              </div>
+              <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                <span>Kembalian:</span>
+                <span>{formatRupiah(changeAmount)}</span>
+              </div>
+            </>
+          )}
 
           <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
 

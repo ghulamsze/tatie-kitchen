@@ -57,11 +57,6 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
       )
     : null;
 
-  const progress = Math.min(1, Math.max(0, scrollTop / 140));
-  const translateY = -progress * 260;
-  const opacity = Math.max(0, 1 - progress * 1.3);
-  const isCollapsed = progress > 0.8;
-
   return (
     <>
       {portalContent}
@@ -77,46 +72,12 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
           background: 'var(--scr-bg)',
         }}
       >
-        {/* Floating Back Button saat Bagian Atas Memudar/Naik */}
-        {isCollapsed && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Kembali"
-            style={{
-              position: 'absolute',
-              top: '12px',
-              left: '16px',
-              zIndex: 35,
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              background: 'var(--fl-bg)',
-              border: '1px solid var(--ctl-line)',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-              display: 'grid',
-              placeItems: 'center',
-              color: 'var(--ink)',
-              fontSize: 'var(--t-md)',
-              fontWeight: 800,
-              cursor: 'pointer',
-              animation: 'tk-fade-in 0.2s ease-out',
-            }}
-          >
-            ‹
-          </button>
-        )}
-
-        {/* Bagian Atas: Navigasi dan Pengaturan Cetak (Naik dan Fade Perlahan saat Slide Kebawah) */}
+        {/* Bagian Atas: Navigasi dan Pengaturan Cetak (Menjadi Dropdown saat Scroll tanpa Fade) */}
         <div
           style={{
-            transform: `translateY(${translateY}px)`,
-            opacity: opacity,
-            marginBottom: `${translateY}px`,
-            pointerEvents: isCollapsed ? 'none' : 'auto',
-            transition: 'transform 0.12s ease-out, opacity 0.12s ease-out, margin-bottom 0.12s ease-out',
             zIndex: 10,
             flexShrink: 0,
+            transition: 'all 0.2s ease',
           }}
         >
           {/* 1. Navigasi Kembali di Kiri Atas (100% Konsisten dengan Layar Rincian: ‹  Cetak menu) */}
@@ -157,7 +118,7 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
             }}
           >
-            {/* Header Dropdown Trigger */}
+            {/* Header Dropdown Trigger: Hanya Teks Pengaturan Dokumen Cetak dan Tanda Panah */}
             <div
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
               role="button"
@@ -176,68 +137,20 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
                 userSelect: 'none',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
-                  Pengaturan Dokumen Cetak
-                </b>
-                {!isSettingsOpen && (
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      color: 'var(--ink-2)',
-                      background: 'var(--ctl)',
-                      padding: '2px 8px',
-                      borderRadius: 'var(--r-pill)',
-                      border: '1px solid var(--ctl-line)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {isMargin4433 ? 'Margin 4433' : 'Margin Normal'} · {isInkSaver ? 'Hemat Tinta' : 'Latar Gelap'}
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {!isSettingsOpen && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePrint();
-                    }}
-                    style={{
-                      background: 'var(--accent)',
-                      color: 'var(--on-accent)',
-                      border: 'none',
-                      borderRadius: 'var(--r-pill)',
-                      padding: '4px 12px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 6 2 18 2 18 9" />
-                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                      <rect x="6" y="14" width="12" height="8" />
-                    </svg>
-                    <span>Cetak</span>
-                  </button>
-                )}
-                <span
-                  style={{
-                    fontSize: '13px',
-                    color: 'var(--ink-2)',
-                    display: 'inline-block',
-                    transform: isSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s ease',
-                  }}
-                >
-                  ▾
-                </span>
-              </div>
+              <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
+                Pengaturan Dokumen Cetak
+              </b>
+              <span
+                style={{
+                  fontSize: '13px',
+                  color: 'var(--ink-2)',
+                  display: 'inline-block',
+                  transform: isSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                ▾
+              </span>
             </div>
 
             {/* Isi Menu Pengaturan Dropdown (Mempertahankan seluruh kontrol pada gambar) */}
@@ -377,7 +290,15 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
 
         {/* 3. Area Pratinjau Dokumen Cetak A4 */}
         <div
-          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+          onScroll={(e) => {
+            const st = e.currentTarget.scrollTop;
+            setScrollTop(st);
+            if (st > 20 && isSettingsOpen) {
+              setIsSettingsOpen(false);
+            } else if (st <= 5 && !isSettingsOpen) {
+              setIsSettingsOpen(true);
+            }
+          }}
           style={{
             flex: 1,
             overflowY: 'auto',

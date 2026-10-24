@@ -143,22 +143,38 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       ) : (
         <div
-          className="tk-phone-scrollable tk-custom-slider"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
             flex: 1,
             minHeight: 0,
-            overflowY: 'auto',
-            paddingBottom: '24px',
-            paddingRight: '4px',
+            overflow: 'hidden',
           }}
         >
           {groupedOrders.map(([dateTitle, dayOrders]) => (
-            <div key={dateTitle} className="tk-phone-list-card">
+            <div
+              key={dateTitle}
+              className="tk-phone-list-card tk-custom-slider"
+              style={{
+                maxHeight: 'calc(100vh - 215px)',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                paddingRight: '6px',
+              }}
+            >
               {/* Header Tanggal */}
-              <div className="tk-phone-date-header dh2">
+              <div
+                className="tk-phone-date-header dh2"
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 4,
+                  background: 'inherit',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
                 {dateTitle}
               </div>
 
@@ -168,6 +184,13 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                 const timeStr = formatTime(order.created_at);
                 const totalQty =
                   items?.reduce((sum, it) => sum + (it.qty || 1), 0) || items?.length || 1;
+                const pm = (order.payment_method || 'tunai').toLowerCase();
+                const methodLabel =
+                  pm === 'qris'
+                    ? 'QRIS'
+                    : pm.includes('transfer')
+                    ? 'Transfer Bank'
+                    : 'Tunai';
 
                 return (
                   <div
@@ -208,7 +231,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                       </span>
                     </div>
 
-                    {/* Kolom Kanan: Nominal Rupiah & Jam Transaksi */}
+                    {/* Kolom Kanan: Nominal Rupiah, Jam Transaksi, & Metode Pembayaran */}
                     <div style={{ textAlign: 'right' }}>
                       <b
                         style={{
@@ -230,7 +253,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                           marginTop: '2px',
                         }}
                       >
-                        {timeStr} · {order.payment_method?.toUpperCase() === 'QRIS' ? 'QRIS' : order.payment_method?.toLowerCase() === 'transfer' ? 'Transfer' : 'Tunai'}
+                        {timeStr} · {methodLabel}
                       </span>
                     </div>
                   </div>
