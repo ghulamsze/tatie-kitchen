@@ -150,7 +150,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       internalHoldTimerRef.current = null;
     }
 
-    // Deteksi HOLD jika ditekan >= 160ms
+    // Deteksi HOLD lebih lama (450ms) agar ketukan biasa tidak terhitung sebagai hold
     internalHoldTimerRef.current = window.setTimeout(() => {
       if (internalPointerDownRef.current) {
         isDraggingRef.current = true;
@@ -161,7 +161,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
         applyIndicatorGeometry(p, false);
         onDragProgress?.(p);
       }
-    }, 160);
+    }, 450);
   };
 
   const handleInternalPointerMove = (e: React.PointerEvent<HTMLElement>) => {
@@ -169,7 +169,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     const dx = Math.abs(e.clientX - internalStartPosRef.current.x);
     const dy = Math.abs(e.clientY - internalStartPosRef.current.y);
 
-    if (!isDraggingRef.current && (dx > 6 || dy > 6)) {
+    if (!isDraggingRef.current && (dx > 16 || dy > 16)) {
       if (internalHoldTimerRef.current !== null) {
         clearTimeout(internalHoldTimerRef.current);
         internalHoldTimerRef.current = null;

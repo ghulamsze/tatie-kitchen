@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { DateRangePreset } from '../../../stores/historyStore.ts';
 import { getShopTodayDateStr } from '../../../lib/format/formatters.ts';
 
@@ -53,7 +54,7 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
     onClose();
   };
 
-  return (
+  const content = (
     <div
       className="tk-phone-overlay ov"
       onClick={onClose}
@@ -159,4 +160,10 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
       </div>
     </div>
   );
+
+  const portalTarget = typeof document !== 'undefined'
+    ? (document.getElementById('tk-portal-root') || document.body)
+    : null;
+
+  return portalTarget ? createPortal(content, portalTarget) : content;
 };

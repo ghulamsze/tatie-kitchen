@@ -148,11 +148,14 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            background: 'var(--bg)',
+            background: 'var(--scr-bg)',
+            contain: 'paint',
           }}
         >
           <div
             style={{
+              width: '100%',
+              height: '100%',
               flex: 1,
               position: 'relative',
               overflow: 'hidden',

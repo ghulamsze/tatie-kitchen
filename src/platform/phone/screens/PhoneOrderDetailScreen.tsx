@@ -114,7 +114,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   return (
     <div className="tk-phone-screen">
       {/* 1. Navigasi Kembali di Kiri Atas */}
-      <div style={{ margin: '4px 4px 12px' }}>
+      <div style={{ margin: '8px 4px 14px 4px' }}>
         <button
           type="button"
           onClick={onBack}
@@ -129,10 +129,11 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             padding: '6px 0',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
+            gap: '8px',
           }}
         >
-          ‹ Rincian
+          <span>‹</span>
+          <span>Rincian</span>
         </button>
       </div>
 
@@ -148,14 +149,11 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           gap: '14px',
         }}
       >
-        {/* Baris Meja & Waktu (Tanpa Badge Selesai) */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Baris Meja (Tanpa Badge Waktu / Selesai) */}
+        <div>
           <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
             Meja {order.table_no || '-'}
           </b>
-          <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
-            {timeStr}
-          </span>
         </div>
 
         {/* Kotak Nomor Antrian Menonjol (Sama seperti Tablet Kasir) */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useCashierStore, DEFAULT_CASHIERS, isImmutableCashier } from '../../../stores/cashierStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
-import { PhonePrintMenuPreview } from '../components/PhonePrintMenuPreview.tsx';
 import { Toast } from '../../../design/components/Toast.tsx';
 import { Cashier } from '../../../lib/supabase/types.ts';
 
@@ -17,22 +17,26 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   const { shop } = useShopStore();
 
   const [isThemeOpen, setIsThemeOpen] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddCashierOpen, setIsAddCashierOpen] = useState(false);
   const [newCashierName, setNewCashierName] = useState('');
   const [selectedCashierToRemove, setSelectedCashierToRemove] = useState<Cashier | null>(null);
+  const [rejectingCashierId, setRejectingCashierId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const holdTimerRef = useRef<number | null>(null);
   const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
+  const portalTarget = typeof document !== 'undefined'
+    ? (document.getElementById('tk-portal-root') || document.body)
+    : null;
+
   useEffect(() => {
     fetchCashiers().catch(() => {});
   }, [fetchCashiers]);
 
-  // Sembunyikan navbar saat dialog atau cetak menu terbuka
+  // Sembunyikan navbar saat dialog terbuka
   useEffect(() => {
-    if (isPreviewOpen || isAddCashierOpen || selectedCashierToRemove || isThemeOpen) {
+    if (isAddCashierOpen || selectedCashierToRemove || isThemeOpen) {
       document.body.classList.add('has-modal');
     } else {
       document.body.classList.remove('has-modal');
@@ -40,7 +44,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     return () => {
       document.body.classList.remove('has-modal');
     };
-  }, [isPreviewOpen, isAddCashierOpen, selectedCashierToRemove, isThemeOpen]);
+  }, [isAddCashierOpen, selectedCashierToRemove, isThemeOpen]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -53,13 +57,20 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     : DEFAULT_CASHIERS;
 
   const startHold = (cashier: Cashier, e: React.PointerEvent) => {
-    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak bisa dihapus
+    pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+
+    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak bisa dihapus: beri animasi merah menolak seperti numpad di tab
     if (isImmutableCashier(cashier.id, cashier.name)) {
+      holdTimerRef.current = window.setTimeout(() => {
+        setRejectingCashierId(cashier.id);
+        setTimeout(() => setRejectingCashierId(null), 500);
+        showToast('Kasir default tidak dapat dihapus');
+        holdTimerRef.current = null;
+      }, 420);
       return;
     }
 
-    pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     holdTimerRef.current = window.setTimeout(() => {
       setSelectedCashierToRemove(cashier);
       holdTimerRef.current = null;
@@ -200,7 +211,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         {displayCashiers.map((cashier) => (
           <div
             key={cashier.id}
-            className="tk-phone-row rw"
+            className={`tk-phone-row rw ${rejectingCashierId === cashier.id ? 'tk-row-rejecting' : ''}`}
             onPointerDown={(e) => startHold(cashier, e)}
             onPointerUp={() => cancelHold()}
             onPointerCancel={() => cancelHold()}
@@ -250,7 +261,6 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         type="button"
         className="tk-btn-flat"
         onClick={() => {
-          setIsPreviewOpen(true);
           if (onOpenPrintMenu) onOpenPrintMenu();
         }}
         style={{
@@ -270,14 +280,8 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         onClose={() => setIsThemeOpen(false)}
       />
 
-      {/* 7. Layar Pratinjau Menu Cetak A4 */}
-      <PhonePrintMenuPreview
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-      />
-
-      {/* 8. Dialog Tambah Kasir */}
-      {isAddCashierOpen && (
+      {/* 8. Dialog Tambah Kasir (Di-portal ke Root agar Terkurung Sempurna Tanpa Cutoff) */}
+      {isAddCashierOpen && portalTarget && createPortal(
         <div
           className="tk-phone-overlay ov"
           onClick={() => setIsAddCashierOpen(false)}
@@ -362,11 +366,12 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        portalTarget
       )}
 
-      {/* 9. Dialog Konfirmasi Hapus Kasir (Tanpa Teks Teknis Supabase, User-friendly) */}
-      {selectedCashierToRemove && (
+      {/* 9. Dialog Konfirmasi Hapus Kasir (Di-portal ke Root agar Terkurung Sempurna Tanpa Cutoff) */}
+      {selectedCashierToRemove && portalTarget && createPortal(
         <div
           className="tk-phone-overlay ov"
           onClick={() => setSelectedCashierToRemove(null)}
@@ -429,7 +434,8 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        portalTarget
       )}
 
       {/* Notifikasi Toast */}

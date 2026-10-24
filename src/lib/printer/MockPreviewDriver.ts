@@ -3,7 +3,7 @@ import { decodeEscPosToText } from './escpos.ts';
 
 export class MockPreviewDriver implements PrinterDriver {
   private connectedDevice: PrinterDevice | null = {
-    name: 'VSC MP-58X (Simulasi Web)',
+    name: 'VSC MP-58X',
     address: '00:11:22:33:44:55',
   };
   private isDeviceConnected = true;
@@ -20,7 +20,7 @@ export class MockPreviewDriver implements PrinterDriver {
 
   async listBondedDevices(): Promise<PrinterDevice[]> {
     return [
-      { name: 'VSC MP-58X (Simulasi Web)', address: '00:11:22:33:44:55' },
+      { name: 'VSC MP-58X', address: '00:11:22:33:44:55' },
       { name: 'RPP02N Thermal Printer', address: 'AA:BB:CC:DD:EE:FF' },
     ];
   }
@@ -28,7 +28,7 @@ export class MockPreviewDriver implements PrinterDriver {
   async connect(address: string): Promise<boolean> {
     this.isDeviceConnected = true;
     this.connectedDevice = {
-      name: address === '00:11:22:33:44:55' ? 'VSC MP-58X (Simulasi Web)' : 'Printer Thermal',
+      name: address === '00:11:22:33:44:55' ? 'VSC MP-58X' : 'Printer Thermal',
       address,
     };
     return true;

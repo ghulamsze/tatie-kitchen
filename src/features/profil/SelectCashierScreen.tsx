@@ -11,7 +11,7 @@ export interface SelectCashierScreenProps {
 
 export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
   onSelectCashier,
-  onOpenDeviceSetup,
+  onOpenDeviceSetup: _onOpenDeviceSetup,
 }) => {
   const { cashiers, activeCashier, setActiveCashier, addNewCashier, removeCashier } = useCashierStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -130,30 +130,6 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
           <span>Tambah kasir</span>
         </button>
       </div>
-
-      {/* Tombol Setup Perangkat Pemilik */}
-      {onOpenDeviceSetup && (
-        <button
-          type="button"
-          onClick={onOpenDeviceSetup}
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            right: '24px',
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--ink-3)',
-            fontSize: 'var(--t-xs)',
-            lineHeight: 'var(--l-xs)',
-            cursor: 'pointer',
-            padding: '8px 12px',
-            borderRadius: 'var(--r-sm)',
-            textDecoration: 'underline',
-          }}
-        >
-          Masuk Perangkat (Setup Toko)
-        </button>
-      )}
 
       {/* Dialog Tambah Kasir */}
       <AddCashierDialog

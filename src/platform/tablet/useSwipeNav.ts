@@ -246,6 +246,7 @@ export function useSwipeNav({
       navbarHoldTimerRef.current = null;
     }
 
+    // Deteksi HOLD lebih lama (450ms) agar ketukan biasa tidak terhitung sebagai hold
     navbarHoldTimerRef.current = window.setTimeout(() => {
       if (isNavbarPointerDownRef.current) {
         isDraggingRef.current = true;
@@ -255,7 +256,7 @@ export function useSwipeNav({
         const progressT = getContinuousProgressFromClientX(e.clientX);
         applyT(progressT, true);
       }
-    }, 160);
+    }, 450);
   }, [cancelOngoingAnimation, getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -264,7 +265,8 @@ export function useSwipeNav({
     const dx = Math.abs(e.clientX - navbarPointerStartXRef.current);
     const dy = Math.abs(e.clientY - navbarPointerStartYRef.current);
 
-    if (!isDraggingRef.current && (dx > 6 || dy > 6)) {
+    // Perlu gerakan yang jelas (> 16px) untuk memicu drag agar ketukan biasa tidak terganggu
+    if (!isDraggingRef.current && (dx > 16 || dy > 16)) {
       if (navbarHoldTimerRef.current !== null) {
         clearTimeout(navbarHoldTimerRef.current);
         navbarHoldTimerRef.current = null;

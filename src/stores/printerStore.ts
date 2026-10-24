@@ -55,7 +55,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => {
   // Jika di mode mock (laptop/browser), berikan default device simulasi VSC MP-58X
   if (!Capacitor.isNativePlatform() && !initialDevice) {
     initialDevice = {
-      name: 'VSC MP-58X (Simulasi Web)',
+      name: 'VSC MP-58X',
       address: '00:11:22:33:44:55',
     };
   }

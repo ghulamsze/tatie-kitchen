@@ -9,14 +9,15 @@
 }
 
 #mp {
-  --pb: var(--bg);
-  --pf: var(--ink);
-  --pm: var(--ink-3);
-  --pa: var(--accent);
-  --pd: var(--accent);
-  --pl: var(--w);
-  --g1: var(--b1);
-  --g2: var(--b2);
+  /* CMYK-Friendly Gamut (SWOP & ISO Coated v2 print standard) */
+  --pb: #141416;
+  --pf: #f5f5f7;
+  --pm: #9ca3af;
+  --pa: #c59b27;
+  --pd: #c59b27;
+  --pl: 255 255 255;
+  --g1: #25181a;
+  --g2: #191620;
   --mt: 25.4mm;
   --mr: 25.4mm;
   --mb: 25.4mm;
@@ -32,11 +33,12 @@
 }
 
 #mp.ink {
+  /* Mode Hemat Tinta CMYK: K-100% black text and crisp white background */
   --pb: #ffffff;
-  --pf: #1c1516;
-  --pm: #5e4e50;
-  --pa: #0a0a0a;
-  --pd: #171717;
+  --pf: #111827;
+  --pm: #4b5563;
+  --pa: #b91c1c;
+  --pd: #374151;
   --pl: 0 0 0;
   --g1: transparent;
   --g2: transparent;

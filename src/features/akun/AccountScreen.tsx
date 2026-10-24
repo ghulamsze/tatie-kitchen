@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
-import { usePrinterStore } from '../../stores/printerStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
@@ -11,7 +10,6 @@ export interface AccountScreenProps {
 
 export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChangeCashier }) => {
   const { activeCashier, shiftStartTime } = useCashierStore();
-  const { isConnected } = usePrinterStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isPrinterOpen, setIsPrinterOpen] = useState(false);
 
@@ -98,12 +96,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
             aria-haspopup="dialog"
             style={{ flex: 1 }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '13px' }}>🖨️</span>
-              <span style={{ color: isConnected ? 'var(--accent-ink)' : 'inherit' }}>
-                {isConnected ? 'Printer OK' : 'Printer'}
-              </span>
-            </span>
+            <span>Printer</span>
             <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
           </button>
         </div>
@@ -119,7 +112,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
 
         {/* Versi Aplikasi */}
         <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', marginTop: '2px' }}>
-          Tati’e Kitchen v{import.meta.env.VITE_APP_VERSION || '0.2.0'} (Tablet Beta)
+          v0.1.0
         </span>
       </div>
 

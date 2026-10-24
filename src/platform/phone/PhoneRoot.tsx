@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavItem, NavbarPill } from '../../design/components/NavbarPill.tsx';
+import { IntroScreen } from '../../features/intro/IntroScreen.tsx';
 import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneOrderDetailScreen } from './screens/PhoneOrderDetailScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
+import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { SwipePager } from '../tablet/SwipePager.tsx';
 import { useSwipeNav } from '../tablet/useSwipeNav.ts';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
@@ -11,8 +13,10 @@ import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 const PHONE_NAV_TABS: NavItem[] = ['Home', 'Riwayat', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
+  const [showIntro, setShowIntro] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<NavItem>('Home');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isPrintMenuOpen, setIsPrintMenuOpen] = useState<boolean>(false);
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
   useEffect(() => {
@@ -44,6 +48,17 @@ export const PhoneRoot: React.FC = () => {
     activeTab,
     onTabChange: setActiveTab,
   });
+
+  const isModalOrOverlayActive = Boolean(selectedOrderId || isPrintMenuOpen);
+
+  // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
+  if (showIntro) {
+    return (
+      <div className="tk-phone-root" style={{ width: '100%', height: '100%', position: 'relative' }}>
+        <IntroScreen onFinish={() => setShowIntro(false)} />
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="tk-phone-root">
@@ -91,17 +106,17 @@ export const PhoneRoot: React.FC = () => {
           trackRef={trackRef}
           progress={progress}
           isDragging={isDragging}
-          onPointerDown={handlePagerPointerDown}
-          onPointerMove={handlePagerPointerMove}
-          onPointerUp={handlePagerPointerUp}
-          onPointerCancel={handlePagerPointerCancel}
+          onPointerDown={isModalOrOverlayActive ? undefined : handlePagerPointerDown}
+          onPointerMove={isModalOrOverlayActive ? undefined : handlePagerPointerMove}
+          onPointerUp={isModalOrOverlayActive ? undefined : handlePagerPointerUp}
+          onPointerCancel={isModalOrOverlayActive ? undefined : handlePagerPointerCancel}
         >
           <PhoneHomeScreen
             onNavigateToHistory={() => scrollToTab('Riwayat')}
             onSelectOrder={(id) => setSelectedOrderId(id)}
           />
           <PhoneHistoryScreen onSelectOrder={(id) => setSelectedOrderId(id)} />
-          <PhoneAccountScreen />
+          <PhoneAccountScreen onOpenPrintMenu={() => setIsPrintMenuOpen(true)} />
         </SwipePager>
 
         {/* Overlay Detail Pesanan jika dipilih */}
@@ -120,10 +135,30 @@ export const PhoneRoot: React.FC = () => {
             <PhoneOrderDetailScreen onBack={() => setSelectedOrderId(null)} />
           </div>
         )}
+
+        {/* Overlay Pratinjau Cetak Menu Fisik A4 (Layar Terkunci & Tidak Bisa Digeser) */}
+        {isPrintMenuOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 70,
+              background: 'var(--scr-bg)',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'tk-fade-in 0.2s ease-out',
+            }}
+          >
+            <PhonePrintMenuPreview
+              isOpen={true}
+              onClose={() => setIsPrintMenuOpen(false)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Floating Liquid Glass Pill Navbar di Bagian Bawah */}
-      {!selectedOrderId && (
+      {/* Floating Liquid Glass Pill Navbar di Bagian Bawah (Sembunyi saat Cetak Menu atau Rincian) */}
+      {!isModalOrOverlayActive && (
         <div className="tk-phone-navbar-wrap">
           <NavbarPill
             activeItem={activeTab}
@@ -140,6 +175,17 @@ export const PhoneRoot: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Container Portal untuk Dialog & Sheet agar terkurung rapi di dalam Frame Layar Android */}
+      <div
+        id="tk-portal-root"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 120,
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   );
 };
