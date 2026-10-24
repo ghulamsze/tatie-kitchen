@@ -149,7 +149,10 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
             flexDirection: 'column',
             gap: '16px',
             flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
             paddingBottom: '24px',
+            paddingRight: '4px',
           }}
         >
           {groupedOrders.map(([dateTitle, dayOrders]) => (

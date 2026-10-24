@@ -239,7 +239,7 @@ export function useSwipeNav({
 
   // Cegah browser Android membatalkan (pointercancel) swipe horizontal saat user menggeser layar
   useEffect(() => {
-    const el = trackRef.current?.parentElement || trackRef.current;
+    const el = containerRef.current || trackRef.current?.parentElement || trackRef.current;
     if (!el) return;
 
     let touchStartX = 0;
@@ -260,9 +260,10 @@ export function useSwipeNav({
       const dx = Math.abs(e.touches[0].clientX - touchStartX);
       const dy = Math.abs(e.touches[0].clientY - touchStartY);
 
-      if (!decided && (dx > 5 || dy > 5)) {
+      if (!decided && (dx > 3 || dy > 3)) {
         decided = true;
-        isHorizontal = dx > dy * 0.75;
+        // Geser sedikit horizontal langsung prioritaskan geser layar
+        isHorizontal = dx >= dy * 0.45;
       }
 
       if (isHorizontal && e.cancelable) {
@@ -460,7 +461,7 @@ export function useSwipeNav({
     const absDy = Math.abs(dy);
 
     if (!hasDecidedDirectionRef.current) {
-      if (absDx < 4 && absDy < 4) {
+      if (absDx < 3 && absDy < 3) {
         return;
       }
 
@@ -471,37 +472,15 @@ export function useSwipeNav({
         return;
       }
 
-      // Jika sentuh area konten gulir (grid menu atau daftar riwayat):
-      if (scrollableTargetRef.current) {
-        // Hanya kunci ke scroll vertikal jika gerakan murni vertikal dominan
-        if (absDy >= 14 && absDy > absDx * 1.6) {
-          hasDecidedDirectionRef.current = true;
-          isLockedOutRef.current = true;
-          return;
-        }
-        // Swipe horizontal di atas scrollable: sangat responsif (absDx >= 6px)
-        if (absDx >= 6 && absDx >= absDy * 0.75) {
-          hasDecidedDirectionRef.current = true;
-          isDraggingRef.current = true;
-          setIsDragging(true);
-          try {
-            (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-          } catch {
-            // ignore
-          }
-          return;
-        }
-      }
-
-      // Scroll vertikal konten di luar scrollable
-      if (absDy >= 14 && absDy > absDx * 1.6) {
+      // Kunci vertikal hanya jika gerakan murni vertikal kuat dan jauh
+      if (absDy >= 24 && absDy > absDx * 2.2) {
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      // Swipe tab horizontal layar: sangat ringan dan langsung responsif (absDx >= 6px)
-      if (absDx >= 6 && absDx >= absDy * 0.75) {
+      // Geser dikit horizontal (absDx >= 3px) langsung aktifkan swipe horizontal layar!
+      if (absDx >= 3 && absDx >= absDy * 0.45) {
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -560,17 +539,14 @@ export function useSwipeNav({
     const totalDx = e.clientX - startXRef.current;
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
-    const containerWidth = containerRef.current?.clientWidth || 390;
-    // Ambang batas swipe sangat ringan: cukup geser sedikit (16-24px) atau flick lembut
-    const threshold = Math.min(24, Math.max(14, containerWidth * 0.05));
 
-    const isFlick = velocity > 0.06 && Math.abs(totalDx) >= 10;
-    const isSwipe = Math.abs(totalDx) >= threshold;
+    // Cukup geser sedikit (>= 8px) atau flick lembut apapun langsung pindah layarnya
+    const isSwipe = Math.abs(totalDx) >= 8 || velocity > 0.04;
 
     const currIdx = activeIndexRef.current;
     let targetIndex = currIdx;
 
-    if (isFlick || isSwipe) {
+    if (isSwipe) {
       if (totalDx < 0) {
         targetIndex = Math.min(tabs.length - 1, currIdx + 1);
       } else if (totalDx > 0) {
@@ -587,8 +563,6 @@ export function useSwipeNav({
   const handlePagerPointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     pointerActiveRef.current = false;
     dragSourceRef.current = null;
-    isDraggingRef.current = false;
-    setIsDragging(false);
 
     try {
       (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
@@ -596,8 +570,26 @@ export function useSwipeNav({
       // ignore
     }
 
-    const targetIdx = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
-    animateTo(targetIdx);
+    if (!isDraggingRef.current) {
+      return;
+    }
+    isDraggingRef.current = false;
+    setIsDragging(false);
+
+    const totalDx = e.clientX - startXRef.current;
+    const currIdx = activeIndexRef.current;
+    let targetIndex = currIdx;
+
+    if (Math.abs(totalDx) >= 8) {
+      if (totalDx < 0) {
+        targetIndex = Math.min(tabs.length - 1, currIdx + 1);
+      } else if (totalDx > 0) {
+        targetIndex = Math.max(0, currIdx - 1);
+      }
+    } else {
+      targetIndex = Math.max(0, Math.min(tabs.length - 1, Math.round(tRef.current)));
+    }
+    animateTo(targetIndex);
   }, [animateTo, tabs.length]);
 
   const scrollToTab = useCallback((tab: NavItem) => {
