@@ -226,7 +226,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
       </div>
 
       <div
-        className="tk-phone-list-card"
+        className={`tk-phone-list-card ${displayCashiers.length > 5 ? 'tk-custom-slider' : ''}`}
         style={{
           marginBottom: '16px',
           maxHeight: displayCashiers.length > 5 ? '252px' : undefined,
@@ -252,7 +252,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               style={{
                 fontSize: 'var(--t-md)',
                 lineHeight: 'var(--l-md)',
-                fontWeight: 500,
+                fontWeight: 400,
                 color: 'var(--ink)',
                 display: 'inline-block',
               }}

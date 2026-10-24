@@ -26,7 +26,7 @@ export const ComponentGallery: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(getStoredTheme);
   const [currentPalette, setCurrentPalette] = useState<Palette>(getStoredPalette);
 
-  const [activeNavItem, setActiveNavItem] = useState<NavItem>('Home');
+  const [activeNavItem, setActiveNavItem] = useState<NavItem>('Beranda');
   const [chipSelected, setChipSelected] = useState<string>('Semua');
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);

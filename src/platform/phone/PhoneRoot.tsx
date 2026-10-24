@@ -10,18 +10,20 @@ import { SwipePager } from '../tablet/SwipePager.tsx';
 import { useSwipeNav } from '../tablet/useSwipeNav.ts';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
+import { useCashierStore } from '../../stores/cashierStore.ts';
 
-const PHONE_NAV_TABS: NavItem[] = ['Home', 'Riwayat', 'Akun'];
+const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Riwayat', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<NavItem>('Home');
+  const [activeTab, setActiveTab] = useState<NavItem>('Beranda');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState<boolean>(false);
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
   useEffect(() => {
     const cleanup = initPosRealtimeSync();
+    useCashierStore.getState().fetchCashiers().catch(() => {});
     return () => {
       cleanup();
     };
@@ -65,12 +67,12 @@ export const PhoneRoot: React.FC = () => {
         setIsPrintMenuOpen(false);
         return true;
       }
-      // 3. Jika sedang di tab selain Home, kembali ke Home
-      if (activeTab !== 'Home') {
-        scrollToTab('Home');
+      // 3. Jika sedang di tab selain Beranda, kembali ke Beranda
+      if (activeTab !== 'Beranda') {
+        scrollToTab('Beranda');
         return true;
       }
-      // 4. Jika di Home dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
+      // 4. Jika di Beranda dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
       return true;
     }, 10);
   }, [selectedOrderId, isPrintMenuOpen, activeTab, scrollToTab]);

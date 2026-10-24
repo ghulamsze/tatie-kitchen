@@ -295,6 +295,8 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
             flexDirection: 'column',
             alignItems: 'center',
             gap: '24px',
+            scrollSnapType: 'y proximity',
+            scrollPaddingTop: '16px',
             WebkitOverflowScrolling: 'touch',
           }}
         >

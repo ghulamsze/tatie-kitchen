@@ -143,7 +143,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       ) : (
         <div
-          className="tk-phone-scrollable"
+          className="tk-phone-scrollable tk-custom-slider"
           style={{
             display: 'flex',
             flexDirection: 'column',

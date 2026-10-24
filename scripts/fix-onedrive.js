@@ -24,6 +24,16 @@ const targets = [
   path.resolve('android/app/src/main/res'),
 ];
 
+const buildDir = path.resolve('android/app/build');
+if (fs.existsSync(buildDir)) {
+  try {
+    fs.rmSync(buildDir, { recursive: true, force: true });
+    console.log('Cleaned android/app/build to prevent incremental merge collision.');
+  } catch (e) {
+    // ignore
+  }
+}
+
 for (const target of targets) {
   touchFiles(target);
 }

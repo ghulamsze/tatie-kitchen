@@ -30,6 +30,58 @@
   --mr: 30mm;
   --mb: 30mm;
   --ml: 40mm;
+  --u: 0.82;
+}
+
+#mp.m4433 .cols {
+  column-gap: 8mm;
+}
+
+#mp.m4433 .pg h2 {
+  font-size: 22pt;
+  line-height: 26pt;
+  margin: 2mm 0 5mm;
+}
+
+#mp.m4433 .pph {
+  margin-bottom: 2.5mm;
+  font-size: 9pt;
+}
+
+#mp.m4433 .mg {
+  margin: 0 0 calc(3.5mm * var(--u, 1));
+}
+
+#mp.m4433 .mg h3 {
+  font-size: calc(11.5pt * var(--u, 1));
+  line-height: calc(15pt * var(--u, 1));
+  gap: 2mm;
+}
+
+#mp.m4433 .dv {
+  margin: calc(1.8mm * var(--u, 1)) 0 0.8mm;
+}
+
+#mp.m4433 .mr {
+  padding: calc(1.1mm * var(--u, 1)) 0 calc(1.3mm * var(--u, 1)) calc(4.5mm * var(--u, 1));
+  font-size: calc(9.8pt * var(--u, 1));
+  line-height: calc(13.2pt * var(--u, 1));
+  gap: 2.5mm;
+}
+
+#mp.m4433 .ppr {
+  min-width: calc(16mm * var(--u, 1));
+}
+
+#mp.m4433 .cv .wmk {
+  font-size: 64pt;
+  line-height: 62pt;
+  bottom: calc(var(--mb) + 28mm);
+}
+
+#mp.m4433 .cv .cats {
+  gap: 3.5mm;
+  font-size: 10pt;
 }
 
 #mp.ink {
@@ -196,6 +248,8 @@
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   border-radius: var(--r-md);
   overflow: hidden;
+  scroll-snap-align: start;
+  scroll-margin-top: 16px;
 }
 
 #mp .pg {

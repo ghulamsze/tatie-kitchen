@@ -431,6 +431,61 @@
 /* ===== RESET & DASAR ===== */
 *, *::before, *::after {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ctl-border) transparent;
+}
+
+/* Custom Liquid Glass Scrollbar / Slider */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ctl-border);
+  border-radius: var(--r-pill);
+  border: 1px solid rgb(var(--w) / 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background: var(--accent);
+}
+
+.tk-custom-slider {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ctl-border) transparent;
+}
+
+.tk-custom-slider::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.tk-custom-slider::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--r-pill);
+  margin: 4px;
+}
+
+.tk-custom-slider::-webkit-scrollbar-thumb {
+  background: var(--ctl-border);
+  border-radius: var(--r-pill);
+  border: 1px solid rgb(var(--w) / 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.tk-custom-slider::-webkit-scrollbar-thumb:hover,
+.tk-custom-slider::-webkit-scrollbar-thumb:active {
+  background: var(--accent);
 }
 
 html, body, #root {

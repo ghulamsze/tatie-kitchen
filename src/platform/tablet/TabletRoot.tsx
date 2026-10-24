@@ -22,7 +22,7 @@ import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
-const NAV_TABS: NavItem[] = ['Home', 'Riwayat', 'Akun'];
+const NAV_TABS: NavItem[] = ['Beranda', 'Riwayat', 'Akun'];
 
 export const TabletRoot: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<TabletScreen>('intro');
@@ -33,11 +33,12 @@ export const TabletRoot: React.FC = () => {
   const { isOnline } = useNetworkStatus();
 
   const activeNavTab: NavItem =
-    currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Home';
+    currentScreen === 'Riwayat' || currentScreen === 'Akun' ? currentScreen : 'Beranda';
 
   // Sinkronisasi real-time dua arah berbasis database Supabase (Broadcast + Polling Cepat + Focus auto-refresh)
   useEffect(() => {
     const cleanupRealtime = initPosRealtimeSync();
+    useCashierStore.getState().fetchCashiers().catch(() => {});
     return () => {
       cleanupRealtime();
     };
@@ -45,7 +46,7 @@ export const TabletRoot: React.FC = () => {
 
   const handleNavTabChange = (tab: NavItem) => {
     setCurrentScreen((prev) => {
-      if (prev === 'Home' || prev === 'Riwayat' || prev === 'Akun') {
+      if (prev === 'Beranda' || prev === 'Riwayat' || prev === 'Akun') {
         return tab;
       }
       return prev;
@@ -80,12 +81,12 @@ export const TabletRoot: React.FC = () => {
     if (!activeCashier) {
       setCurrentScreen('select-cashier');
     } else {
-      setCurrentScreen('Home');
+      setCurrentScreen('Beranda');
     }
   };
 
   const handleSelectCashier = (_cashier: Cashier) => {
-    setCurrentScreen('Home');
+    setCurrentScreen('Beranda');
   };
 
   const handleChangeCashier = () => {
@@ -144,7 +145,7 @@ export const TabletRoot: React.FC = () => {
         {renderOfflineBanner()}
         <PaymentScreen
           onSuccess={() => setCurrentScreen('receipt')}
-          onCancel={() => setCurrentScreen('Home')}
+          onCancel={() => setCurrentScreen('Beranda')}
         />
       </div>
     );
@@ -156,14 +157,14 @@ export const TabletRoot: React.FC = () => {
       <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
         {renderOfflineBanner()}
         <ReceiptScreen
-          onNewOrder={() => setCurrentScreen('Home')}
+          onNewOrder={() => setCurrentScreen('Beranda')}
         />
       </div>
     );
   }
 
-  // 5. Layar Utama Tablet (Home, Riwayat, Akun) dengan Seamless Drag-to-Switch
-  const showNavbar = (currentScreen === 'Home' || currentScreen === 'Riwayat' || currentScreen === 'Akun') && !isCustomerMenuOpen;
+  // 5. Layar Utama Tablet (Beranda, Riwayat, Akun) dengan Seamless Drag-to-Switch
+  const showNavbar = (currentScreen === 'Beranda' || currentScreen === 'Riwayat' || currentScreen === 'Akun') && !isCustomerMenuOpen;
   const isModalActive = Boolean(heldItem) || isCustomerMenuOpen;
 
   return (

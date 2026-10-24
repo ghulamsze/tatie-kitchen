@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Cashier } from '../lib/supabase/types.ts';
-import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
+import { supabase, isSupabaseConfigured, getSupabaseSecretKey } from '../lib/supabase/client.ts';
 import { formatTime } from '../lib/format/formatters.ts';
 import { logError } from '../lib/logger/logger.ts';
 import { broadcastCashierChanged } from '../lib/supabase/realtime.ts';
@@ -86,24 +86,27 @@ interface CashierState {
 }
 
 
+export const DEFAULT_SHOP_ID = '40f91c30-2e23-476b-bdd7-5e0605b1f812';
+
 export const useCashierStore = create<CashierState>((set) => ({
   cashiers: loadSavedCashiers(),
   activeCashier: null,
   shiftStartTime: '08.00',
   isLoading: false,
 
-  fetchCashiers: async (shopId) => {
+  fetchCashiers: async (_shopId) => {
     if (!isSupabaseConfigured()) {
       return;
     }
 
     try {
       set({ isLoading: true });
-      let query = supabase.from('cashiers').select('*').eq('active', true);
-      if (shopId && shopId !== 'shop-001') {
-        query = query.eq('shop_id', shopId);
-      }
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from('cashiers')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: true });
+
       if (error) {
         logError('cashierStore:fetchCashiers_query', error);
       } else if (data && data.length > 0) {
@@ -140,26 +143,49 @@ export const useCashierStore = create<CashierState>((set) => ({
     }
   },
 
-  addNewCashier: async (name, shopId = 'shop-001') => {
+  addNewCashier: async (name, shopId = DEFAULT_SHOP_ID) => {
     const trimmed = name.trim();
     if (!trimmed) throw new Error('Nama kasir tidak boleh kosong.');
 
     if (isSupabaseConfigured()) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase.rpc as any)('add_cashier', {
-          p_shop_id: shopId,
-          p_name: trimmed,
+        const secretKey = getSupabaseSecretKey();
+        const res = await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers`, {
+          method: 'POST',
+          headers: {
+            apikey: secretKey,
+            Authorization: `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({
+            shop_id: shopId,
+            name: trimmed,
+            active: true,
+          }),
         });
-        if (error) {
-          logError('cashierStore:add_cashier_rpc_error', error);
-        } else if (data) {
-          const newCashier = data as Cashier;
-          set((state) => ({ cashiers: [...state.cashiers, newCashier] }));
-          return newCashier;
+
+        if (res.ok) {
+          const rows = await res.json();
+          if (Array.isArray(rows) && rows.length > 0) {
+            const newCashier = rows[0] as Cashier;
+            set((state) => {
+              const updated = deduplicateCashiers([...state.cashiers, newCashier]);
+              try {
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+                }
+              } catch {
+                // ignore
+              }
+              return { cashiers: updated };
+            });
+            broadcastCashierChanged('add', newCashier.id, trimmed).catch(() => {});
+            return newCashier;
+          }
         }
       } catch (err) {
-        logError('cashierStore:add_cashier_rpc_exception', err);
+        logError('cashierStore:add_cashier_rest_exception', err);
       }
     }
 
@@ -173,7 +199,7 @@ export const useCashierStore = create<CashierState>((set) => ({
     };
 
     set((state) => {
-      const updated = [...state.cashiers, localCashier];
+      const updated = deduplicateCashiers([...state.cashiers, localCashier]);
       try {
         localStorage.setItem('tk_cashiers', JSON.stringify(updated));
       } catch (err) {
@@ -197,13 +223,19 @@ export const useCashierStore = create<CashierState>((set) => ({
 
     if (isSupabaseConfigured()) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('cashiers') as any).update({ active: false }).eq('id', id);
-        if (error) {
-          logError('cashierStore:removeCashier_db_error', error);
-        }
+        const secretKey = getSupabaseSecretKey();
+        await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: secretKey,
+            Authorization: `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({ active: false }),
+        });
       } catch (err) {
-        logError('cashierStore:removeCashier_db_exception', err);
+        logError('cashierStore:removeCashier_rest_exception', err);
       }
     }
 

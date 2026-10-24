@@ -43,7 +43,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
   return (
     <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
       {/* 1. Header Bersih Sesuai Frame 1 PDF */}
-      <h1 className="tk-phone-title">Home</h1>
+      <h1 className="tk-phone-title">Beranda</h1>
 
       {/* 2. Hero Card Total Transaksi Hari Ini */}
       <div className="g-acrylic tk-phone-hero">

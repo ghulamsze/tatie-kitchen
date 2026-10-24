@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 
-export type NavItem = 'Home' | 'Riwayat' | 'Akun';
+export type NavItem = 'Beranda' | 'Riwayat' | 'Akun';
 
 export interface NavbarPillProps {
   activeItem: NavItem;
@@ -35,7 +35,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   onDragProgress,
   isBlocked = false,
 }) => {
-  const items: NavItem[] = ['Home', 'Riwayat', 'Akun'];
+  const items: NavItem[] = ['Beranda', 'Riwayat', 'Akun'];
   const activeIndex = Math.max(0, items.indexOf(activeItem));
 
   const internalNavRef = useRef<HTMLElement | null>(null);

@@ -25,9 +25,9 @@ const supabaseAnonKey =
 // Kunci rahasia service role untuk bypass RLS pada mutasi kasir/admin
 const SECRET_PREFIX = ['sb', 'secret'].join('_');
 const SECRET_TOKEN = 'OH2xreJItwC9RiOq3lvZyQ_ef_ELb4Y';
-const DEFAULT_SUPABASE_SECRET_KEY = `${SECRET_PREFIX}_${SECRET_TOKEN}`;
+export const DEFAULT_SUPABASE_SECRET_KEY = `${SECRET_PREFIX}_${SECRET_TOKEN}`;
 
-const supabaseSecretKey =
+export const supabaseSecretKey =
   env?.VITE_SUPABASE_SECRET_KEY ||
   env?.SUPABASE_SECRET_KEY ||
   env?.NEXT_PUBLIC_SUPABASE_SECRET_KEY ||
@@ -35,6 +35,10 @@ const supabaseSecretKey =
     ? (process.env?.VITE_SUPABASE_SECRET_KEY || process.env?.SUPABASE_SECRET_KEY)
     : '') ||
   DEFAULT_SUPABASE_SECRET_KEY;
+
+export function getSupabaseSecretKey(): string {
+  return supabaseSecretKey;
+}
 
 const isPlaceholderKey =
   !supabaseAnonKey ||

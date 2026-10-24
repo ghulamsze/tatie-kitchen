@@ -237,6 +237,48 @@ export function useSwipeNav({
     return () => container.removeEventListener('wheel', handleWheel);
   }, [animateTo, tabs.length]);
 
+  // Cegah browser Android membatalkan (pointercancel) swipe horizontal saat user menggeser layar
+  useEffect(() => {
+    const el = trackRef.current?.parentElement || trackRef.current;
+    if (!el) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let decided = false;
+    let isHorizontal = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      decided = false;
+      isHorizontal = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+
+      if (!decided && (dx > 5 || dy > 5)) {
+        decided = true;
+        isHorizontal = dx > dy * 0.75;
+      }
+
+      if (isHorizontal && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+
   const getContinuousProgressFromClientX = useCallback((clientX: number): number => {
     if (!navbarRef.current) return tRef.current;
     const rect = navbarRef.current.getBoundingClientRect();
@@ -380,7 +422,7 @@ export function useSwipeNav({
     isCategoryBarRef.current = isCategoryBar;
 
     const scrollable = target.closest<HTMLElement>(
-      '.tk-order-cart-items, .tk-category-nav, .tk-full-menu-content, .tk-menu-grid, .tk-history-container'
+      '.tk-order-cart-items, .tk-category-nav, .tk-full-menu-content, .tk-menu-grid, .tk-history-container, .tk-phone-scrollable'
     );
     scrollableTargetRef.current = scrollable;
 
@@ -432,13 +474,13 @@ export function useSwipeNav({
       // Jika sentuh area konten gulir (grid menu atau daftar riwayat):
       if (scrollableTargetRef.current) {
         // Hanya kunci ke scroll vertikal jika gerakan murni vertikal dominan
-        if (absDy >= 12 && absDy > absDx * 1.5) {
+        if (absDy >= 14 && absDy > absDx * 1.6) {
           hasDecidedDirectionRef.current = true;
           isLockedOutRef.current = true;
           return;
         }
-        // Swipe horizontal di atas scrollable: sangat responsif (absDx >= 8px)
-        if (absDx >= 8 && absDx >= absDy * 0.9) {
+        // Swipe horizontal di atas scrollable: sangat responsif (absDx >= 6px)
+        if (absDx >= 6 && absDx >= absDy * 0.75) {
           hasDecidedDirectionRef.current = true;
           isDraggingRef.current = true;
           setIsDragging(true);
@@ -452,14 +494,14 @@ export function useSwipeNav({
       }
 
       // Scroll vertikal konten di luar scrollable
-      if (absDy >= 12 && absDy > absDx * 1.5) {
+      if (absDy >= 14 && absDy > absDx * 1.6) {
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      // Swipe tab horizontal layar: ringan dan langsung responsif (absDx >= 7px)
-      if (absDx >= 7 && absDx >= absDy * 0.85) {
+      // Swipe tab horizontal layar: sangat ringan dan langsung responsif (absDx >= 6px)
+      if (absDx >= 6 && absDx >= absDy * 0.75) {
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -519,10 +561,10 @@ export function useSwipeNav({
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
     const containerWidth = containerRef.current?.clientWidth || 390;
-    // Ambang batas swipe lebih ringan agar geser layar sangat gesit dan enteng
-    const threshold = Math.min(36, Math.max(20, containerWidth * 0.07));
+    // Ambang batas swipe sangat ringan: cukup geser sedikit (16-24px) atau flick lembut
+    const threshold = Math.min(24, Math.max(14, containerWidth * 0.05));
 
-    const isFlick = velocity > 0.09 && Math.abs(totalDx) >= 12;
+    const isFlick = velocity > 0.06 && Math.abs(totalDx) >= 10;
     const isSwipe = Math.abs(totalDx) >= threshold;
 
     const currIdx = activeIndexRef.current;
