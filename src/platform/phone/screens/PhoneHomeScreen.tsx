@@ -27,7 +27,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
   };
 
   return (
-    <div className="tk-phone-screen">
+    <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
       {/* 1. Header Bersih Sesuai Frame 1 PDF */}
       <h1 className="tk-phone-title">Home</h1>
 

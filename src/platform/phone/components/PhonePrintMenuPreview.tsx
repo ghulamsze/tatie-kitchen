@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PrintMenuDocument } from './PrintMenuDocument.tsx';
 
@@ -18,11 +18,20 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
   const [isMargin4433, setIsMargin4433] = useState(initialMargin4433);
   const [isInkSaver, setIsInkSaver] = useState(initialInkSaver);
 
+  // Pastikan navbar disembunyikan saat modal cetak menu terbuka
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-modal');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handlePrint = () => {
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
-      // Pastikan portal termount sempurna sebelum window.print dipanggil
       setTimeout(() => {
         try {
           window.print();
@@ -50,6 +59,7 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
     <>
       {portalContent}
       <div
+        className="tk-phone-print-preview tk-phone-overlay ov"
         style={{
           position: 'fixed',
           inset: 0,
@@ -112,57 +122,124 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
               borderRadius: 'var(--r-pill)',
             }}
           >
-            <span>🖨️</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
+            </svg>
             <span>Cetak A4</span>
           </button>
         </div>
 
-        {/* Sub-bar Pilihan Margin & Mode Tinta */}
+        {/* Sub-bar Pilihan Kontrol yang Jelas Berbeda Fungsi */}
         <div
           style={{
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '8px',
+            gap: '10px',
             padding: '10px 16px',
             background: 'rgb(var(--w) / 0.04)',
             borderBottom: '1px solid rgb(var(--w) / 0.08)',
           }}
         >
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Kelompok 1: Opsi Tata Letak Margin Kertas (Segmented Pill Aksen) */}
+          <div
+            style={{
+              display: 'inline-flex',
+              padding: '3px',
+              background: 'var(--ctl)',
+              borderRadius: 'var(--r-pill)',
+              border: '1px solid var(--ctl-line)',
+              gap: '2px',
+            }}
+          >
             <button
               type="button"
-              className={`tk-chip ${!isMargin4433 ? 'active lime' : ''}`}
               onClick={() => setIsMargin4433(false)}
-              style={{ fontSize: '11px', padding: '6px 12px', height: '30px' }}
+              style={{
+                border: 'none',
+                background: !isMargin4433 ? 'var(--accent)' : 'transparent',
+                color: !isMargin4433 ? 'var(--on-accent)' : 'var(--ink-2)',
+                padding: '4px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
               Margin Normal
             </button>
             <button
               type="button"
-              className={`tk-chip ${isMargin4433 ? 'active lime' : ''}`}
               onClick={() => setIsMargin4433(true)}
-              style={{ fontSize: '11px', padding: '6px 12px', height: '30px' }}
+              style={{
+                border: 'none',
+                background: isMargin4433 ? 'var(--accent)' : 'transparent',
+                color: isMargin4433 ? 'var(--on-accent)' : 'var(--ink-2)',
+                padding: '4px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
               Margin 4433 (Jilid)
             </button>
-            <button
-              type="button"
-              className={`tk-chip ${isInkSaver ? 'active lime' : ''}`}
-              onClick={() => setIsInkSaver(!isInkSaver)}
-              style={{ fontSize: '11px', padding: '6px 12px', height: '30px' }}
-            >
-              {isInkSaver ? '✓ Hemat Tinta (Putih)' : 'Warna Latar Gelap'}
-            </button>
           </div>
 
-          <span style={{ fontSize: '11px', color: 'var(--ink-3)' }}>
-            4 Halaman Fisik A4
-          </span>
+          {/* Kelompok 2: Opsi Warna Mode Tinta & Kertas (Tampilan Visual Berbeda: Gelap vs Putih) */}
+          <div style={{ display: 'inline-flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setIsInkSaver(false)}
+              style={{
+                border: !isInkSaver ? '1.5px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.15)',
+                background: '#18181b',
+                color: '#f4f4f5',
+                padding: '5px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: !isInkSaver ? '0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent)' : 'none',
+              }}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
+              <span>Latar Gelap</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsInkSaver(true)}
+              style={{
+                border: isInkSaver ? '1.5px solid var(--accent)' : '1px solid #d4d4d8',
+                background: '#ffffff',
+                color: '#0f172a',
+                padding: '5px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: isInkSaver ? '0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent)' : 'none',
+              }}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94a3b8' }} />
+              <span>Hemat Tinta (Putih)</span>
+            </button>
+          </div>
         </div>
 
-        {/* Petunjuk Penggunaan Cetak Ringkas */}
+        {/* Petunjuk Cetak Tanpa Emoji */}
         <div
           style={{
             padding: '8px 16px',
@@ -175,13 +252,13 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
             gap: '8px',
           }}
         >
-          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>ℹ️</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>•</span>
           <span>
-            Di jendela dialog cetak printer: pilih kertas <b>A4</b>, margin <b>Minimum/Nol</b>, dan centang opsi <b>Grafik latar belakang</b>.
+            Di jendela dialog cetak printer: pilih kertas <b>A4</b>, margin <b>Nol</b>, dan centang opsi <b>Grafik latar belakang</b>.
           </span>
         </div>
 
-        {/* Area Pratinjau Dokumen Fisik A4 yang Bisa Di-scroll */}
+        {/* Area Dokumen Cetak yang Mendukung Scroll Penuh 4 Halaman A4 */}
         <div
           style={{
             flex: 1,

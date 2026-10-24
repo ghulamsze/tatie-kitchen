@@ -104,7 +104,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
   };
 
   return (
-    <div className="tk-phone-screen">
+    <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
       {/* 1. Header Riwayat Bersih Sesuai Frame 2 PDF */}
       <h1 className="tk-phone-title">Riwayat</h1>
 
@@ -142,7 +142,16 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div
+          className="tk-phone-scrollable"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            flex: 1,
+            paddingBottom: '24px',
+          }}
+        >
           {groupedOrders.map(([dateTitle, dayOrders]) => (
             <div key={dateTitle} className="tk-phone-list-card">
               {/* Header Tanggal */}

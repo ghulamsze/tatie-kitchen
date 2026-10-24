@@ -52,13 +52,13 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   const { order, items } = selectedOrder;
   const cashierFound = cashiers.find((c) => c.id === order.cashier_id);
   const cashierName = cashierFound ? cashierFound.name : 'Robertus Amaresi';
-  const timeStr = formatTime(order.created_at); // Contoh: "10.01 WITA" (sudah mengandung WITA)
+  const timeStr = formatTime(order.created_at);
   const dateStr = formatDate(order.created_at);
   const totalItemCount = items.reduce((acc, it) => acc + (it.qty || 1), 0);
   const cashReceived = order.cash_received_idr || order.total_idr;
   const changeAmount = order.change_idr || 0;
 
-  // 1. Bagikan Struk Ringkas
+  // 1. Bagikan Ringkasan Struk
   const handleShare = async () => {
     const linesSummary = items
       .map(
@@ -67,7 +67,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
       )
       .join('\n');
 
-    const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}\n\nTerima kasih atas pesanan Anda!`;
+    const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\nTunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}\n\nTerima kasih atas kunjungan Anda!`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -90,7 +90,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
     }
   };
 
-  // 2. Unduh Gambar Struk PNG yang Identik dengan Struk Tablet
+  // 2. Unduh Gambar Struk PNG yang 100% Identik dengan Struk Tablet
   const handleDownloadPng = async () => {
     if (!hiddenReceiptRef.current) return;
     try {
@@ -136,7 +136,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         </button>
       </div>
 
-      {/* 2. Hero Card Rincian Transaksi dengan Hierarki Jelas (Sesuai Konsep Struk Tablet) */}
+      {/* 2. Hero Card Rincian Transaksi */}
       <div
         className="g-acrylic"
         style={{
@@ -148,25 +148,13 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           gap: '14px',
         }}
       >
-        {/* Baris Meta Status & Waktu */}
+        {/* Baris Meja & Waktu (Tanpa Badge Selesai) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
-              borderRadius: 'var(--r-pill)',
-              background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-              color: 'var(--accent)',
-              fontSize: 'var(--t-xs)',
-              fontWeight: 800,
-            }}
-          >
-            ✓ Selesai
-          </span>
+          <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
+            Meja {order.table_no || '-'}
+          </b>
           <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
-            Meja {order.table_no || '-'} · {timeStr}
+            {timeStr}
           </span>
         </div>
 
@@ -361,7 +349,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         </div>
       </div>
 
-      {/* 4. Dua Tombol Aksi: Download PNG & Share */}
+      {/* 4. Dua Tombol Aksi: Download PNG & Share (Tanpa Emoji) */}
       <div
         style={{
           display: 'flex',
@@ -384,7 +372,11 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             gap: '8px',
           }}
         >
-          <span>📤</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
           <span>Bagikan</span>
         </button>
 
@@ -404,7 +396,11 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             gap: '8px',
           }}
         >
-          <span>📥</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
           <span>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
         </button>
       </div>
@@ -417,129 +413,108 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         />
       )}
 
-      {/* 5. Target Render Struk Fisik Thermal Persis Seperti Tablet Kasir (Hidden offscreen) */}
+      {/* 5. Target Render Struk Fisik Monospace Identik 100% dengan Struk Tablet */}
       <div
         style={{
           position: 'fixed',
           left: '-9999px',
           top: '0',
-          width: '320px',
+          width: '300px',
           zIndex: -1,
           pointerEvents: 'none',
         }}
       >
         <div
           ref={hiddenReceiptRef}
+          className="tk-receipt-card"
           style={{
-            background: '#ffffff',
-            color: '#111827',
-            padding: '24px 20px',
-            fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            lineHeight: '1.4',
             boxSizing: 'border-box',
-            width: '320px',
+            width: '300px',
+            background: '#fbfaf5',
+            color: '#1f1e1d',
+            borderRadius: '6px',
+            padding: '24px 20px',
+            fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace",
+            fontSize: '14px',
+            lineHeight: '20px',
           }}
         >
-          {/* Header Kafe */}
-          <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-            <b style={{ fontSize: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111827' }}>
-              {shop.name || 'TATI’E KITCHEN'}
-            </b>
-            <div style={{ fontSize: '11px', color: '#4b5563', marginTop: '2px' }}>
-              {shop.address || 'Makassar'}
+          <div className="center-bold" style={{ textAlign: 'center', fontWeight: 700, fontSize: '16px', marginBottom: '2px' }}>
+            {shop.name || 'Tati’e Kitchen'}
+          </div>
+          <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666' }}>
+            {shop.address || 'Makassar'}
+          </div>
+
+          <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
+
+          {/* Tampilan Nomor Antrian Menonjol pada Struk Fisik (Persis Tablet) */}
+          <div style={{ textAlign: 'center', padding: '6px 0 2px 0' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '0.08em', color: '#666666', fontWeight: 700 }}>
+              NOMOR ANTRIAN
             </div>
-            {/* Box Nomor Antrian Besar (Persis Tablet) */}
-            <div
-              style={{
-                marginTop: '10px',
-                padding: '8px 12px',
-                background: '#f3f4f6',
-                borderRadius: '6px',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ fontSize: '10px', fontWeight: 800, color: '#4b5563', letterSpacing: '0.05em' }}>
-                NOMOR ANTRIAN
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 900, color: '#111827', lineHeight: 1.1 }}>
-                {formatQueueNo(order.queue_no || 1)}
-              </div>
+            <div style={{ fontSize: '32px', fontWeight: 900, lineHeight: 1.1, color: '#111111', margin: '2px 0' }}>
+              {formatQueueNo(order.queue_no || 1)}
             </div>
           </div>
 
-          {/* Garis Pembatas */}
-          <div style={{ borderBottom: '1px dashed #d1d5db', marginBottom: '8px' }} />
+          <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
 
-          {/* Meta Transaksi */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#4b5563', marginBottom: '4px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
             <span>Waktu:</span>
             <span>{dateStr} {timeStr}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#4b5563', marginBottom: '4px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
             <span>Kasir:</span>
             <span>{cashierName}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#4b5563', marginBottom: '4px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
             <span>Meja:</span>
             <span>{order.table_no || '-'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#4b5563', marginBottom: '8px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
             <span>No. Struk:</span>
-            <span>{order.id.slice(0, 14)}</span>
+            <span>{order.id.substring(0, 14)}</span>
           </div>
 
-          {/* Garis Pembatas */}
-          <div style={{ borderBottom: '1px dashed #d1d5db', marginBottom: '10px' }} />
+          <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
 
           {/* Daftar Item Pesanan */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
-            {items.map((it, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <span style={{ color: '#111827' }}>
-                  {it.qty}x {it.name_snapshot}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0' }}>
+            {items.map((item) => (
+              <div key={item.id} className="row-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>
+                  {item.qty}x {item.name_snapshot}
                 </span>
-                <b style={{ color: '#111827' }}>
-                  {formatRupiah(it.price_snapshot_idr * it.qty)}
-                </b>
+                <span>{formatRupiah(item.price_snapshot_idr * item.qty)}</span>
               </div>
             ))}
           </div>
 
           {order.notes && (
-            <div
-              style={{
-                fontSize: '11px',
-                fontStyle: 'italic',
-                color: '#6b7280',
-                marginBottom: '10px',
-              }}
-            >
+            <div style={{ fontSize: '11px', color: '#555555', marginTop: '4px', fontStyle: 'italic' }}>
               Catatan: {order.notes}
             </div>
           )}
 
-          {/* Garis Pembatas */}
-          <div style={{ borderBottom: '1px dashed #d1d5db', marginBottom: '8px' }} />
+          <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
 
-          {/* Rincian Total, Tunai, Kembalian */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 800, marginBottom: '4px' }}>
-            <span>TOTAL:</span>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+            <span>Total:</span>
             <span>{formatRupiah(order.total_idr)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#4b5563', marginBottom: '4px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Tunai:</span>
             <span>{formatRupiah(cashReceived)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+          <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
             <span>Kembalian:</span>
             <span>{formatRupiah(changeAmount)}</span>
           </div>
 
-          {/* Garis Pembatas */}
-          <div style={{ borderBottom: '1px dashed #d1d5db', marginBottom: '10px' }} />
+          <hr style={{ border: 0, borderTop: '1px dashed #999999', margin: '8px 0' }} />
 
-          <div style={{ textAlign: 'center', fontSize: '11px', color: '#6b7280' }}>
+          <div style={{ textAlign: 'center', fontSize: '11px', color: '#666666', marginTop: '6px' }}>
             Terima kasih atas kunjungan Anda!
           </div>
         </div>

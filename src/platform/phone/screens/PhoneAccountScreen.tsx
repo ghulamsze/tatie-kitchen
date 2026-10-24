@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useCashierStore, DEFAULT_CASHIERS } from '../../../stores/cashierStore.ts';
+import { useCashierStore, DEFAULT_CASHIERS, isImmutableCashier } from '../../../stores/cashierStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
 import { PhonePrintMenuPreview } from '../components/PhonePrintMenuPreview.tsx';
@@ -30,6 +30,18 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     fetchCashiers().catch(() => {});
   }, [fetchCashiers]);
 
+  // Sembunyikan navbar saat dialog atau cetak menu terbuka
+  useEffect(() => {
+    if (isPreviewOpen || isAddCashierOpen || selectedCashierToRemove || isThemeOpen) {
+      document.body.classList.add('has-modal');
+    } else {
+      document.body.classList.remove('has-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-modal');
+    };
+  }, [isPreviewOpen, isAddCashierOpen, selectedCashierToRemove, isThemeOpen]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -41,6 +53,11 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     : DEFAULT_CASHIERS;
 
   const startHold = (cashier: Cashier, e: React.PointerEvent) => {
+    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak bisa dihapus
+    if (isImmutableCashier(cashier.id, cashier.name)) {
+      return;
+    }
+
     pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     holdTimerRef.current = window.setTimeout(() => {
@@ -96,7 +113,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   };
 
   return (
-    <div className="tk-phone-screen">
+    <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
       {/* 1. Judul Layar Sesuai Frame 5 PDF */}
       <h1 className="tk-phone-title">Akun</h1>
 
@@ -189,32 +206,20 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
             onPointerCancel={() => cancelHold()}
             onPointerMove={(e) => cancelHold(e)}
             style={{
-              cursor: 'pointer',
               userSelect: 'none',
               WebkitUserSelect: 'none',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <b
-                style={{
-                  fontSize: 'var(--t-md)',
-                  lineHeight: 'var(--l-md)',
-                  fontWeight: 600,
-                  color: 'var(--ink)',
-                }}
-              >
-                {cashier.name}
-              </b>
-              <span style={{ fontSize: '11px', color: 'var(--ink-3)', marginTop: '2px' }}>
-                Tekan tahan untuk menghapus
-              </span>
-            </div>
-            <span style={{ color: 'var(--ink-3)', fontSize: 'var(--t-xs)' }}>
-              Hold ✕
-            </span>
+            <b
+              style={{
+                fontSize: 'var(--t-md)',
+                lineHeight: 'var(--l-md)',
+                fontWeight: 600,
+                color: 'var(--ink)',
+              }}
+            >
+              {cashier.name}
+            </b>
           </div>
         ))}
       </div>
@@ -240,7 +245,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         <span style={{ color: 'var(--ink-3)' }}>▾</span>
       </div>
 
-      {/* 5. Tombol Cetak Menu: Langsung Buka Pratinjau Lembar A4 yang Jelas */}
+      {/* 5. Tombol Cetak Menu (Tanpa Emoji) */}
       <button
         type="button"
         className="tk-btn-flat"
@@ -253,14 +258,10 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
           height: '48px',
           marginBottom: '16px',
           fontSize: 'var(--t-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
+          fontWeight: 700,
         }}
       >
-        <span>🖨️</span>
-        <span>Cetak menu fisik (A4)</span>
+        Cetak menu fisik (A4)
       </button>
 
       {/* 6. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
@@ -269,13 +270,13 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         onClose={() => setIsThemeOpen(false)}
       />
 
-      {/* 7. Layar Pratinjau Menu Cetak A4 (Muncul saat Cetak Menu) */}
+      {/* 7. Layar Pratinjau Menu Cetak A4 */}
       <PhonePrintMenuPreview
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
       />
 
-      {/* 8. Dialog Tambah Kasir (Sesuai Frame 10k preview.pdf) */}
+      {/* 8. Dialog Tambah Kasir */}
       {isAddCashierOpen && (
         <div
           className="tk-phone-overlay ov"
@@ -329,7 +330,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   color: 'var(--ink-2)',
                 }}
               >
-                Nama baru langsung tersimpan di database dan sinkron ke seluruh device.
+                Nama kasir baru akan langsung tersinkron ke semua perangkat.
               </span>
             </div>
 
@@ -364,7 +365,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </div>
       )}
 
-      {/* 9. Dialog Konfirmasi Hapus Kasir (Muncul saat Baris Kasir Di-Hold) */}
+      {/* 9. Dialog Konfirmasi Hapus Kasir (Tanpa Teks Teknis Supabase, User-friendly) */}
       {selectedCashierToRemove && (
         <div
           className="tk-phone-overlay ov"
@@ -376,7 +377,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
           <div
             className="g-liquid tk-phone-dialog"
             onClick={(e) => e.stopPropagation()}
-            style={{ gap: '16px' }}
+            style={{ gap: '14px' }}
           >
             <b
               style={{
@@ -386,7 +387,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                 color: 'var(--ink)',
               }}
             >
-              Hapus akun kasir?
+              Hapus kasir?
             </b>
 
             <span
@@ -396,8 +397,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                 color: 'var(--ink-2)',
               }}
             >
-              Yakin ingin menghapus kasir <b>{selectedCashierToRemove.name}</b>?
-              Perubahan akan tersimpan di database Supabase dan otomatis tersinkron ke semua device lain.
+              Hapus akun kasir <b>{selectedCashierToRemove.name}</b> dari daftar kasir toko?
             </span>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
@@ -425,7 +425,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   transition: 'opacity 0.15s ease',
                 }}
               >
-                Hapus Kasir
+                Hapus
               </button>
             </div>
           </div>

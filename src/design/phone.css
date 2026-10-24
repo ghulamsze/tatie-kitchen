@@ -21,17 +21,24 @@
   display: flex;
   flex-direction: column;
   padding: 12px 16px calc(100px + env(safe-area-inset-bottom, 0px)) 16px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
   width: 100%;
   position: relative;
   background: transparent !important;
+  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
 
 .tk-swipe-page .tk-phone-screen {
   background: transparent !important;
+}
+
+.tk-phone-scrollable {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes tk-fade-in {
@@ -166,13 +173,17 @@
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Saat dialog/sheet terbuka: navbar diturunkan ke belakang / disembunyikan agar tidak menghalangi */
+/* Saat dialog/sheet/print-preview terbuka: navbar disembunyikan agar tidak menghalangi */
 body:has(.tk-phone-overlay) .tk-phone-navbar-wrap,
+body:has(.tk-phone-print-preview) .tk-phone-navbar-wrap,
+body.has-modal .tk-phone-navbar-wrap,
 .tk-phone-root:has(.tk-phone-overlay) .tk-phone-navbar-wrap,
+.tk-phone-root:has(.tk-phone-print-preview) .tk-phone-navbar-wrap,
 .tk-phone-root.has-modal .tk-phone-navbar-wrap {
-  z-index: 10 !important;
+  z-index: -10 !important;
   pointer-events: none !important;
   opacity: 0 !important;
+  display: none !important;
   transform: translateX(-50%) translateY(24px) !important;
 }
 
