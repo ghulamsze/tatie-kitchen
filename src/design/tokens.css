@@ -372,12 +372,19 @@
 }
 
 /* ===== RESET & DASAR ===== */
-* {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
   margin: 0;
+  padding: 0;
+}
+
+body {
   background: var(--bg);
   color: var(--fg);
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;

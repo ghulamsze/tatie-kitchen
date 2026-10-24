@@ -24,11 +24,45 @@ export interface OrderCreatedPayload {
   senderDeviceId?: string;
 }
 
+export interface CashierChangedPayload {
+  action: 'add' | 'remove';
+  cashierId: string;
+  name?: string;
+  senderDeviceId?: string;
+}
+
 // Generate device session ID unik untuk menandai asal perubahan
 const DEVICE_SESSION_ID =
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `dev-${Math.random().toString(36).substring(2, 9)}`;
+
+/**
+ * Broadcast perubahan daftar kasir ke seluruh device secara instan (< 100ms)
+ */
+export async function broadcastCashierChanged(
+  action: 'add' | 'remove',
+  cashierId: string,
+  name?: string
+): Promise<void> {
+  if (!isSupabaseConfigured() || !syncChannel) return;
+
+  try {
+    await syncChannel.send({
+      type: 'broadcast',
+      event: 'CASHIER_CHANGED',
+      payload: {
+        action,
+        cashierId,
+        name,
+        senderDeviceId: DEVICE_SESSION_ID,
+      } as CashierChangedPayload,
+    });
+    logInfo('realtimeSync:broadcast', `Cashier changed broadcast sent: ${action} - ${cashierId}`);
+  } catch (err) {
+    logError('realtimeSync:broadcast_cashier_err', err);
+  }
+}
 
 /**
  * Broadcast perubahan ketersediaan menu ke seluruh device yang sedang aktif secara instan (< 100ms)
@@ -171,7 +205,18 @@ export function initPosRealtimeSync(): () => void {
       }
     );
 
-    // 3. Fallback Postgres Changes pada public.menu_items
+    // 3. Dengar perubahan kasir dari perangkat lain
+    syncChannel.on(
+      'broadcast',
+      { event: 'CASHIER_CHANGED' },
+      ({ payload }: { payload: CashierChangedPayload }) => {
+        if (!payload || payload.senderDeviceId === DEVICE_SESSION_ID) return;
+        logInfo('realtimeSync:receive', `Menerima perubahan kasir dari device lain: ${payload.action} - ${payload.cashierId}`);
+        useCashierStore.getState().fetchCashiers().catch(() => {});
+      }
+    );
+
+    // 4. Fallback Postgres Changes pada public.menu_items
     syncChannel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'menu_items' },
@@ -181,13 +226,23 @@ export function initPosRealtimeSync(): () => void {
       }
     );
 
-    // 4. Fallback Postgres Changes pada public.orders
+    // 5. Fallback Postgres Changes pada public.orders
     syncChannel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders' },
       (changePayload) => {
         logInfo('realtimeSync:postgres_orders', JSON.stringify(changePayload));
         useHistoryStore.getState().fetchOrders().catch(() => {});
+      }
+    );
+
+    // 6. Fallback Postgres Changes pada public.cashiers
+    syncChannel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'cashiers' },
+      (changePayload) => {
+        logInfo('realtimeSync:postgres_cashiers', JSON.stringify(changePayload));
+        useCashierStore.getState().fetchCashiers().catch(() => {});
       }
     );
 

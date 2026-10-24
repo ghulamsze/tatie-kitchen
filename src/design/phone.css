@@ -3,17 +3,40 @@
    100% token discipline: var(--*), zero hardcoded colors or px font-sizes.
    ========================================================================== */
 
+.tk-phone-root {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--scr-bg);
+  box-sizing: border-box;
+}
+
 .tk-phone-screen {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 16px 96px 16px;
+  padding: 12px 16px calc(100px + env(safe-area-inset-bottom, 0px)) 16px;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
   width: 100%;
   position: relative;
+  background: transparent !important;
   -webkit-overflow-scrolling: touch;
+}
+
+.tk-swipe-page .tk-phone-screen {
+  background: transparent !important;
+}
+
+@keyframes tk-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tk-phone-title {
@@ -129,15 +152,39 @@
   transform: scale(0.99);
 }
 
+/* Floating Navbar Wrap di HP */
+.tk-phone-navbar-wrap {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: min(330px, calc(100% - 32px));
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Saat dialog/sheet terbuka: navbar diturunkan ke belakang / disembunyikan agar tidak menghalangi */
+body:has(.tk-phone-overlay) .tk-phone-navbar-wrap,
+.tk-phone-root:has(.tk-phone-overlay) .tk-phone-navbar-wrap,
+.tk-phone-root.has-modal .tk-phone-navbar-wrap {
+  z-index: 10 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(24px) !important;
+}
+
 /* Phone Bottom Sheet & Overlay */
 .tk-phone-overlay,
 .ov {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 100;
   background: var(--ov);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -152,9 +199,9 @@
 .tk-phone-sheet,
 .sh {
   position: relative;
-  z-index: 75;
+  z-index: 105;
   width: calc(100% - 24px);
-  margin: 0 auto 20px auto;
+  margin: 0 auto calc(20px + env(safe-area-inset-bottom, 0px)) auto;
   padding: 20px;
   border-radius: var(--r-xl);
   display: flex;
@@ -162,6 +209,26 @@
   gap: 12px;
   box-sizing: border-box;
   animation: tk-sheet-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dialog Tengah untuk Cetak Menu & Tambah Kasir */
+.tk-phone-dialog {
+  position: relative;
+  z-index: 105;
+  width: min(420px, calc(100% - 32px));
+  margin: auto;
+  padding: 24px;
+  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  animation: tk-dialog-scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tk-dialog-scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 @keyframes tk-sheet-slide-up {

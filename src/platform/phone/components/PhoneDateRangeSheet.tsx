@@ -40,6 +40,7 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
     { id: 'kemarin', label: 'Kemarin' },
     { id: '7-hari', label: '7 hari terakhir' },
     { id: '30-hari', label: '30 hari terakhir' },
+    { id: 'semua', label: 'Semua waktu' },
     { id: 'pilih-tanggal', label: 'Pilih tanggal…' },
   ];
 

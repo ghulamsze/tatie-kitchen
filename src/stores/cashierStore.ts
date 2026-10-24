@@ -3,6 +3,7 @@ import { Cashier } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client.ts';
 import { formatTime } from '../lib/format/formatters.ts';
 import { logError } from '../lib/logger/logger.ts';
+import { broadcastCashierChanged } from '../lib/supabase/realtime.ts';
 
 // Data kasir awal acuan dari seed / HTML
 export const DEFAULT_CASHIERS: Cashier[] = [
@@ -180,14 +181,17 @@ export const useCashierStore = create<CashierState>((set) => ({
       }
       return { cashiers: updated };
     });
+
+    // Broadcast ke device lain secara instan
+    broadcastCashierChanged('add', localCashier.id, trimmed).catch(() => {});
+
     return localCashier;
   },
 
   removeCashier: async (id: string) => {
-    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak dapat dihapus
     const currentList = useCashierStore.getState().cashiers;
-    const target = currentList.find((c) => c.id === id);
-    if (isImmutableCashier(id, target?.name)) {
+    // Jangan izinkan jika kasir tersisa tinggal 1 agar data kasir tidak kosong
+    if (currentList.length <= 1) {
       return;
     }
 
@@ -202,6 +206,9 @@ export const useCashierStore = create<CashierState>((set) => ({
         logError('cashierStore:removeCashier_db_exception', err);
       }
     }
+
+    // Broadcast ke seluruh device (Tablet/HP)
+    broadcastCashierChanged('remove', id).catch(() => {});
 
     set((state) => {
       const remaining = state.cashiers.filter((c) => c.id !== id);

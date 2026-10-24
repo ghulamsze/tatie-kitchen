@@ -218,7 +218,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                           marginTop: '2px',
                         }}
                       >
-                        {timeStr} WITA
+                        {timeStr}
                       </span>
                     </div>
                   </div>

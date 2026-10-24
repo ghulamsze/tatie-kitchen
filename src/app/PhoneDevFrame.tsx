@@ -79,36 +79,52 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
         <button
           type="button"
           onClick={() => setDeviceOverride('tablet')}
+          title="Tablet Kasir"
+          aria-label="Mode Tablet"
           style={{
             border: 'none',
             background: 'transparent',
             color: 'var(--ink-2)',
-            padding: '6px 14px',
-            borderRadius: '999px',
-            fontSize: '12px',
-            fontWeight: 800,
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.15s ease',
+            padding: 0,
           }}
         >
-          Tablet
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <circle cx="12" cy="18" r="0.5" fill="currentColor" />
+          </svg>
         </button>
         <button
           type="button"
           onClick={() => setDeviceOverride('phone')}
+          title="Android HP"
+          aria-label="Mode Android HP"
           style={{
             border: 'none',
             background: 'var(--accent)',
             color: 'var(--on-accent)',
-            padding: '6px 14px',
-            borderRadius: '999px',
-            fontSize: '12px',
-            fontWeight: 800,
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.15s ease',
+            padding: 0,
           }}
         >
-          Android HP
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" />
+            <path d="M12 18h.01" />
+          </svg>
         </button>
       </div>
       <div
@@ -136,31 +152,6 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
           }}
         >
           <div
-            className="sb"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              height: '40px',
-              padding: '0 18px',
-              fontSize: 'var(--t-xs)',
-              lineHeight: 'var(--l-xs)',
-              fontWeight: 700,
-              color: 'var(--ink-2)',
-              zIndex: 60,
-              pointerEvents: 'none',
-              userSelect: 'none',
-              flexShrink: 0,
-            }}
-          >
-            <span>10.04</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>5G</span>
-              <span>82%</span>
-            </span>
-          </div>
-
-          <div
             style={{
               flex: 1,
               position: 'relative',
@@ -171,22 +162,6 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
           >
             {children}
           </div>
-
-          <div
-            className="gest"
-            style={{
-              position: 'absolute',
-              bottom: '8px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '120px',
-              height: '4px',
-              borderRadius: 'var(--r-sm)',
-              background: 'rgba(255, 255, 255, 0.35)',
-              zIndex: 60,
-              pointerEvents: 'none',
-            }}
-          />
         </div>
       </div>
     </div>

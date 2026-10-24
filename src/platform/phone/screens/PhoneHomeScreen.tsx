@@ -187,7 +187,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                       marginTop: '2px',
                     }}
                   >
-                    {timeStr} WITA
+                    {timeStr}
                   </span>
                 </div>
               </div>

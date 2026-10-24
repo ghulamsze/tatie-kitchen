@@ -1,41 +1,98 @@
-import React, { useState } from 'react';
-import { useCashierStore } from '../../../stores/cashierStore.ts';
+import React, { useState, useEffect, useRef } from 'react';
+import { useCashierStore, DEFAULT_CASHIERS } from '../../../stores/cashierStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
-import { PhonePrintMenuDialog } from '../components/PhonePrintMenuDialog.tsx';
-import { PrintMenuDocument } from '../components/PrintMenuDocument.tsx';
+import { PhonePrintMenuPreview } from '../components/PhonePrintMenuPreview.tsx';
+import { Toast } from '../../../design/components/Toast.tsx';
+import { Cashier } from '../../../lib/supabase/types.ts';
 
 export interface PhoneAccountScreenProps {
   onOpenPrintMenu?: () => void;
-  onLogout?: () => void;
 }
 
 export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   onOpenPrintMenu,
-  onLogout,
 }) => {
-  const { cashiers } = useCashierStore();
+  const { cashiers, addNewCashier, removeCashier, fetchCashiers } = useCashierStore();
   const { shop } = useShopStore();
+
   const [isThemeOpen, setIsThemeOpen] = useState(false);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [printOptions, setPrintOptions] = useState({
-    isMargin4433: false,
-    isInkSaver: false,
-  });
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isAddCashierOpen, setIsAddCashierOpen] = useState(false);
+  const [newCashierName, setNewCashierName] = useState('');
+  const [selectedCashierToRemove, setSelectedCashierToRemove] = useState<Cashier | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const activeCashiers = cashiers.filter((c) => c.active);
+  const holdTimerRef = useRef<number | null>(null);
+  const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
-    } else {
-      window.location.search = '?device=tablet';
+  useEffect(() => {
+    fetchCashiers().catch(() => {});
+  }, [fetchCashiers]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Pastikan minimal ada kasir bawaan sesuai preview.pdf
+  const displayCashiers = cashiers.length > 0
+    ? cashiers.filter((c) => c.active)
+    : DEFAULT_CASHIERS;
+
+  const startHold = (cashier: Cashier, e: React.PointerEvent) => {
+    pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = window.setTimeout(() => {
+      setSelectedCashierToRemove(cashier);
+      holdTimerRef.current = null;
+    }, 500);
+  };
+
+  const cancelHold = (e?: React.PointerEvent) => {
+    if (e && pointerStartPosRef.current) {
+      const dx = Math.abs(e.clientX - pointerStartPosRef.current.x);
+      const dy = Math.abs(e.clientY - pointerStartPosRef.current.y);
+      if (dx > 12 || dy > 12) {
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      }
+      return;
+    }
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    pointerStartPosRef.current = null;
+  };
+
+  const handleAddCashierSubmit = async () => {
+    const trimmed = newCashierName.trim();
+    if (!trimmed) return;
+    try {
+      await addNewCashier(trimmed);
+      setNewCashierName('');
+      setIsAddCashierOpen(false);
+      showToast(`Kasir ${trimmed} berhasil ditambahkan`);
+    } catch {
+      showToast('Gagal menambahkan kasir baru');
     }
   };
 
-  const handleApplyPrint = (opts: { isMargin4433: boolean; isInkSaver: boolean }) => {
-    setPrintOptions(opts);
-    if (onOpenPrintMenu) onOpenPrintMenu();
+  const handleRemoveCashierConfirm = async () => {
+    if (!selectedCashierToRemove) return;
+    const name = selectedCashierToRemove.name;
+    const id = selectedCashierToRemove.id;
+    setSelectedCashierToRemove(null);
+
+    try {
+      await removeCashier(id);
+      showToast(`Kasir ${name} berhasil dihapus`);
+    } catch {
+      showToast('Gagal menghapus kasir');
+    }
   };
 
   return (
@@ -92,32 +149,55 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </span>
       </div>
 
-      {/* 3. Daftar Kasir Sesuai Frame 5 PDF (Tanpa Badge Counter & Tanpa Badge Aktif) */}
-      <div style={{ margin: '16px 4px 8px' }}>
+      {/* 3. Daftar Kasir Sesuai Frame 5 PDF */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          margin: '16px 4px 8px',
+        }}
+      >
         <h2 className="tk-phone-section-title" style={{ margin: 0 }}>
           Kasir
         </h2>
+        <button
+          type="button"
+          onClick={() => setIsAddCashierOpen(true)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--accent)',
+            fontSize: 'var(--t-xs)',
+            lineHeight: 'var(--l-xs)',
+            fontWeight: 700,
+            cursor: 'pointer',
+            padding: '4px 8px',
+          }}
+        >
+          + Tambah kasir
+        </button>
       </div>
 
       <div className="tk-phone-list-card" style={{ marginBottom: '16px' }}>
-        {activeCashiers.length === 0 ? (
+        {displayCashiers.map((cashier) => (
           <div
+            key={cashier.id}
+            className="tk-phone-row rw"
+            onPointerDown={(e) => startHold(cashier, e)}
+            onPointerUp={() => cancelHold()}
+            onPointerCancel={() => cancelHold()}
+            onPointerMove={(e) => cancelHold(e)}
             style={{
-              padding: '20px 16px',
-              textAlign: 'center',
-              color: 'var(--ink-3)',
-              fontSize: 'var(--t-sm)',
+              cursor: 'pointer',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            Belum ada kasir
-          </div>
-        ) : (
-          activeCashiers.map((cashier) => (
-            <div
-              key={cashier.id}
-              className="tk-phone-row rw"
-              style={{ cursor: 'default' }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               <b
                 style={{
                   fontSize: 'var(--t-md)',
@@ -128,9 +208,15 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               >
                 {cashier.name}
               </b>
+              <span style={{ fontSize: '11px', color: 'var(--ink-3)', marginTop: '2px' }}>
+                Tekan tahan untuk menghapus
+              </span>
             </div>
-          ))
-        )}
+            <span style={{ color: 'var(--ink-3)', fontSize: 'var(--t-xs)' }}>
+              Hold ✕
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* 4. Tombol Pengaturan Tampilan Tema & Palet Sesuai Frame 5 PDF */}
@@ -154,54 +240,200 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         <span style={{ color: 'var(--ink-3)' }}>▾</span>
       </div>
 
-      {/* 5. Tombol Cetak Menu */}
+      {/* 5. Tombol Cetak Menu: Langsung Buka Pratinjau Lembar A4 yang Jelas */}
       <button
         type="button"
         className="tk-btn-flat"
-        onClick={() => setIsPrintDialogOpen(true)}
+        onClick={() => {
+          setIsPreviewOpen(true);
+          if (onOpenPrintMenu) onOpenPrintMenu();
+        }}
         style={{
           width: '100%',
           height: '48px',
-          marginBottom: '12px',
+          marginBottom: '16px',
           fontSize: 'var(--t-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
         }}
       >
-        Cetak menu
+        <span>🖨️</span>
+        <span>Cetak menu fisik (A4)</span>
       </button>
 
-      {/* 6. Tombol Keluar */}
-      <button
-        type="button"
-        className="tk-btn-flat"
-        onClick={handleLogout}
-        style={{
-          width: '100%',
-          height: '48px',
-          color: 'var(--ink-2)',
-          fontSize: 'var(--t-sm)',
-        }}
-      >
-        Keluar
-      </button>
-
-      {/* 7. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
+      {/* 6. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
       <PhoneThemeSheet
         isOpen={isThemeOpen}
         onClose={() => setIsThemeOpen(false)}
       />
 
-      {/* 8. Dialog Konfigurasi Cetak Menu A4 */}
-      <PhonePrintMenuDialog
-        isOpen={isPrintDialogOpen}
-        onClose={() => setIsPrintDialogOpen(false)}
-        onPrint={handleApplyPrint}
+      {/* 7. Layar Pratinjau Menu Cetak A4 (Muncul saat Cetak Menu) */}
+      <PhonePrintMenuPreview
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
       />
 
-      {/* 9. Target Dokumen Cetak A4 */}
-      <PrintMenuDocument
-        isMargin4433={printOptions.isMargin4433}
-        isInkSaver={printOptions.isInkSaver}
-      />
+      {/* 8. Dialog Tambah Kasir (Sesuai Frame 10k preview.pdf) */}
+      {isAddCashierOpen && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsAddCashierOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Tambah kasir"
+        >
+          <div
+            className="g-liquid tk-phone-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <b
+              style={{
+                fontSize: 'var(--t-lg)',
+                lineHeight: 'var(--l-lg)',
+                fontWeight: 800,
+                color: 'var(--ink)',
+              }}
+            >
+              Tambah kasir
+            </b>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <input
+                type="text"
+                placeholder="Nama kasir"
+                value={newCashierName}
+                onChange={(e) => setNewCashierName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCashierSubmit();
+                }}
+                style={{
+                  height: '48px',
+                  borderRadius: 'var(--r-md)',
+                  background: 'var(--ctl)',
+                  border: '1px solid var(--ctl-line)',
+                  color: 'var(--ink)',
+                  padding: '0 16px',
+                  fontFamily: 'inherit',
+                  fontSize: 'var(--t-sm)',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 'var(--t-xs)',
+                  lineHeight: 'var(--l-xs)',
+                  color: 'var(--ink-2)',
+                }}
+              >
+                Nama baru langsung tersimpan di database dan sinkron ke seluruh device.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                type="button"
+                className="tk-btn-flat"
+                onClick={() => {
+                  setNewCashierName('');
+                  setIsAddCashierOpen(false);
+                }}
+                style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="tk-btn-lime"
+                onClick={handleAddCashierSubmit}
+                disabled={!newCashierName.trim()}
+                style={{
+                  flex: 1,
+                  height: '48px',
+                  fontSize: 'var(--t-sm)',
+                  opacity: newCashierName.trim() ? 1 : 0.45,
+                }}
+              >
+                Tambah
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Dialog Konfirmasi Hapus Kasir (Muncul saat Baris Kasir Di-Hold) */}
+      {selectedCashierToRemove && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setSelectedCashierToRemove(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Konfirmasi Hapus Kasir"
+        >
+          <div
+            className="g-liquid tk-phone-dialog"
+            onClick={(e) => e.stopPropagation()}
+            style={{ gap: '16px' }}
+          >
+            <b
+              style={{
+                fontSize: 'var(--t-lg)',
+                lineHeight: 'var(--l-lg)',
+                fontWeight: 800,
+                color: 'var(--ink)',
+              }}
+            >
+              Hapus akun kasir?
+            </b>
+
+            <span
+              style={{
+                fontSize: 'var(--t-sm)',
+                lineHeight: 'var(--l-sm)',
+                color: 'var(--ink-2)',
+              }}
+            >
+              Yakin ingin menghapus kasir <b>{selectedCashierToRemove.name}</b>?
+              Perubahan akan tersimpan di database Supabase dan otomatis tersinkron ke semua device lain.
+            </span>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+              <button
+                type="button"
+                className="tk-btn-flat"
+                onClick={() => setSelectedCashierToRemove(null)}
+                style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveCashierConfirm}
+                style={{
+                  flex: 1,
+                  height: '48px',
+                  fontSize: 'var(--t-sm)',
+                  fontWeight: 800,
+                  background: 'var(--danger)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 'var(--r-md)',
+                  cursor: 'pointer',
+                  transition: 'opacity 0.15s ease',
+                }}
+              >
+                Hapus Kasir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifikasi Toast */}
+      {toastMessage && <Toast message={toastMessage} visible={true} />}
     </div>
   );
 };

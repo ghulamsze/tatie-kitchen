@@ -39,7 +39,7 @@ export const PhonePrintMenuDialog: React.FC<PhonePrintMenuDialogProps> = ({
       aria-label="Dialog Cetak Menu A4"
     >
       <div
-        className="g-liquid tk-phone-sheet sh"
+        className="g-liquid tk-phone-dialog"
         onClick={(e) => e.stopPropagation()}
         style={{ gap: '14px' }}
       >
@@ -100,12 +100,12 @@ export const PhonePrintMenuDialog: React.FC<PhonePrintMenuDialogProps> = ({
         </button>
 
         {/* Tombol Aksi: Batal (Flat) & Cetak (Lime) */}
-        <div className="tk-phone-btn-row btn2" style={{ marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
           <button
             type="button"
             className="tk-btn-flat"
             onClick={onClose}
-            style={{ height: '48px', minWidth: 0, fontSize: 'var(--t-sm)' }}
+            style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
           >
             Batal
           </button>
@@ -115,7 +115,7 @@ export const PhonePrintMenuDialog: React.FC<PhonePrintMenuDialogProps> = ({
             type="button"
             className="tk-btn-lime"
             onClick={handlePrintClick}
-            style={{ height: '48px', minWidth: 0, fontSize: 'var(--t-sm)' }}
+            style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
           >
             Cetak
           </button>
