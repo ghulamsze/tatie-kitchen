@@ -225,14 +225,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                 qty: l.qty,
               }));
 
-              // Pastikan kolom payment_method di baris database tersimpan dengan nilai yang dipilih
-              try {
-                (supabase.from('orders') as any)
-                  .update({ payment_method: normalizedPaymentMethod })
-                  .eq('id', recordedOrder.id)
-                  .then(() => {});
-              } catch {}
-
               setLastOrder(recordedOrder, recordedItems);
               useHistoryStore.getState().addOrder(recordedOrder, recordedItems);
               clearCart();
@@ -255,7 +247,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                     status: 'paid',
                     queue_no: nextQueueNo,
                     business_date: todayDateStr,
-                    payment_method: normalizedPaymentMethod,
                   })
                   .select()
                   .single();

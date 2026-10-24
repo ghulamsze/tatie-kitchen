@@ -18,7 +18,6 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
   const [isMargin4433, setIsMargin4433] = useState(initialMargin4433);
   const [isInkSaver, setIsInkSaver] = useState(initialInkSaver);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
-  const [scrollTop, setScrollTop] = useState(0);
 
   // Pastikan class modal terpasang saat preview aktif
   useEffect(() => {
@@ -292,7 +291,6 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
         <div
           onScroll={(e) => {
             const st = e.currentTarget.scrollTop;
-            setScrollTop(st);
             if (st > 20 && isSettingsOpen) {
               setIsSettingsOpen(false);
             } else if (st <= 5 && !isSettingsOpen) {

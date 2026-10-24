@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useDevice } from '../lib/device/useDevice.ts';
 import { registerDevice } from '../lib/device/deviceRegistration.ts';
 import { DevFrame } from './DevFrame.tsx';
-import { LaptopPlaceholder } from '../platform/laptop/LaptopPlaceholder.tsx';
+import { LaptopRoot } from '../platform/laptop/LaptopRoot.tsx';
 import { PhoneDevFrame } from './PhoneDevFrame.tsx';
 import { PhoneRoot } from '../platform/phone/PhoneRoot.tsx';
 import { ComponentGallery } from '../dev/ComponentGallery.tsx';
@@ -51,7 +51,7 @@ export const AppShell: React.FC = () => {
 
   // Pilih antarmuka berdasarkan formFactor
   if (device.formFactor === 'laptop') {
-    return <LaptopPlaceholder device={device} />;
+    return <LaptopRoot />;
   }
 
   if (device.formFactor === 'phone') {

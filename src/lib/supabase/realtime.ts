@@ -21,6 +21,7 @@ export interface OrderCreatedPayload {
   orderId: string;
   queueNo?: number;
   total?: number;
+  paymentMethod?: string;
   senderDeviceId?: string;
 }
 
@@ -97,7 +98,8 @@ export async function broadcastMenuAvailability(
 export async function broadcastOrderCreated(
   orderId: string,
   queueNo?: number,
-  total?: number
+  total?: number,
+  paymentMethod?: string
 ): Promise<void> {
   if (!isSupabaseConfigured() || !syncChannel) return;
 
@@ -109,10 +111,11 @@ export async function broadcastOrderCreated(
         orderId,
         queueNo,
         total,
+        paymentMethod,
         senderDeviceId: DEVICE_SESSION_ID,
       } as OrderCreatedPayload,
     });
-    logInfo('realtimeSync:broadcast', `Order created broadcast sent for order #${queueNo || 1}`);
+    logInfo('realtimeSync:broadcast', `Order created broadcast sent for order #${queueNo || 1} (${paymentMethod || 'Tunai'})`);
   } catch (err) {
     logError('realtimeSync:broadcast_order_err', err);
   }
@@ -200,6 +203,14 @@ export function initPosRealtimeSync(): () => void {
         if (!payload || payload.senderDeviceId === DEVICE_SESSION_ID) return;
 
         logInfo('realtimeSync:receive', `Menerima transaksi baru dari device lain: Order #${payload.queueNo || ''}`);
+        if (payload.orderId && payload.paymentMethod) {
+          try {
+            const raw = localStorage.getItem('tk_order_payment_methods');
+            const map = raw ? JSON.parse(raw) : {};
+            map[payload.orderId] = payload.paymentMethod;
+            localStorage.setItem('tk_order_payment_methods', JSON.stringify(map));
+          } catch {}
+        }
         // Segera fetch data riwayat pesanan terbaru dari Supabase
         useHistoryStore.getState().fetchOrders().catch(() => {});
       }

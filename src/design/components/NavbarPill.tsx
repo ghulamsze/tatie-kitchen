@@ -135,24 +135,39 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     return Math.max(0, Math.min(items.length - 1, rawIndex));
   }, [activeIndex, items.length]);
 
+  // Perhitungan index tab saat diketuk langsung (tap biasa)
+  const getTabIndexFromClientX = useCallback((clientX: number): number => {
+    const el = internalNavRef.current;
+    if (!el) return activeIndex;
+    const rect = el.getBoundingClientRect();
+    const padding = 4;
+    const innerWidth = rect.width - padding * 2;
+    if (innerWidth <= 0) return activeIndex;
+    const relativeX = clientX - rect.left - padding;
+    const itemWidth = innerWidth / items.length;
+    const rawIndex = Math.floor(relativeX / itemWidth);
+    return Math.max(0, Math.min(items.length - 1, Math.max(0, rawIndex)));
+  }, [activeIndex, items.length]);
+
   const handleInternalPointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if (isBlocked) return;
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
     internalPointerDownRef.current = true;
     internalStartPosRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
 
     if (internalHoldTimerRef.current !== null) {
       clearTimeout(internalHoldTimerRef.current);
       internalHoldTimerRef.current = null;
     }
 
-    // Deteksi HOLD lebih lama (450ms) agar ketukan biasa tidak terhitung sebagai hold
+    // Deteksi HOLD (300ms) untuk scrubbing antar tab
     internalHoldTimerRef.current = window.setTimeout(() => {
       if (internalPointerDownRef.current) {
+        try {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
         isDraggingRef.current = true;
         setInternalIsDragging(true);
         setInternalIsHolding(true);
@@ -161,7 +176,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
         applyIndicatorGeometry(p, false);
         onDragProgress?.(p);
       }
-    }, 450);
+    }, 300);
   };
 
   const handleInternalPointerMove = (e: React.PointerEvent<HTMLElement>) => {
@@ -169,10 +184,15 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
     const dx = Math.abs(e.clientX - internalStartPosRef.current.x);
     const dy = Math.abs(e.clientY - internalStartPosRef.current.y);
 
-    if (!isDraggingRef.current && (dx > 16 || dy > 16)) {
+    if (!isDraggingRef.current && (dx > 10 || dy > 10)) {
       if (internalHoldTimerRef.current !== null) {
         clearTimeout(internalHoldTimerRef.current);
         internalHoldTimerRef.current = null;
+      }
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
       }
       isDraggingRef.current = true;
       setInternalIsDragging(true);
@@ -193,7 +213,7 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       internalHoldTimerRef.current = null;
     }
 
-    const wasHolding = isDraggingRef.current;
+    const wasDragging = isDraggingRef.current;
     internalPointerDownRef.current = false;
     isDraggingRef.current = false;
     setInternalIsDragging(false);
@@ -205,12 +225,39 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
       // ignore
     }
 
-    if (wasHolding) {
+    if (isBlocked) return;
+
+    if (wasDragging) {
       const p = calculateProgress(e.clientX);
-      const nearestIndex = Math.max(0, Math.min(items.length - 1, Math.round(p)));
-      onSelect(items[nearestIndex]);
+      const targetIndex = Math.max(0, Math.min(items.length - 1, Math.round(p)));
+      onSelect(items[targetIndex]);
+    } else {
+      const targetIndex = getTabIndexFromClientX(e.clientX);
+      onSelect(items[targetIndex]);
     }
   };
+
+  // Pastikan timer dan state hold/drag selalu bersih saat pointerup global
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      if (internalHoldTimerRef.current !== null) {
+        clearTimeout(internalHoldTimerRef.current);
+        internalHoldTimerRef.current = null;
+      }
+      if (internalPointerDownRef.current || isDraggingRef.current) {
+        internalPointerDownRef.current = false;
+        isDraggingRef.current = false;
+        setInternalIsDragging(false);
+        setInternalIsHolding(false);
+      }
+    };
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointercancel', handleGlobalPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerUp);
+    };
+  }, []);
 
   const isHolding = externalIsHolding !== undefined ? externalIsHolding : internalIsHolding;
   const activeDragging = externalIsDragging !== undefined ? externalIsDragging : internalIsDragging;
@@ -353,8 +400,18 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
               transformOrigin: 'center center',
               transition: activeDragging ? 'none' : 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease',
             }}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               if (!isBlocked) onSelect(item);
+            }}
+            onPointerUp={() => {
+              if (internalHoldTimerRef.current !== null) {
+                clearTimeout(internalHoldTimerRef.current);
+                internalHoldTimerRef.current = null;
+              }
+              if (!isBlocked && !activeDragging && !isHolding) {
+                onSelect(item);
+              }
             }}
             aria-current={activeItem === item ? 'page' : undefined}
             disabled={isBlocked}

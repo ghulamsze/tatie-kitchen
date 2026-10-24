@@ -1,214 +1,254 @@
-MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (REVISI TOTAL HP ANDROID PEMILIK)
+MASTER PROMPT ANTIGRAVITY: TATI’E KITCHEN (PEMBUATAN PLATFORM LAPTOP / SISTEM ADMIN PEMILIK)
 
-Tempel isi ini sebagai pesan pertama ke agent untuk eksekusi revisi layar Android HP. Setelah itu kirim pesan pendek per fase (lihat bagian paling bawah).
-
-================================================================================
-PERAN
-================================================================================
-Kamu adalah tim pengembang frontend & mobile senior yang menyempurnakan aplikasi kasir & pemantau warung Tati’e Kitchen. Kamu bekerja bertahap, presisi tinggi, dan selalu menunggu persetujuan pemilik di setiap akhir fase.
+Tempel isi berkas ini sebagai panduan master pelaksanaan platform Laptop. Setelah disetujui, eksekusi dilakukan bertahap per fase dengan menunggu perintah "Lanjut" di setiap akhir fase (lihat bagian paling bawah untuk daftar pemicu fase).
 
 ================================================================================
-TUJUAN
+1. PERAN & PRINSIP KERJA
 ================================================================================
-Revisi total seluruh antarmuka HP Android (Mode Pemilik / Owner App) agar 100% presisi dan identik dengan desain di docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
-
-================================================================================
-SUMBER KEBENARAN VISUAL & ATURAN GAYA
-================================================================================
-1. DESAIN & STRUKTUR:
-   - Sumber kebenaran mutlak untuk layout, hierarki teks, dan konten adalah docs/archive/tati_e-kitchen-preview.pdf Halaman 17 (Bagian 7. Pemilik: Android).
-   - Terdapat 5 frame tampilan utama di PDF:
-     * Frame 1 (Layar 7a): Home (Total transaksi hari ini, daftar Terbaru)
-     * Frame 2 (Layar 7b): Riwayat (Pengelompokan per tanggal, filter rentang)
-     * Frame 3 (Layar 7c): Rentang Waktu (Bottom sheet pilihan preset & kustom tanggal)
-     * Frame 4 (Layar 7d): Rincian Transaksi (Meja, jam, nominal besar, rincian item, tombol Share & Download PNG)
-     * Frame 5 (Layar 7e): Akun (Profil Pemilik, daftar Kasir, tombol Tampilan, Cetak menu, Keluar)
-
-2. ATURAN GAYA TABLET (GOLDEN STANDARD):
-   - Style antarmuka tablet saat ini sudah paling sempurna: gunakan seluruh token desain, material glassmorphism (g-acrylic, g-liquid, liquid-glass), background radial gradient dinamis, font Plus Jakarta Sans, dan palet warna aktif (Netflix, Samudra, dsb.) serta mode gelap/terang.
-   - SEMUA warna, ukuran font, line-height, radius, dan jarak WAJIB menggunakan token CSS (var(--t-*), var(--r-*), var(--ctl*), var(--accent), var(--ink*)). DILARANG MENULIS NILAI HARDCODED PIXEL ATAU HEX SECARA SEMBARANGAN.
-
-3. HINDARI BADGE BERLEBIHAN (CRITICAL):
-   - Jangan menambahkan badge atau dekorasi berisik yang tidak ada di PDF:
-     * HAPUS badge "Live" berkedip di header Home.
-     * HAPUS dot-dot indikator status di sebelah nama meja.
-     * HAPUS label teks "Lunas" di bawah harga transaksi.
-     * HAPUS tautan "Lihat semua ›" di sebelah judul Terbaru.
-     * HAPUS chip badge "Aktif" di samping nama kasir di Akun.
-     * HAPUS counter "2 aktif" di header Kasir.
-     * HAPUS kotak kartu perbandingan Tunai vs QRIS di Home (kembalikan ke hero card tunggal yang bersih sesuai PDF).
-   - Samakan gayanya: tenang, minimalis, bersih, elegan, dan proporsional.
-
-4. ALUR KERJA BERTAHAP (STOP GATES):
-   - Kerjakan satu fase dalam satu waktu.
-   - Laporkan hasil di akhir fase dan BERHENTI sampai pemilik mengetik "Lanjut".
+Kamu adalah Lead Fullstack Engineer yang membangun sistem web admin laptop Tati’e Kitchen.
+Kamu bekerja bertahap, berpegang teguh pada cetak biru visual, presisi tinggi, dan selalu menunggu instruksi pemilik di setiap akhir fase.
+- Sumber kebenaran visual mutlak: reference/tati_e-kitchen-final-preview.html (Bagian 9, 10, dan 11) dan docs/archive/tati_e-kitchen-preview.pdf (Halaman 19 s.d. 45).
+- Sumber kebenaran arsitektur: docs/arsitektur.md.
+- Sumber aturan token & desain: docs/design.md dan src/design/tokens.css.
 
 ================================================================================
-RINCIAN SPESIFIKASI 5 LAYAR HP (PDF HALAMAN 17)
+2. TUJUAN SISTEM LAPTOP
 ================================================================================
-
-1. LAYAR 7a: HOME
-   - Simulasi Status Bar atas: jam (kiri, misal "10.04") dan sinyal (kanan, misal "5G · 82%").
-   - Heading: "Home" (var(--t-xl), font-weight 800, tanpa badge "Live").
-   - Hero Card (.g-acrylic, radius var(--r-lg), padding 20px):
-     * Label atas: "Total transaksi hari ini" (var(--t-sm), var(--ink-2), font-weight 500).
-     * Nominal utama: Format Rupiah tebal dan besar (var(--t-xl), font-weight 800, var(--ink)).
-     * Label bawah: "{totalCount} transaksi" (var(--t-sm), var(--ink-3), font-weight 700).
-   - Bagian "Terbaru":
-     * Judul bagian: "Terbaru" (var(--t-md), font-weight 800, tanpa tombol "Lihat semua").
-     * Sub-header tanggal: Format tanggal hari ini (misal "21 Okt 2026").
-     * Kartu daftar (.tk-phone-list-card):
-       - Setiap baris (.tk-phone-row) terdiri dari 2 kolom rapi:
-         Kiri: Meja {no} (tebal, var(--t-md)) & {qty} item (var(--ink-3), var(--t-xs))
-         Kanan: Rp{total} (tebal, var(--t-md)) & {jam} WITA (var(--ink-3), var(--t-xs))
-       - Tanpa dot neon hijau, tanpa badge "Lunas".
-       - Mengetuk baris akan membuka Layar 7d (Rincian Transaksi).
-   - Floating Navbar Pill di bawah: [ Home ] [ Riwayat ] [ Akun ].
-
-2. LAYAR 7b: RIWAYAT
-   - Simulasi Status Bar atas: jam & sinyal.
-   - Heading: "Riwayat" (var(--t-xl), font-weight 800).
-   - Filter Rentang Waktu (Pill trigger .tk-phone-range-trigger):
-     * Menampilkan rentang aktif, misal: "Hari ini · 21 Okt 2026 ▾" atau "Semua waktu ▾".
-     * Mengetuk tombol membuka Bottom Sheet Rentang Waktu (Layar 7c).
-   - Pengelompokan Transaksi Berdasarkan Tanggal:
-     * Header per tanggal (misal "21 Okt 2026", "20 Okt 2026").
-     * Di bawah setiap header tanggal, tampilkan baris-baris transaksi dengan format identik:
-       Kiri: Meja {no} & {qty} item
-       Kanan: Rp{total} & {jam} WITA
-     * Mengetuk baris membuka Layar 7d (Rincian Transaksi).
-   - Floating Navbar Pill di bawah.
-
-3. LAYAR 7c: RENTANG WAKTU (BOTTOM SHEET)
-   - Latar belakang mengabur gelap (backdrop-filter: blur(16px)).
-   - Bottom sheet glass (.g-liquid, radius var(--r-xl)):
-     * Judul sheet: "Rentang waktu" (var(--t-lg), font-weight 800).
-     * Opsi baris (tinggi 48px, background var(--ctl), radius var(--r-md)):
-       - "Hari ini" (dengan tanda centang "✓" di kanan jika terpilih)
-       - "Kemarin"
-       - "7 hari terakhir"
-       - "30 hari terakhir"
-       - "Pilih tanggal..."
-     * Tombol aksi primer di bawah: "Terapkan" (.tk-btn-lime atau tombol aksen palet, tinggi 48px).
-
-4. LAYAR 7d: RINCIAN TRANSAKSI (DETAIL PESANAN)
-   - Tombol kembali di kiri atas: "‹ Rincian" (teks tombol datar tanpa background, saat diketuk kembali ke layar pemanggil).
-   - Sub-header: "Meja {no} · {jam} WITA" (var(--ink-2), var(--t-md)).
-   - Nominal total transaksi sangat besar: "Rp80.000" (var(--t-2xl) atau var(--t-3xl), font-weight 800, var(--ink)).
-   - Baris kasir: "Kasir {namaKasir}" (var(--ink-3), var(--t-sm)).
-   - Kartu Rincian Menu (.g-acrylic atau .tk-phone-list-card):
-     * Setiap item pesanan: {qty} {nama_menu} (kiri) | Rp{subtotal} (kanan)
-     * Catatan jika ada: "Catatan: {catatan}" (var(--ink-3), var(--t-xs))
-     * Garis pemisah tipis
-     * Baris Total: "Total" (kiri) | Rp{total} (kanan, font-weight 800)
-   - Tombol Aksi Bawah (2 Tombol Berdampingan, lebar 50% / 50%):
-     * Tombol Kiri: "Share" (.tk-btn-flat, tinggi 48px, membagikan struk)
-     * Tombol Kanan: "Download PNG" (tombol aksen, tinggi 48px, mengunduh gambar struk)
-   - Floating Navbar Pill tetap ada di bawah.
-
-5. LAYAR 7e: AKUN
-   - Simulasi Status Bar atas: jam & sinyal.
-   - Heading: "Akun" (var(--t-xl), font-weight 800).
-   - Hero Card Profil Pemilik (.g-acrylic, radius var(--r-lg)):
-     * Avatar bulat/persegi tumpul dengan inisial "P" (var(--accent)).
-     * Teks peran: "Pemilik" (var(--t-md), font-weight 800).
-     * Nama warung: "Tati’e Kitchen" (var(--t-sm), var(--ink-3)).
-   - Bagian "Kasir":
-     * Judul section: "Kasir" (var(--t-md), font-weight 800, tanpa badge "aktif").
-     * Daftar kasir dalam kartu bersih (.tk-phone-list-card):
-       - Baris nama kasir: "Robertus Amaresi"
-       - Baris nama kasir: "Puspitawati"
-       - Tanpa tombol edit/hapus dan tanpa badge "Aktif" (menjaga kesederhanaan mode pemilik sesuai PDF).
-   - Tombol Pengaturan:
-     * Baris "Tampilan" (dengan dot warna palet aktif di kiri dan panah "▾" di kanan).
-     * Tombol "Cetak menu" (.tk-btn-flat, tinggi 48px).
-     * Tombol "Keluar" (.tk-btn-flat, tinggi 48px, warna var(--ink-2)).
-   - Floating Navbar Pill di bawah.
+Membangun antarmuka desktop/laptop (resolusi standar 1280 × 720 atau layar penuh desktop) untuk pemilik warung, yang mencakup:
+1. Autentikasi Pemilik (Login Email/Password & Google Sign-In).
+2. Layout Desktop Khusus: Sidebar permanen (kiri), Top bar dengan filter rentang waktu (kanan atas), dan Konten berbasis tabel & kartu split-view.
+3. 8 Layar Utama:
+   - Masuk (Login)
+   - Home (Dashboard KPI, grafik batang per jam, daftar transaksi terbaru)
+   - Riwayat (Split-view tabel transaksi & panel detail struk, dialog ekspor Excel/PDF/CSV, share, unduh PNG)
+   - Menu (Split-view tabel katalog menu & panel edit menu, dialog tambah menu)
+   - Menu Pelanggan (Pengaturan kasir tablet, prioritas kategori maks 7 item, pengaturan Terlaris, dialog pratinjau kasir)
+   - Kasir (Kartu profil kasir, dialog tambah kasir, ubah nama, hapus kasir)
+   - Laporan (KPI mingguan, grafik batang per hari, daftar menu terlaris)
+   - Pengaturan & Akun (Profil kafe, backup data JSON, ganti password, palet tema & warna, dialog cetak menu A4)
+4. Fitur Cetak Menu A4 (1 sampul + 3 halaman kategori, margin normal/4433, mode hemat tinta, terhubung ke window.print()).
 
 ================================================================================
-RENCANA FASE PENGERJAAN
+3. ATURAN GAYA & KONSISTENSI DESAIN (GOLDEN STANDARD)
 ================================================================================
+1. HIERARKI TEKS (7 SKALA TETAP):
+   - --t-xs / --l-xs (12px / 16px): label kecil, tanggal, badge status.
+   - --t-sm / --l-sm (14px / 20px): teks isi sekunder, tabel, tombol kecil.
+   - --t-md / --l-md (16px / 24px): teks isi default, baris tabel, tombol utama.
+   - --t-lg / --l-lg (20px / 28px): sub-heading panel, judul kartu detail.
+   - --t-xl / --l-xl (32px / 40px): heading layar utama (h2).
+   - --t-2xl / --l-2xl (44px / 52px): angka KPI omzet besar, branding login.
+   - --t-3xl / --l-3xl (64px / 72px): kembalian / display angka jumbo.
+   - Bobot font: 500 (reguler), 700 (semi-bold), 800 (tebal judul).
 
-FASE 0: AUDIT & STRUKTUR NAVIGASI
-- Periksa seluruh berkas di src/platform/phone/:
-  * PhoneRoot.tsx
-  * screens/PhoneHomeScreen.tsx
-  * screens/PhoneHistoryScreen.tsx
-  * screens/PhoneOrderDetailScreen.tsx
-  * screens/PhoneAccountScreen.tsx
-  * components/PhoneDateRangeSheet.tsx
-  * components/PhoneThemeSheet.tsx
-  * components/PhonePrintMenuDialog.tsx
-  * src/design/phone.css
-- Di PhoneRoot.tsx, tambahkan state routing untuk mendukung navigasi ke Layar 7d (Rincian Transaksi) saat baris transaksi di Home atau Riwayat diketuk, dengan tombol kembali "‹ Rincian".
-- Tulis daftar perbedaan antara kode saat ini dengan PDF Halaman 17.
-- Tunggu persetujuan pemilik sebelum lanjut ke Fase 1.
+2. GRID & KONTROL:
+   - Semua jarak, padding, gap, dan ukuran kelipatan 4px.
+   - Tinggi kontrol tombol & input standar desktop: 40px, 48px, 56px.
+   - Posisi filter rentang waktu: selalu tetap di pojok kanan atas top bar.
 
-FASE 1: REVISI LAYAR HOME (SESUAI FRAME 1 PDF)
-- Bersihkan PhoneHomeScreen.tsx:
-  * Hapus badge "Live" di header.
-  * Hapus tombol "Lihat semua ›".
-  * Hapus dot neon di samping meja.
-  * Hapus label "Lunas".
-  * Pastikan susunan kartu hero dan daftar transaksi terbaru presisi mengikuti Frame 1 PDF.
-  * Hubungkan ketukan baris transaksi agar membuka Layar 7d.
-- Uji tampilan pada viewport HP (390 x 800) dan verifikasi di browser.
-- Tunggu "Lanjut".
+3. BENTUK & SUDUT (RADIUS):
+   - Radius 12px (var(--r-sm)): chip kecil, badge status.
+   - Radius 16px (var(--r-md)): input form, tombol kontrol, thumbnail menu.
+   - Radius 24px (var(--r-lg)): panel sidebar, kartu detail, kontainer konten.
+   - Radius 32px (var(--r-xl)): dialog modal, toast notifikasi, avatar.
+   - Pil 999px: tombol rentang waktu, chip navigasi.
 
-FASE 2: REVISI LAYAR RIWAYAT & BOTTOM SHEET RENTANG WAKTU (SESUAI FRAME 2 & 3 PDF)
-- Bersihkan PhoneHistoryScreen.tsx:
-  * Format baris transaksi disamakan persis dengan Home: Meja {no} ({qty} item) di kiri, Rp{total} ({jam}) di kanan.
-  * Pengelompokan tanggal rapi dengan header tanggal bersih.
-  * Hubungkan tombol trigger rentang waktu ke PhoneDateRangeSheet.
-- Pastikan PhoneDateRangeSheet.tsx memiliki opsi: Hari ini, Kemarin, 7 hari terakhir, 30 hari terakhir, Pilih tanggal..., dan tombol primer "Terapkan".
-- Hubungkan ketukan baris transaksi ke Layar 7d.
-- Tunggu "Lanjut".
+4. MATERIAL LAPISAN:
+   - Frosted Acrylic (.g-acrylic / .g): Panel sidebar, kartu dashboard KPI, kartu rincian transaksi, panel pengaturan.
+   - Liquid Glass (.g-liquid / .g.sh): Dialog modal melayang, popover akun, toast status melayang.
+   - Baris & Kontrol Input: Datar (flat) tanpa blur.
 
-FASE 3: REVISI LAYAR RINCIAN TRANSAKSI (SESUAI FRAME 4 PDF)
-- Rombak PhoneOrderDetailScreen.tsx:
-  * Tombol navigasi atas: "‹ Rincian" (kembali ke layar asal).
-  * Sub-header meja & jam transaksi.
-  * Nominal omzet transaksi sangat besar (Rp80.000).
-  * Baris "Kasir {namaKasir}".
-  * Rincian item pesanan dalam satu daftar bersih beserta catatan dan baris Total.
-  * Dua tombol aksi berdampingan: "Share" (flat) dan "Download PNG" (accent) dengan fungsi ekspor/bagikan struk.
-  * Floating navbar tetap tampil di bagian bawah.
-- Tunggu "Lanjut".
-
-FASE 4: REVISI LAYAR AKUN (SESUAI FRAME 5 PDF)
-- Bersihkan PhoneAccountScreen.tsx:
-  * Profil pemilik bersih (avatar P, Pemilik, Tati'e Kitchen).
-  * Section "Kasir": daftar nama kasir polos tanpa badge "Aktif" atau tombol aksi berlebihan.
-  * Baris "Tampilan" dengan pop-up/sheet pilihan tema dan 6 palet warna.
-  * Tombol "Cetak menu" dan tombol "Keluar".
-- Tunggu "Lanjut".
-
-FASE 5: PENYESUAIAN CSS & VERIFIKASI MULTI-PALET
-- Di src/design/phone.css:
-  * Hapus selector dan styling badge yang tidak terpakai.
-  * Pastikan 100% token discipline: var(--*).
-  * Verifikasi di 6 palet warna (Netflix, Matcha, Samudra, Senja, Blush, Mono) dan 2 mode (Gelap & Terang).
-  * Jalankan audit: npm run build dan npx tsc --noEmit.
-  * Buat tangkapan layar komparasi kelima layar di viewport HP.
-- Tunggu "Lanjut".
-
-FASE 6: BUILD APK ANDROID (HP)
-- Sinkronisasikan build web ke platform Capacitor Android:
-  * npx cap sync android
-- Kompilasi berkas APK debug:
-  * gradlew assembleDebug (atau npm run build:apk:debug)
-- Konfirmasi file android/app/build/outputs/apk/debug/app-debug.apk siap dipasang di HP pemilik.
-- Tunggu konfirmasi akhir pemilik.
+5. ATURAN SATU TOMBOL LIME:
+   - Hanya boleh ada MAKSIMAL 1 tombol berlatar hijau terang (Lime Accent) per layar aktif untuk aksi terpenting.
+   - Tombol sekunder harus menggunakan varian datar (.tk-btn-flat / .bay.g).
 
 ================================================================================
-PESAN PENDEK UNTUK SETIAP FASE (TEMPEL SATU PER SATU)
+4. SPESIFIKASI DETAIL LAYAR LAPTOP (BAGIAN 9 & 10 ACUAN)
 ================================================================================
 
-Lanjut Fase 1. Rencana Fase 0 disetujui.
-Lanjut Fase 2. Layar Home sudah sesuai PDF.
-Lanjut Fase 3. Layar Riwayat & Rentang Waktu sudah sesuai PDF.
-Lanjut Fase 4. Layar Rincian Transaksi sudah sesuai PDF.
-Lanjut Fase 5. Layar Akun sudah sesuai PDF.
-Lanjut Fase 6. CSS & uji multi-palet disetujui. Siapkan build APK.
+--- 4.1. LAYAR MASUK (LOGIN) & INTERAKSI (10a, 10b, 10c) ---
+- Layout tengah (.dev.scr.it):
+  * Logo Tati’e Kitchen (32/40, weight 800).
+  * Kotak Login (.g.lgn, lebar 420px, padding 36px 40px):
+    - Judul: "Masuk" (32/40).
+    - Kolom Email: "example@gmail.com".
+    - Kolom Kata Sandi: placeholder "Kata sandi".
+    - Tombol primer Lime: "Masuk".
+    - Tombol sekunder Google: "Sign in with Google" dengan logo SVG resmi Google.
+- Interaksi:
+  * 10a (Sign in with Google): Membuka dialog liquid glass pilihan akun Google.
+  * 10b (Memproses Masuk): Tombol berubah menampilkan spinner animasi (.spn) + teks "Memeriksa akun".
+  * 10c (Gagal Masuk): Kolom bermasalah berbingkai merah (.fld.er) + pesan error di bawahnya: "Kata sandi tidak cocok. Coba lagi." (.em).
 
-Jika ada yang belum sesuai: Perbaiki dulu (tulis temuan). Jangan lanjut fase.
+--- 4.2. SHELL LAPTOP & SIDEBAR PERMANEN ---
+- Sidebar Kiri (.g.sd, lebar 240px):
+  * Header: "Tati’e Kitchen" (h3 tebal).
+  * Menu Navigasi:
+    [ Home ] [ Riwayat ] [ Menu ] [ Kasir ] [ Laporan ] [ Pengaturan ]
+  * Profil Pengguna Bawah (.me):
+    - Avatar bulat inisial "P" (.av2).
+    - Nama "Pemilik" & subtitle "Tati’e Kitchen".
+    - Klik memunculkan popover bubble (.g.bub):
+      [ Akun saya ] [ Tampilan (tema & warna) ] [ Keluar ]
+- Top Bar Atas (.tp):
+  * Kiri: Judul Halaman aktif (Home / Riwayat / Menu / dst).
+  * Kanan: Grup Tombol Aksi & Pill Rentang Waktu (dropdown "Hari ini · 21 Okt 2026 ▾").
+
+--- 4.3. LAYAR HOME (DASHBOARD) ---
+- Top Bar: Judul "Home" & Dropdown Rentang Waktu.
+- Grid 3 KPI Card (1.6fr 1fr 1fr):
+  * Kartu 1 (Highlight Lime .kc.hi): "Total transaksi hari ini" -> Nominal format Rupiah (44/52).
+  * Kartu 2 (.kc): "Jumlah transaksi" -> {count} transaksi.
+  * Kartu 3 (.kc): "Rata-rata per transaksi" -> {avg} Rupiah.
+- Konten Bawah (Split 1.5fr & 1fr):
+  * Kiri (.g, padding 20px): "Transaksi per jam" dengan diagram batang CSS (.bars) jam 09 s.d. jam 20.
+  * Kanan (.fl): "Terbaru" dengan daftar transaksi terbaru (jam, nomor meja, item, total).
+
+--- 4.4. LAYAR RIWAYAT & DETAIL SPLIT VIEW (10d, 10e, 10f) ---
+- Top Bar: Judul "Riwayat", Tombol "Ekspor", Dropdown Rentang Waktu.
+- Konten Split View (Tabel kiri 1.7fr, Detail kanan 1fr):
+  * Tabel Riwayat: Kolom [ Waktu | Meja | Kasir | Item | Total ]. Baris interaktif yang dapat diklik untuk memilih pesanan.
+  * Panel Detail Kanan (.g, padding 24px):
+    - Header: "Meja {no} · {jam} WITA", "Kasir {nama}".
+    - Daftar rincian menu pesanan + Total Rupiah tebal.
+    - Tombol aksi: "Share" (.bay.g) dan "Download PNG" (.bay.lime).
+- Interaksi:
+  * 10d (Ekspor): Dialog pilihan format Excel (.xlsx), PDF, CSV.
+  * 10e (Share): Dialog bagikan via WhatsApp, Salin tautan, Aplikasi lain.
+  * 10f (Download PNG): Unduh gambar struk sebagai PNG via html-to-image + toast notifikasi "Struk Meja {no} diunduh sebagai PNG".
+
+--- 4.5. LAYAR MENU & EDIT MENU (10g, 10h, 10p) ---
+- Top Bar: Judul "Menu", Tombol "Cetak menu", Tombol "Menu pelanggan", Tombol primer "Tambah menu" (Lime).
+- Konten Split View (Tabel kiri 1.8fr, Panel edit kanan 1fr):
+  * Tabel Menu: Kolom [ Menu (dengan thumbnail foto .th2) | Kategori | Harga | Status (Tersedia/Habis) ].
+  * Panel Edit Menu Kanan:
+    - Foto kartu menu (.mc, tinggi 152px) dengan gambar preview.
+    - Kolom edit: Nama menu, Harga, Kategori.
+    - Tombol primer: "Simpan" (Lime).
+- Interaksi:
+  * 10g (Tambah Menu): Dialog modal input foto, nama menu, harga, kategori. Tombol Simpan redup sampai valid.
+  * 10h (Simpan Edit): Perubahan tersimpan ke Supabase + toast "Perubahan menu disimpan".
+  * 10p (Cetak Menu): Dialog opsi cetak A4.
+
+--- 4.6. LAYAR MENU PELANGGAN (KASIR SETUP) (10i, 10j) ---
+- Top Bar: Judul "Menu pelanggan", Tombol "Cetak menu", Tombol "Pratinjau di kasir", Tombol primer "Simpan" (Lime).
+- Konten:
+  * Kiri (1.2fr):
+    - Teks petunjuk: "Atur kelompok dan urutan yang tampil di kasir. Maksimal 7 item per kelompok agar pembeli tidak bingung memilih."
+    - Daftar kelompok menu dengan status jumlah item (misal "Terlaris · 7 item dari maks. 7").
+    - Tombol urutan (↑ / ↓) dan toggle "Tampil".
+  * Kanan (Panel Terlaris .g, padding 24px):
+    - Segmented tab: [ Pilih manual ] [ Otomatis dari penjualan ].
+    - Daftar chip menu terlaris aktif dengan tombol hapus (×).
+    - Pilihan foto unggulan kotak sorot.
+    - Pengaturan switch: "Tampilkan menu habis" (Aktif) & "Format harga" (Rp. 15.000).
+- Interaksi:
+  * 10i (Pratinjau di Kasir): Dialog modal pratinjau mini Golden Triangle kasir tablet (skala 50% ukuran 1024x640).
+  * 10j (Simpan): Toast "Menu pelanggan disimpan".
+
+--- 4.7. LAYAR KASIR (10k, 10l, 10m) ---
+- Top Bar: Judul "Kasir", Tombol primer "Tambah kasir" (Lime).
+- Konten:
+  * Grid kartu kasir (.g, padding 28px):
+    - Avatar bulat besar (92px) inisial kasir (.av.g).
+    - Nama kasir tebal (20/28).
+    - Ringkasan transaksi: "{count} transaksi hari ini · Rp{total}".
+    - Tombol aksi: "Ubah nama" & "Hapus".
+  * Petunjuk: "Kasir masuk tanpa kata sandi. Nama baru langsung muncul di layar pilih profil."
+- Interaksi:
+  * 10k (Tambah Kasir): Dialog modal input nama kasir baru.
+  * 10l (Ubah Nama): Dialog modal ubah nama kasir.
+  * 10m (Hapus Kasir): Dialog konfirmasi: "Hapus kasir {nama}? Transaksi yang sudah tercatat tidak ikut terhapus." (Tombol Batal warna Lime, tombol Hapus warna danger).
+
+--- 4.8. LAYAR LAPORAN ---
+- Top Bar: Judul "Laporan", Tombol "Ekspor", Dropdown Rentang Waktu ("7 hari terakhir ▾").
+- Konten:
+  * Grid 3 KPI Card: Total transaksi 7 hari (highlight lime), Jumlah transaksi, Rata-rata per hari.
+  * Bawah (Split 1.5fr & 1fr):
+    - Kiri (.g, padding 20px): Grafik batang "Per hari" (Kam, Jum, Sab, Min, Sen, Sel, Rab).
+    - Kanan (.fl): "Menu terlaris" dengan akumulasi kuantiti terjual.
+  * Catatan: "Laporan dibuat otomatis dari transaksi kasir. Tidak ada input manual."
+
+--- 4.9. LAYAR PENGATURAN & AKUN (10n, 10o) ---
+- Pengaturan:
+  * Panel Kiri: Profil kafe (Nama: Tati’e Kitchen, Alamat: Jl. Seimenggaris, Telepon: 0853 9364 4364).
+  * Panel Kanan: Opsi cetak struk otomatis, nama kasir di struk, footer struk, ubah kata sandi, cadangkan data, tema dan warna.
+- Interaksi:
+  * 10n (Cadangkan Data): Dialog konfirmasi unduh berkas JSON backup ke laptop.
+  * 10o (Ubah Kata Sandi): Dialog modal kata sandi lama, kata sandi baru, ulangi kata sandi baru.
+- Akun:
+  * Avatar besar 100px inisial "P", nama Pemilik, tombol ubah kata sandi, pemilihan tema (Terang, Gelap, Sistem) & 6 palet warna (Netflix, Samudra, dsb.), tombol Keluar.
+
+--- 4.10. FITUR CETAK MENU A4 (BAGIAN 11) ---
+- Dihasilkan dari data menu asli Supabase.
+- Tata letak A4 presisi: 1 lembar sampul depan + 3 lembar kategori isi.
+- Opsi Margin: "Margin normal" (2,54 cm) vs "Margin 4433" (kiri 4 cm, atas 4 cm, kanan 3 cm, bawah 3 cm).
+- Opsi Hemat Tinta: latar putih bersih vs latar gelap penuh.
+- Tombol "Cetak menu" memicu print preview browser (A4 portrait).
+
+================================================================================
+5. TAHAPAN EKSEKUSI (9 FASE BERTURUT-TURUT)
+================================================================================
+
+- FASE 1: Fondasi Platform Laptop, Layout Shell Desktop, Sidebar Navigasi, & Sistem Autentikasi Pemilik.
+  * Buat `src/design/laptop.css`, `LaptopRoot.tsx`, `LaptopLayout.tsx`, `LaptopSidebar.tsx`, `LaptopTopBar.tsx`.
+  * Integrasikan ke `AppShell.tsx` untuk menampilkan antarmuka laptop penuh saat `device.formFactor === 'laptop'`.
+  * Implementasikan `LoginScreen.tsx` (email/password, Google sign-in dialog 10a, loading state 10b, error state 10c).
+  * Unit test Vitest untuk auth & shell laptop.
+
+- FASE 2: Layar Home Laptop (Dashboard KPI, Visualisasi Jam, & Transaksi Terbaru).
+  * KPI Card 3 kolom, diagram batang jam (.bars), daftar transaksi terbaru realtime.
+  * Filter rentang waktu di pojok kanan atas.
+  * Realtime listener pesanan baru dari tablet kasir.
+
+- FASE 3: Layar Riwayat Transaksi & Detail Split View (Ekspor, Share, Download PNG).
+  * Split view tabel riwayat dan panel detail struk.
+  * Dialog ekspor 10d (Excel, PDF, CSV), dialog share 10e, tombol unduh PNG 10f dengan html-to-image.
+
+- FASE 4: Layar Katalog Menu & Form Edit Menu (Tambah Menu & Cetak Menu).
+  * Split view tabel menu (dengan thumbnail) dan form panel edit menu.
+  * Dialog modal tambah menu 10g (upload foto, nama, harga, kategori).
+  * Simpan perubahan status ketersediaan & harga langsung ke database Supabase + toast 10h.
+
+- FASE 5: Layar Menu Pelanggan (Pengaturan Kasir Tablet & Pratinjau Golden Triangle).
+  * Manajemen kelompok menu kasir (maksimal 7 item per kelompok).
+  * Pengaturan urutan naik/turun dan tombol tampil/sembunyi.
+  * Pengaturan Terlaris (manual vs otomatis), pemilihan foto unggulan kotak sorot.
+  * Dialog modal pratinjau kasir 10i (Golden Triangle 1024x640 skala 50%) + toast 10j.
+
+- FASE 6: Layar Manajemen Kasir (Profil, Tambah, Ubah Nama, Hapus).
+  * Kartu profil kasir dengan avatar 92px dan ringkasan omzet hari ini.
+  * Dialog tambah kasir 10k, ubah nama 10l, hapus kasir 10m dengan konfirmasi aman.
+  * Sinkronisasi dua arah dengan tabel `cashiers` Supabase.
+
+- FASE 7: Layar Laporan Penjualan Otomatis.
+  * KPI mingguan (Total transaksi, jumlah transaksi, rata-rata per hari).
+  * Grafik batang per hari (7 hari terakhir).
+  * Daftar menu terlaris otomatis dari data pesanan.
+  * Ekspor laporan.
+
+- FASE 8: Layar Pengaturan Kafe, Akun Pemilik, & Dialog Cetak Menu A4 Terintegrasi.
+  * Layar Pengaturan profil kafe & opsi cetak struk.
+  * Dialog cadangkan data 10n (ekspor JSON) & ubah kata sandi 10o.
+  * Layar Akun: selector tema (Terang/Gelap/Sistem) & palet warna, tombol logout.
+  * Fitur Cetak Menu A4: Sampul + 3 halaman kategori, margin normal/4433, mode hemat tinta, integrasi window.print().
+
+- FASE 9: Pengujian Menyeluruh (Vitest Unit Tests, Playwright Visual Audit, & Production Build).
+  * Pengujian Vitest untuk semua komponen dan flow laptop.
+  * Playwright visual audit pada viewport desktop 1280 × 720.
+  * Verifikasi token desain, 7 skala font, dan single lime button rule.
+  * Build produksi `npm run build` sukses 0 error.
+
+================================================================================
+6. DAFTAR PEMICU PERINTAH PER FASE (UNTUK PENGGUNA)
+================================================================================
+Ketik perintah berikut secara bertahap:
+- "Lanjut Fase 1: Fondasi Platform Laptop, Layout Shell Desktop, & Sistem Autentikasi Pemilik"
+- "Lanjut Fase 2: Layar Home Laptop (Dashboard KPI & Visualisasi Jam Transaksi)"
+- "Lanjut Fase 3: Layar Riwayat Transaksi & Detail Split View (Ekspor, Share, Unduh PNG)"
+- "Lanjut Fase 4: Layar Katalog Menu & Form Edit Menu (Tambah Menu & Cetak Menu)"
+- "Lanjut Fase 5: Layar Menu Pelanggan (Pengaturan Kasir Tablet & Pratinjau Golden Triangle)"
+- "Lanjut Fase 6: Layar Manajemen Kasir (Tambah, Ubah Nama, Hapus Kasir)"
+- "Lanjut Fase 7: Layar Laporan Penjualan Otomatis (KPI & Grafik Batang Per Hari)"
+- "Lanjut Fase 8: Layar Pengaturan, Akun Pemilik, & Fitur Cetak Menu A4"
+- "Lanjut Fase 9: Pengujian Menyeluruh Vitest, Playwright Audit, & Build Final"

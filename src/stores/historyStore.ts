@@ -69,6 +69,14 @@ export const useHistoryStore = create<HistoryState>((set) => ({
   },
 
   addOrder: (order, items) => {
+    if (order.id && order.payment_method) {
+      try {
+        const raw = localStorage.getItem('tk_order_payment_methods');
+        const map = raw ? JSON.parse(raw) : {};
+        map[order.id] = order.payment_method;
+        localStorage.setItem('tk_order_payment_methods', JSON.stringify(map));
+      } catch {}
+    }
     set((state) => {
       const updated = [{ order, items }, ...state.orders];
       try {
@@ -79,7 +87,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       return { orders: updated };
     });
     // Broadcast pembuatan order ke perangkat lain secara real-time
-    broadcastOrderCreated(order.id, order.queue_no || 1, order.total_idr).catch(() => {});
+    broadcastOrderCreated(order.id, order.queue_no || 1, order.total_idr, order.payment_method || 'Tunai').catch(() => {});
   },
 
   fetchOrders: async (shopId) => {
@@ -99,6 +107,12 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       if (error) {
         logError('historyStore:fetchOrders_query', error);
       } else if (data) {
+        let paymentMap: Record<string, string> = {};
+        try {
+          const raw = localStorage.getItem('tk_order_payment_methods');
+          if (raw) paymentMap = JSON.parse(raw);
+        } catch {}
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const remoteOrders: HistoryOrderWithItems[] = data.map((d: any) => ({
           order: {
@@ -114,7 +128,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             queue_no: d.queue_no,
             business_date: d.business_date,
             created_at: d.created_at,
-            payment_method: d.payment_method || 'Tunai',
+            payment_method: d.payment_method || paymentMap[d.id] || 'Tunai',
           },
           items: d.order_items || [],
         }));
