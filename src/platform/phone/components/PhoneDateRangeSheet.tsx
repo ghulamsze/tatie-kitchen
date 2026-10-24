@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DateRangePreset } from '../../../stores/historyStore.ts';
 import { getShopTodayDateStr } from '../../../lib/format/formatters.ts';
+import { registerBackHandler } from '../../../lib/device/backButton.ts';
 
 export type ExtendedDateRangeOption = DateRangePreset | 'pilih-tanggal';
 
@@ -29,10 +30,25 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      document.body.classList.add('has-modal');
       setActiveOption(customDate ? 'pilih-tanggal' : selectedRange);
       if (customDate) setDateInput(customDate);
+    } else {
+      document.body.classList.remove('has-modal');
     }
+    return () => {
+      document.body.classList.remove('has-modal');
+    };
   }, [isOpen, selectedRange, customDate]);
+
+  // Tangani tombol back default Android saat sheet rentang waktu terbuka
+  useEffect(() => {
+    if (!isOpen) return;
+    return registerBackHandler(() => {
+      onClose();
+      return true;
+    }, 80);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -58,13 +74,19 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
     <div
       className="tk-phone-overlay ov"
       onClick={onClose}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label="Rentang waktu"
+      style={{ pointerEvents: 'auto' }}
     >
       <div
         className="g-liquid tk-phone-sheet sh"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        style={{ pointerEvents: 'auto' }}
       >
         <b
           style={{

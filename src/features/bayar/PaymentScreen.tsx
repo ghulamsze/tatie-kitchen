@@ -19,6 +19,7 @@ import { useShopStore } from '../../stores/shopStore.ts';
 import { getQuickCashOptions } from './quickCash.ts';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
 import { generateUUID } from '../../lib/uuid.ts';
+import { triggerHapticFeedback } from '../../lib/device/haptics.ts';
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer';
 
@@ -38,6 +39,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
 
   const triggerReject = () => {
     setIsRejecting(true);
+    triggerHapticFeedback([40, 60, 40]);
     if (rejectTimeoutRef.current) clearTimeout(rejectTimeoutRef.current);
     rejectTimeoutRef.current = setTimeout(() => {
       setIsRejecting(false);

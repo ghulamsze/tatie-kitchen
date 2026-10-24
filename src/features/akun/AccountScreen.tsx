@@ -73,39 +73,59 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
           </span>
         </div>
 
-        {/* Tombol Tampilan & Tombol Printer */}
-        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+        {/* Tombol Tampilan (Lebar) & Tombol Printer (Icon SVG Saja) */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
           <button
             type="button"
             className="tk-btn-appearance"
             onClick={() => setIsAppearanceOpen(true)}
             aria-haspopup="dialog"
-            style={{ flex: 1 }}
+            aria-label="Atur tampilan tema dan warna"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              height: '48px',
+              boxSizing: 'border-box',
+            }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <i className="tk-dot-color" />
               <span>Tampilan</span>
             </span>
-            <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
+            <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>▾</span>
           </button>
 
           <button
             type="button"
-            className="tk-btn-appearance"
+            className="tk-btn-icon-circle"
             onClick={() => setIsPrinterOpen(true)}
             aria-haspopup="dialog"
-            style={{ flex: 1 }}
+            aria-label="Pengaturan printer thermal"
           >
-            <span>Printer</span>
-            <span style={{ fontSize: 'var(--t-xs)' }}>▾</span>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" rx="1" />
+            </svg>
           </button>
         </div>
 
-        {/* Tombol Ganti Kasir */}
+        {/* Tombol Ganti Kasir (Tinggi 48px Sama Persis dengan Tampilan & Printer) */}
         <Button
           variant="flat"
+          size="md"
           onClick={onChangeCashier}
-          style={{ width: '100%' }}
+          style={{ width: '100%', height: '48px' }}
         >
           Ganti kasir
         </Button>

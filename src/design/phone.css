@@ -126,12 +126,12 @@
   background: rgb(var(--w) / 0.06);
 }
 
-.tk-phone-row.tk-row-rejecting {
+/* Animasi Merah Menolak Khusus Teks Kasir Bawaan */
+.tk-text-rejecting {
+  display: inline-block;
+  color: var(--danger) !important;
   animation: tk-shake-reject 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
-  color: #ff3b30 !important;
-  border-color: rgba(255, 59, 48, 0.6) !important;
-  background: rgba(255, 59, 48, 0.12) !important;
-  box-shadow: 0 0 14px rgba(255, 59, 48, 0.3) !important;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--danger) 50%, transparent);
 }
 
 .tk-phone-dot {
@@ -197,18 +197,47 @@ body.has-modal .tk-phone-navbar-wrap,
   transform: translateX(-50%) translateY(24px) !important;
 }
 
+/* Kunci semua tombol dan interaksi di belakang dialog saat dialog/sheet/rentang waktu terbuka */
+body.has-modal .tk-phone-screen,
+.tk-phone-root.has-modal .tk-phone-screen,
+body:has(.tk-phone-overlay) .tk-phone-screen,
+.tk-phone-root:has(.tk-phone-overlay) .tk-phone-screen,
+body:has(.ov) .tk-phone-screen,
+body:has(.tk-overlay) .tk-phone-screen {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* Container Portal Dialog/Sheet di HP */
+.tk-phone-portal-root {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.tk-phone-portal-root:not(:empty) {
+  pointer-events: auto;
+}
+
+.tk-phone-portal-root > * {
+  pointer-events: auto !important;
+}
+
 /* Phone Bottom Sheet & Overlay (Terkurung di dalam Frame Android) */
 .tk-phone-overlay,
 .ov {
   position: absolute;
   inset: 0;
-  z-index: 100;
+  z-index: 120 !important;
   background: var(--ov);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  pointer-events: auto !important;
+  touch-action: none;
   animation: tk-overlay-fade 0.2s ease-out;
 }
 

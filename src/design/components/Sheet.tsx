@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { registerBackHandler } from '../../lib/device/backButton.ts';
 
 export interface SheetProps {
   isOpen: boolean;
@@ -31,6 +32,14 @@ export const Sheet: React.FC<SheetProps> = ({
     };
   }, [isOpen]);
 
+  // Tangani tombol back default Android saat sheet terbuka
+  useEffect(() => {
+    if (!isOpen || !onClose) return;
+    return registerBackHandler(() => {
+      onClose();
+      return true;
+    }, 70);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -59,7 +59,7 @@ export function useSwipeNav({
     if (trackRef.current) {
       trackRef.current.style.transition = dragging
         ? 'none'
-        : 'transform 220ms cubic-bezier(0, 0, 0.2, 1)';
+        : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
       trackRef.current.style.transform = `translate3d(calc(-${t} * 100%), 0, 0)`;
     }
 
@@ -72,7 +72,7 @@ export function useSwipeNav({
       const left = padding + t * itemW;
       indicatorRef.current.style.transition = dragging
         ? 'none'
-        : 'transform 220ms cubic-bezier(0, 0, 0.2, 1), width 220ms cubic-bezier(0, 0, 0.2, 1)';
+        : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), width 200ms cubic-bezier(0.16, 1, 0.3, 1)';
       indicatorRef.current.style.transform = `translate3d(${left}px, 0, 0)`;
       indicatorRef.current.style.width = `${itemW}px`;
     }
@@ -88,16 +88,17 @@ export function useSwipeNav({
       });
     }
 
-    // Throttle React state setProgress dengan requestAnimationFrame agar UI tidak lag saat drag/hold
-    if (rafIdRef.current === null) {
-      rafIdRef.current = requestAnimationFrame(() => {
+    // Saat dragging aktif, hindari re-render React agar gesture swipe terasa instan dan ringan
+    if (!dragging) {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
-        setProgress(tRef.current);
-      });
+      }
+      setProgress(t);
     }
   }, [tabs.length]);
 
-  // Animasi halus 240ms cubic-bezier menuju tab target (0 = Home, 1 = Riwayat, 2 = Akun)
+  // Animasi halus 200ms cubic-bezier menuju tab target (0 = Home, 1 = Riwayat, 2 = Akun)
   const animateTo = useCallback((targetIndex: number) => {
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
@@ -114,7 +115,7 @@ export function useSwipeNav({
     }
 
     if (trackRef.current) {
-      trackRef.current.style.transition = 'transform 240ms cubic-bezier(0.2, 0.9, 0.3, 1)';
+      trackRef.current.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
       trackRef.current.style.transform = `translate3d(calc(-${clampedTarget} * 100%), 0, 0)`;
     }
 
@@ -384,7 +385,7 @@ export function useSwipeNav({
     const absDy = Math.abs(dy);
 
     if (!hasDecidedDirectionRef.current) {
-      if (absDx < 6 && absDy < 6) {
+      if (absDx < 4 && absDy < 4) {
         return;
       }
 
@@ -397,12 +398,14 @@ export function useSwipeNav({
 
       // Jika sentuh area konten gulir (grid menu atau daftar riwayat):
       if (scrollableTargetRef.current) {
-        if (absDy >= 7) {
+        // Hanya kunci ke scroll vertikal jika gerakan murni vertikal dominan
+        if (absDy >= 12 && absDy > absDx * 1.5) {
           hasDecidedDirectionRef.current = true;
           isLockedOutRef.current = true;
           return;
         }
-        if (absDx >= 24 && absDx >= absDy * 2) {
+        // Swipe horizontal di atas scrollable: sangat responsif (absDx >= 8px)
+        if (absDx >= 8 && absDx >= absDy * 0.9) {
           hasDecidedDirectionRef.current = true;
           isDraggingRef.current = true;
           setIsDragging(true);
@@ -415,15 +418,15 @@ export function useSwipeNav({
         }
       }
 
-      // Scroll vertikal konten
-      if (absDy > absDx * 1.3 && absDy > 10) {
+      // Scroll vertikal konten di luar scrollable
+      if (absDy >= 12 && absDy > absDx * 1.5) {
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      // Swipe tab horizontal layar
-      if (absDx >= 10 && absDx >= absDy * 1.2) {
+      // Swipe tab horizontal layar: ringan dan langsung responsif (absDx >= 7px)
+      if (absDx >= 7 && absDx >= absDy * 0.85) {
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -448,12 +451,12 @@ export function useSwipeNav({
       const currIdx = activeIndexRef.current;
       let effectiveDx = dx;
       if (currIdx === 0 && dx > 0) {
-        effectiveDx = dx * 0.3;
+        effectiveDx = dx * 0.35;
       } else if (currIdx === tabs.length - 1 && dx < 0) {
-        effectiveDx = dx * 0.3;
+        effectiveDx = dx * 0.35;
       }
 
-      const containerWidth = containerRef.current?.clientWidth || 1024;
+      const containerWidth = containerRef.current?.clientWidth || 390;
       const deltaT = -effectiveDx / containerWidth;
       const newT = currIdx + deltaT;
       const clampedT = Math.max(-0.15, Math.min(tabs.length - 1 + 0.15, newT));
@@ -482,10 +485,11 @@ export function useSwipeNav({
     const totalDx = e.clientX - startXRef.current;
     const totalDt = Math.max(1, performance.now() - startTimeRef.current);
     const velocity = Math.abs(totalDx) / totalDt;
-    const containerWidth = containerRef.current?.clientWidth || 1024;
-    const threshold = Math.min(50, Math.max(35, containerWidth * 0.05));
+    const containerWidth = containerRef.current?.clientWidth || 390;
+    // Ambang batas swipe lebih ringan agar geser layar sangat gesit dan enteng
+    const threshold = Math.min(36, Math.max(20, containerWidth * 0.07));
 
-    const isFlick = velocity > 0.14 && Math.abs(totalDx) >= 16;
+    const isFlick = velocity > 0.09 && Math.abs(totalDx) >= 12;
     const isSwipe = Math.abs(totalDx) >= threshold;
 
     const currIdx = activeIndexRef.current;

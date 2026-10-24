@@ -5,6 +5,8 @@ import { useShopStore } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
 import { Toast } from '../../../design/components/Toast.tsx';
 import { Cashier } from '../../../lib/supabase/types.ts';
+import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
+import { registerBackHandler } from '../../../lib/device/backButton.ts';
 
 export interface PhoneAccountScreenProps {
   onOpenPrintMenu?: () => void;
@@ -46,6 +48,22 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     };
   }, [isAddCashierOpen, selectedCashierToRemove, isThemeOpen]);
 
+  // Tangani tombol back default Android saat dialog tambah/hapus kasir terbuka
+  useEffect(() => {
+    if (!isAddCashierOpen && !selectedCashierToRemove) return;
+    return registerBackHandler(() => {
+      if (selectedCashierToRemove) {
+        setSelectedCashierToRemove(null);
+        return true;
+      }
+      if (isAddCashierOpen) {
+        setIsAddCashierOpen(false);
+        return true;
+      }
+      return false;
+    }, 85);
+  }, [isAddCashierOpen, selectedCashierToRemove]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -60,12 +78,12 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
 
-    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak bisa dihapus: beri animasi merah menolak seperti numpad di tab
+    // Robertus Amaresi dan Puspitawati adalah kasir default yang tidak bisa dihapus: animasi merah menolak pada teks & getaran hp tanpa notifikasi toast
     if (isImmutableCashier(cashier.id, cashier.name)) {
       holdTimerRef.current = window.setTimeout(() => {
         setRejectingCashierId(cashier.id);
+        triggerHapticFeedback([40, 60, 40]);
         setTimeout(() => setRejectingCashierId(null), 500);
-        showToast('Kasir default tidak dapat dihapus');
         holdTimerRef.current = null;
       }, 420);
       return;
@@ -211,7 +229,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         {displayCashiers.map((cashier) => (
           <div
             key={cashier.id}
-            className={`tk-phone-row rw ${rejectingCashierId === cashier.id ? 'tk-row-rejecting' : ''}`}
+            className="tk-phone-row rw"
             onPointerDown={(e) => startHold(cashier, e)}
             onPointerUp={() => cancelHold()}
             onPointerCancel={() => cancelHold()}
@@ -222,11 +240,13 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
             }}
           >
             <b
+              className={rejectingCashierId === cashier.id ? 'tk-text-rejecting' : ''}
               style={{
                 fontSize: 'var(--t-md)',
                 lineHeight: 'var(--l-md)',
                 fontWeight: 600,
                 color: 'var(--ink)',
+                display: 'inline-block',
               }}
             >
               {cashier.name}
@@ -235,46 +255,57 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         ))}
       </div>
 
-      {/* 4. Tombol Pengaturan Tampilan Tema & Palet Sesuai Frame 5 PDF */}
+      {/* 4. Tombol Pengaturan Tampilan Tema & Cetak Menu Fisik (Kiri: Tampilan Lebih Lebar, Kanan: Icon Cetak Menu Fisik A4) */}
       <div
-        className="tk-phone-range-trigger rg g vb"
-        onClick={() => setIsThemeOpen(true)}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-label="Atur tampilan tema dan warna"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            setIsThemeOpen(true);
-          }
+        style={{
+          display: 'flex',
+          gap: '8px',
+          margin: '0 4px 16px',
+          boxSizing: 'border-box',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <i className="dotc" aria-hidden="true" />
-          <span>Tampilan</span>
-        </span>
-        <span style={{ color: 'var(--ink-3)' }}>▾</span>
+        <button
+          type="button"
+          className="tk-btn-appearance"
+          onClick={() => setIsThemeOpen(true)}
+          aria-haspopup="dialog"
+          aria-label="Atur tampilan tema dan warna"
+          style={{ flex: 1, minWidth: 0, height: '48px', boxSizing: 'border-box' }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <i className="tk-dot-color" />
+            <span>Tampilan</span>
+          </span>
+          <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>▾</span>
+        </button>
+
+        <button
+          type="button"
+          className="tk-btn-icon-circle"
+          onClick={() => {
+            if (onOpenPrintMenu) onOpenPrintMenu();
+          }}
+          aria-label="Cetak menu fisik (A4)"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" rx="1" />
+          </svg>
+        </button>
       </div>
 
-      {/* 5. Tombol Cetak Menu (Tanpa Emoji) */}
-      <button
-        type="button"
-        className="tk-btn-flat"
-        onClick={() => {
-          if (onOpenPrintMenu) onOpenPrintMenu();
-        }}
-        style={{
-          width: '100%',
-          height: '48px',
-          marginBottom: '16px',
-          fontSize: 'var(--t-sm)',
-          fontWeight: 700,
-        }}
-      >
-        Cetak menu fisik (A4)
-      </button>
-
-      {/* 6. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
+      {/* 5. Bottom Sheet Pemilih Tampilan Tema & 6 Palet Warna */}
       <PhoneThemeSheet
         isOpen={isThemeOpen}
         onClose={() => setIsThemeOpen(false)}

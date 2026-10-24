@@ -9,6 +9,7 @@ import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { SwipePager } from '../tablet/SwipePager.tsx';
 import { useSwipeNav } from '../tablet/useSwipeNav.ts';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
+import { registerBackHandler } from '../../lib/device/backButton.ts';
 
 const PHONE_NAV_TABS: NavItem[] = ['Home', 'Riwayat', 'Akun'];
 
@@ -50,6 +51,29 @@ export const PhoneRoot: React.FC = () => {
   });
 
   const isModalOrOverlayActive = Boolean(selectedOrderId || isPrintMenuOpen);
+
+  // Tangani tombol back default Android agar tidak menutup aplikasi
+  useEffect(() => {
+    return registerBackHandler(() => {
+      // 1. Jika ada overlay rincian pesanan terbuka, tutup rincian dan kembali ke layar sebelumnya
+      if (selectedOrderId) {
+        setSelectedOrderId(null);
+        return true;
+      }
+      // 2. Jika ada preview cetak menu terbuka, tutup pratinjau
+      if (isPrintMenuOpen) {
+        setIsPrintMenuOpen(false);
+        return true;
+      }
+      // 3. Jika sedang di tab selain Home, kembali ke Home
+      if (activeTab !== 'Home') {
+        scrollToTab('Home');
+        return true;
+      }
+      // 4. Jika di Home dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
+      return true;
+    }, 10);
+  }, [selectedOrderId, isPrintMenuOpen, activeTab, scrollToTab]);
 
   // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
   if (showIntro) {
@@ -179,12 +203,7 @@ export const PhoneRoot: React.FC = () => {
       {/* Container Portal untuk Dialog & Sheet agar terkurung rapi di dalam Frame Layar Android */}
       <div
         id="tk-portal-root"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 120,
-          pointerEvents: 'none',
-        }}
+        className="tk-phone-portal-root"
       />
     </div>
   );

@@ -366,11 +366,15 @@
   white-space: nowrap;
   display: grid;
   place-items: center;
-  color: var(--ink);
+  color: var(--ink-3);
   cursor: pointer;
   background: transparent;
   border: none;
-  transition: color 0.2s ease, transform 0.15s ease;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+}
+
+.tk-navbar-item:hover {
+  color: var(--ink);
 }
 
 /* Ketukan biasa (tap): respons fisik instan mikro pada tombol yang disentuh tanpa menekan frame navbar */
@@ -385,9 +389,10 @@
 }
 
 .tk-navbar-item.active {
-  color: var(--on-accent);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  font-weight: 700;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  font-weight: 800;
+  opacity: 1 !important;
 }
 
 .tk-navbar-item:focus-visible {
@@ -575,13 +580,44 @@ body.tk-modal-open .tk-navbar,
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  width: 100%;
+  box-sizing: border-box;
   font-weight: 700;
   font-size: var(--t-sm);
   line-height: var(--l-sm);
   border: 1px solid var(--ctl-line);
   background: var(--ctl);
   color: var(--ink);
+}
+
+.tk-btn-icon-circle {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+  border: 1px solid var(--ctl-line);
+  background: var(--ctl);
+  color: var(--ink);
+  flex: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.tk-btn-icon-circle:active {
+  transform: scale(0.95);
+}
+
+.tk-btn-icon-circle svg {
+  display: block;
+  margin: auto;
+  flex: none;
 }
 
 .tk-dot-color {
