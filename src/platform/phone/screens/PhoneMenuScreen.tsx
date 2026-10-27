@@ -755,130 +755,132 @@ export const PhoneMenuScreen: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) - Sejajar Rapi Presisi */}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                {/* Box Foto Makanan (52x52) */}
-                <div
-                  onClick={() => handlePhotoBoxClick('edit')}
-                  onPointerDown={() => handlePointerDownFoodPhoto('edit')}
-                  onPointerUp={handlePointerUpFoodPhoto}
-                  onPointerLeave={handlePointerUpFoodPhoto}
-                  onPointerCancel={handlePointerUpFoodPhoto}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
-                  title={editPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
+              {/* Baris Pertama: Label Nama Menu mulai dari Box Foto */}
+              <div>
+                <label
                   style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    display: 'grid',
-                    placeItems: 'center',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    touchAction: 'none',
+                    display: 'block',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: 'var(--ink-3)',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
                   }}
                 >
-                  {editPhotoPath ? (
-                    <img
-                      src={editPhotoPath}
-                      alt="Foto makanan"
-                      draggable={false}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        WebkitTouchCallout: 'none',
-                        zIndex: 1,
-                      }}
-                    />
-                  ) : (
-                    <svg
-                      width="22"
-                      height="22"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--ink-3)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                      <circle cx="9" cy="9" r="2" />
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                    </svg>
-                  )}
-
-                  {/* Shield pelindung anti-copy / anti-hold */}
+                  Nama Menu
+                </label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {/* Box Foto Makanan (52x52) */}
                   <div
-                    style={{ position: 'absolute', inset: 0, zIndex: 2 }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  />
-
-                  {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
-                  <div
+                    onClick={() => handlePhotoBoxClick('edit')}
+                    onPointerDown={() => handlePointerDownFoodPhoto('edit')}
+                    onPointerUp={handlePointerUpFoodPhoto}
+                    onPointerLeave={handlePointerUpFoodPhoto}
+                    onPointerCancel={handlePointerUpFoodPhoto}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
+                    title={editPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
                     style={{
-                      position: 'absolute',
-                      bottom: '2px',
-                      right: '2px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: 'var(--r-pill)',
-                      background: 'rgba(28, 20, 18, 0.82)',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
                       border: '1px solid var(--ctl-line)',
+                      overflow: 'hidden',
+                      position: 'relative',
                       display: 'grid',
                       placeItems: 'center',
-                      zIndex: 3,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-                      color: 'var(--ink)',
-                      pointerEvents: 'none',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      touchAction: 'none',
                     }}
                   >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </div>
-                </div>
+                    {editPhotoPath ? (
+                      <img
+                        src={editPhotoPath}
+                        alt="Foto makanan"
+                        draggable={false}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          pointerEvents: 'none',
+                          userSelect: 'none',
+                          WebkitUserSelect: 'none',
+                          WebkitTouchCallout: 'none',
+                          zIndex: 1,
+                        }}
+                      />
+                    ) : (
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--ink-3)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    )}
 
-                {/* Input Nama Menu (52px) */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      color: 'var(--ink-3)',
-                      marginBottom: '6px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    Nama Menu
-                  </label>
+                    {/* Shield pelindung anti-copy / anti-hold */}
+                    <div
+                      style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    />
+
+                    {/* Icon Sunting Liquid Glass di ujung kanan bawah (Sesuai Dialog Tablet) */}
+                    <div
+                      className="g-liquid"
+                      style={{
+                        position: 'absolute',
+                        bottom: '3px',
+                        right: '3px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: 'var(--r-pill)',
+                        border: '1px solid rgba(255, 255, 255, 0.40)',
+                        background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        zIndex: 3,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+                        color: 'var(--ink)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Input Nama Menu (52px) */}
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     style={{
-                      width: '100%',
+                      flex: 1,
+                      minWidth: 0,
                       height: '52px',
                       padding: '0 14px',
                       borderRadius: 'var(--r-md)',
@@ -1047,126 +1049,127 @@ export const PhoneMenuScreen: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) - Sejajar Rapi Presisi */}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                {/* Box Foto Makanan (52x52) */}
-                <div
-                  className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
-                  onClick={() => handlePhotoBoxClick('add')}
-                  onPointerDown={() => handlePointerDownFoodPhoto('add')}
-                  onPointerUp={handlePointerUpFoodPhoto}
-                  onPointerLeave={handlePointerUpFoodPhoto}
-                  onPointerCancel={handlePointerUpFoodPhoto}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
-                  title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
+              {/* Baris Pertama: Label Nama Menu mulai dari Box Foto */}
+              <div>
+                <label
                   style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: shakeField === 'photo' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    display: 'grid',
-                    placeItems: 'center',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    touchAction: 'none',
+                    display: 'block',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: shakeField === 'name' ? 'var(--danger)' : 'var(--ink-3)',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    transition: 'color 0.15s ease',
                   }}
                 >
-                  {addPhotoPath ? (
-                    <img
-                      src={addPhotoPath}
-                      alt="Foto makanan baru"
-                      draggable={false}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        WebkitTouchCallout: 'none',
-                        zIndex: 1,
-                      }}
-                    />
-                  ) : (
-                    <svg
-                      width="22"
-                      height="22"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={shakeField === 'photo' ? 'var(--danger)' : 'var(--ink-3)'}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                      <circle cx="9" cy="9" r="2" />
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                    </svg>
-                  )}
-
-                  {/* Shield pelindung anti-copy / anti-hold */}
+                  Nama Menu
+                </label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {/* Box Foto Makanan (52x52) */}
                   <div
-                    style={{ position: 'absolute', inset: 0, zIndex: 2 }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  />
-
-                  {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
-                  <div
+                    className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
+                    onClick={() => handlePhotoBoxClick('add')}
+                    onPointerDown={() => handlePointerDownFoodPhoto('add')}
+                    onPointerUp={handlePointerUpFoodPhoto}
+                    onPointerLeave={handlePointerUpFoodPhoto}
+                    onPointerCancel={handlePointerUpFoodPhoto}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
+                    title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
                     style={{
-                      position: 'absolute',
-                      bottom: '2px',
-                      right: '2px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: 'var(--r-pill)',
-                      background: 'rgba(28, 20, 18, 0.82)',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                      border: '1px solid var(--ctl-line)',
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
+                      border: shakeField === 'photo' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
+                      overflow: 'hidden',
+                      position: 'relative',
                       display: 'grid',
                       placeItems: 'center',
-                      zIndex: 3,
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
-                      color: 'var(--ink)',
-                      pointerEvents: 'none',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      touchAction: 'none',
                     }}
                   >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </div>
-                </div>
+                    {addPhotoPath ? (
+                      <img
+                        src={addPhotoPath}
+                        alt="Foto makanan baru"
+                        draggable={false}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          pointerEvents: 'none',
+                          userSelect: 'none',
+                          WebkitUserSelect: 'none',
+                          WebkitTouchCallout: 'none',
+                          zIndex: 1,
+                        }}
+                      />
+                    ) : (
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={shakeField === 'photo' ? 'var(--danger)' : 'var(--ink-3)'}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    )}
 
-                {/* Input Nama Menu (52px) */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      color: shakeField === 'name' ? 'var(--danger)' : 'var(--ink-3)',
-                      marginBottom: '6px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      transition: 'color 0.15s ease',
-                    }}
-                  >
-                    Nama Menu
-                  </label>
+                    {/* Shield pelindung anti-copy / anti-hold */}
+                    <div
+                      style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    />
+
+                    {/* Icon Sunting Liquid Glass di ujung kanan bawah (Sesuai Dialog Tablet) */}
+                    <div
+                      className="g-liquid"
+                      style={{
+                        position: 'absolute',
+                        bottom: '3px',
+                        right: '3px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: 'var(--r-pill)',
+                        border: '1px solid rgba(255, 255, 255, 0.40)',
+                        background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        zIndex: 3,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+                        color: 'var(--ink)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Input Nama Menu (52px) */}
                   <input
                     ref={addNameInputRef}
                     type="text"
@@ -1178,7 +1181,8 @@ export const PhoneMenuScreen: React.FC = () => {
                       if (shakeField === 'name') setShakeField(null);
                     }}
                     style={{
-                      width: '100%',
+                      flex: 1,
+                      minWidth: 0,
                       height: '52px',
                       padding: '0 14px',
                       borderRadius: 'var(--r-md)',

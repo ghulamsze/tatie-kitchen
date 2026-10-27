@@ -161,6 +161,24 @@ export const CropProfileDialog: React.FC<CropProfileDialogProps> = ({
     }
   };
 
+  const handleApplyCropRef = useRef(handleApplyCrop);
+  handleApplyCropRef.current = handleApplyCrop;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !isProcessing) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleApplyCropRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isProcessing]);
+
   return (
     <Dialog
       isOpen={isOpen}

@@ -81,7 +81,7 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
         letterSpacing: '0',
         userSelect: 'none',
         height: '32px',
-        paddingRight: '4px',
+        paddingRight: '8px',
       }}
     >
       <span
@@ -119,7 +119,7 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
                   justifyContent: 'center',
                   position: 'relative',
                   height: '100%',
-                  width: isVisible ? '0.28em' : '0px',
+                  width: isVisible ? '0.30em' : '0px',
                   opacity: isVisible ? 1 : 0,
                   overflow: 'hidden',
                   transition:
@@ -151,9 +151,9 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
 
           const digitWidth = isVisible
             ? char === '1'
-              ? '0.40em'
-              : '0.62em'
-            : '0.52em';
+              ? '0.44em'
+              : '0.72em'
+            : '0.54em';
 
           return (
             <span

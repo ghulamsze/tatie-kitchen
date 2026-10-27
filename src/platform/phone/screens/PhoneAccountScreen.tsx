@@ -345,28 +345,29 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
             }}
           />
 
-          {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
+          {/* Icon Sunting Liquid Glass di ujung kanan bawah (Sesuai Dialog Tablet) */}
           <div
+            className="g-liquid"
             style={{
               position: 'absolute',
               bottom: '3px',
               right: '3px',
-              width: '20px',
-              height: '20px',
+              width: '22px',
+              height: '22px',
               borderRadius: 'var(--r-pill)',
-              background: 'rgba(28, 20, 18, 0.85)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              border: '1px solid var(--ctl-line)',
+              border: '1px solid rgba(255, 255, 255, 0.40)',
+              background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               display: 'grid',
               placeItems: 'center',
               zIndex: 3,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
               color: 'var(--ink)',
               pointerEvents: 'none',
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
