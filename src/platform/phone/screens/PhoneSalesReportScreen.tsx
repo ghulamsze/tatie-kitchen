@@ -473,8 +473,8 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-          gap: '8px',
-          margin: '0 4px 16px',
+          gap: '14px',
+          margin: '0 4px 20px',
           flexShrink: 0,
         }}
       >

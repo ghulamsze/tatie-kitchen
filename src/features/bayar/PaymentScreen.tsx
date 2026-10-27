@@ -437,24 +437,19 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           <button
             type="button"
             onClick={() => handleKeypadPress('Bungkus')}
-            aria-label="Bungkus"
+            aria-label="Pesanan Bungkus"
             title="Pesanan Bungkus"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              height: '52px',
-              boxSizing: 'border-box',
+              display: 'grid',
+              placeItems: 'center',
               background: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
               color: tableInput === 'Bungkus' ? 'var(--on-accent)' : undefined,
               borderColor: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
             }}
           >
             <svg
-              width="20"
-              height="20"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -467,7 +462,6 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               <line x1="3" y1="6" x2="21" y2="6" />
               <path d="M16 10a4 4 0 0 1-8 0" />
             </svg>
-            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em' }}>Bungkus</span>
           </button>
         </div>
       </div>
