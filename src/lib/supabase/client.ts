@@ -22,21 +22,29 @@ const supabaseAnonKey =
   (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_ANON_KEY)) ||
   DEFAULT_SUPABASE_ANON_KEY;
 
-// Kunci rahasia service role untuk bypass RLS pada mutasi kasir/admin
+// Kunci rahasia service role untuk bypass RLS pada lingkungan server/backend.
+// PERHATIAN KEAMANAN: Di lingkungan browser, gateway Supabase menolak keras kunci 'sb_secret_'
+// dengan 401 Unauthorized: "Forbidden use of secret API key in browser".
+// Oleh karena itu, di browser selalu gunakan publishable anon key.
+const isBrowser = typeof window !== 'undefined';
 const SECRET_PREFIX = ['sb', 'secret'].join('_');
 const SECRET_TOKEN = 'OH2xreJItwC9RiOq3lvZyQ_ef_ELb4Y';
 export const DEFAULT_SUPABASE_SECRET_KEY = `${SECRET_PREFIX}_${SECRET_TOKEN}`;
 
-export const supabaseSecretKey =
-  env?.VITE_SUPABASE_SECRET_KEY ||
-  env?.SUPABASE_SECRET_KEY ||
-  env?.NEXT_PUBLIC_SUPABASE_SECRET_KEY ||
-  (typeof process !== 'undefined'
-    ? (process.env?.VITE_SUPABASE_SECRET_KEY || process.env?.SUPABASE_SECRET_KEY)
-    : '') ||
-  DEFAULT_SUPABASE_SECRET_KEY;
+export const supabaseSecretKey = isBrowser
+  ? supabaseAnonKey
+  : (env?.VITE_SUPABASE_SECRET_KEY ||
+     env?.SUPABASE_SECRET_KEY ||
+     env?.NEXT_PUBLIC_SUPABASE_SECRET_KEY ||
+     (typeof process !== 'undefined'
+       ? (process.env?.VITE_SUPABASE_SECRET_KEY || process.env?.SUPABASE_SECRET_KEY)
+       : '') ||
+     DEFAULT_SUPABASE_SECRET_KEY);
 
 export function getSupabaseSecretKey(): string {
+  if (typeof window !== 'undefined') {
+    return supabaseAnonKey;
+  }
   return supabaseSecretKey;
 }
 
@@ -62,7 +70,6 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
 // Klien Supabase Admin / Service Role
 // Di lingkungan browser, jangan pernah mengirim kunci rahasia (sb_secret_) karena gateway Supabase
 // akan langsung menolak dengan 401: "Forbidden use of secret API key in browser".
-const isBrowser = typeof window !== 'undefined';
 const effectiveAdminKey = isBrowser ? supabaseAnonKey : (supabaseSecretKey || supabaseAnonKey);
 
 export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(

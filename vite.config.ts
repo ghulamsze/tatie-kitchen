@@ -44,8 +44,8 @@ export default defineConfig(({ mode }) => {
         },
       },
     ],
-    // Mengizinkan prefix NEXT_PUBLIC_, SUPABASE_, dan VITE_
-    envPrefix: ['VITE_', 'SUPABASE_', 'NEXT_PUBLIC_'],
+    // Mengizinkan prefix aman: NEXT_PUBLIC_, SUPABASE publik, dan VITE_ (tanpa secret key)
+    envPrefix: ['VITE_', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_'],
     define: {
       'process.env.SUPABASE_URL': JSON.stringify(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL || env.VITE_SUPABASE_URL || ''),
       'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || ''),

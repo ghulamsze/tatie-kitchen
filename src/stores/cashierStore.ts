@@ -184,27 +184,15 @@ export const useCashierStore = create<CashierState>((set) => ({
 
         // Ambil mapping avatar terbaru dari Supabase Storage jika terhubung
         try {
-          const secretKey = getSupabaseSecretKey();
-          const listRes = await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/list/avatars`, {
-            method: 'POST',
-            headers: {
-              apikey: secretKey,
-              Authorization: `Bearer ${secretKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prefix: '', limit: 100 }),
-          });
-          if (listRes.ok) {
-            const files = await listRes.json();
-            if (Array.isArray(files)) {
-              const avatarMap = getLocalCashierAvatars();
-              files.forEach((f: { name: string; updated_at?: string }) => {
-                const id = f.name.replace(/\.[^/.]+$/, '');
-                avatarMap[id] = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${f.name}?t=${new Date(f.updated_at || Date.now()).getTime()}`;
-              });
-              if (typeof localStorage !== 'undefined') {
-                localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(avatarMap));
-              }
+          const { data: files } = await supabase.storage.from('avatars').list('', { limit: 100 });
+          if (Array.isArray(files)) {
+            const avatarMap = getLocalCashierAvatars();
+            files.forEach((f: { name: string; updated_at?: string | null }) => {
+              const id = f.name.replace(/\.[^/.]+$/, '');
+              avatarMap[id] = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${f.name}?t=${new Date(f.updated_at || Date.now()).getTime()}`;
+            });
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(avatarMap));
             }
           }
         } catch {}
@@ -275,7 +263,6 @@ export const useCashierStore = create<CashierState>((set) => ({
     // Simpan ke Supabase secara native atau REST
     if (isSupabaseConfigured()) {
       try {
-        const secretKey = getSupabaseSecretKey();
         const payload = {
           shop_id: shopId,
           name: trimmed,
@@ -284,6 +271,7 @@ export const useCashierStore = create<CashierState>((set) => ({
 
         if (Capacitor.isNativePlatform()) {
           // Native Android HTTP request: lolos dari batasan browser user-agent
+          const secretKey = getSupabaseSecretKey();
           const res = await CapacitorHttp.request({
             url: 'https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers',
             method: 'POST',
@@ -315,34 +303,24 @@ export const useCashierStore = create<CashierState>((set) => ({
             }
           }
         } else {
-          // Browser fetch
-          const res = await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers`, {
-            method: 'POST',
-            headers: {
-              apikey: secretKey,
-              Authorization: `Bearer ${secretKey}`,
-              'Content-Type': 'application/json',
-              Prefer: 'return=representation',
-            },
-            body: JSON.stringify(payload),
-          });
+          // Browser environment: gunakan Supabase client resmi (Publishable/Anon Key)
+          const { data: inserted, error: insertErr } = await (supabase.from('cashiers') as any)
+            .insert(payload)
+            .select();
 
-          if (res.ok) {
-            const rows = await res.json();
-            if (Array.isArray(rows) && rows.length > 0) {
-              const remoteCashier = rows[0] as Cashier;
-              set((state) => {
-                const updated = deduplicateCashiers(
-                  state.cashiers.map((c) => (c.id === tempId ? remoteCashier : c))
-                );
-                try {
-                  localStorage.setItem('tk_cashiers', JSON.stringify(updated));
-                } catch {}
-                return { cashiers: updated };
-              });
-              broadcastCashierChanged('add', remoteCashier.id, trimmed).catch(() => {});
-              return remoteCashier;
-            }
+          if (!insertErr && Array.isArray(inserted) && inserted.length > 0) {
+            const remoteCashier = inserted[0] as Cashier;
+            set((state) => {
+              const updated = deduplicateCashiers(
+                state.cashiers.map((c) => (c.id === tempId ? remoteCashier : c))
+              );
+              try {
+                localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+              } catch {}
+              return { cashiers: updated };
+            });
+            broadcastCashierChanged('add', remoteCashier.id, trimmed).catch(() => {});
+            return remoteCashier;
           }
         }
       } catch (err) {
@@ -386,8 +364,8 @@ export const useCashierStore = create<CashierState>((set) => ({
 
     if (isSupabaseConfigured()) {
       try {
-        const secretKey = getSupabaseSecretKey();
         if (Capacitor.isNativePlatform()) {
+          const secretKey = getSupabaseSecretKey();
           await CapacitorHttp.request({
             url: `https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`,
             method: 'PATCH',
@@ -400,16 +378,10 @@ export const useCashierStore = create<CashierState>((set) => ({
             data: { active: false },
           });
         } else {
-          await fetch(`https://fiaetjtqhvdewqffliai.supabase.co/rest/v1/cashiers?id=eq.${id}`, {
-            method: 'PATCH',
-            headers: {
-              apikey: secretKey,
-              Authorization: `Bearer ${secretKey}`,
-              'Content-Type': 'application/json',
-              Prefer: 'return=representation',
-            },
-            body: JSON.stringify({ active: false }),
-          });
+          // Browser environment: gunakan Supabase client resmi (Publishable/Anon Key)
+          await (supabase.from('cashiers') as any)
+            .update({ active: false })
+            .eq('id', id);
         }
       } catch (err) {
         logError('cashierStore:removeCashier_rest_exception', err);
@@ -476,17 +448,24 @@ export const useCashierStore = create<CashierState>((set) => ({
 
     // 2. Upload ke Supabase Storage (Database)
     try {
-      const secretKey = getSupabaseSecretKey();
-      await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars/${cashierId}.jpg`, {
-        method: 'POST',
-        headers: {
-          apikey: secretKey,
-          Authorization: `Bearer ${secretKey}`,
-          'x-upsert': 'true',
-          'Content-Type': blob.type || 'image/jpeg',
-        },
-        body: blob,
-      });
+      if (Capacitor.isNativePlatform()) {
+        const secretKey = getSupabaseSecretKey();
+        await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars/${cashierId}.jpg`, {
+          method: 'POST',
+          headers: {
+            apikey: secretKey,
+            Authorization: `Bearer ${secretKey}`,
+            'x-upsert': 'true',
+            'Content-Type': blob.type || 'image/jpeg',
+          },
+          body: blob,
+        });
+      } else {
+        await supabase.storage.from('avatars').upload(`${cashierId}.jpg`, blob, {
+          upsert: true,
+          contentType: blob.type || 'image/jpeg',
+        });
+      }
 
       // Simpan di local cache
       saveLocalCashierAvatar(cashierId, publicUrl);
@@ -531,16 +510,20 @@ export const useCashierStore = create<CashierState>((set) => ({
 
     // 2. Hapus dari database Supabase Storage
     try {
-      const secretKey = getSupabaseSecretKey();
-      await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars`, {
-        method: 'DELETE',
-        headers: {
-          apikey: secretKey,
-          Authorization: `Bearer ${secretKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prefixes: [`${cashierId}.jpg`] }),
-      });
+      if (Capacitor.isNativePlatform()) {
+        const secretKey = getSupabaseSecretKey();
+        await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars`, {
+          method: 'DELETE',
+          headers: {
+            apikey: secretKey,
+            Authorization: `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prefixes: [`${cashierId}.jpg`] }),
+        });
+      } else {
+        await supabase.storage.from('avatars').remove([`${cashierId}.jpg`]);
+      }
       // Broadcast hapus avatar ke semua device
       await broadcastCashierAvatarChanged(cashierId, '');
     } catch (err) {
