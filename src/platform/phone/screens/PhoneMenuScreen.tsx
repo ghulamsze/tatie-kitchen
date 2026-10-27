@@ -4,6 +4,7 @@ import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
+import { registerBackHandler } from '../../../lib/device/backButton.ts';
 
 function formatThousands(value: number | string): string {
   const digits = String(value).replace(/\D/g, '');
@@ -34,7 +35,12 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || groups[0];
+  // Urutkan grup secara alfabetis A-Z sesuai instruksi
+  const sortedGroups = useMemo(() => {
+    return [...groups].sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }, [groups]);
+
+  const selectedGroup = sortedGroups.find((g) => g.id === selectedGroupId) || sortedGroups[0];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -114,7 +120,7 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
         </svg>
       </button>
 
-      {/* Dropdown / Dropup Options Popup */}
+      {/* Dropdown / Dropup Options Popup (Liquid Glass Pekat & Blur 28px) */}
       {isOpen && (
         <div
           role="listbox"
@@ -126,19 +132,19 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
             left: 0,
             right: 0,
             zIndex: 60,
-            background: 'color-mix(in srgb, var(--acrylic-bg) 95%, #000 5%)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            background: 'color-mix(in srgb, var(--fl-bg) 96%, #000 4%)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
             borderRadius: 'var(--r-md)',
             border: '1px solid var(--ctl-line)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
-            maxHeight: '190px',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.65)',
+            maxHeight: '220px',
             overflowY: 'auto',
             padding: '4px',
             animation: 'tk-fade-in 0.15s ease',
           }}
         >
-          {groups.map((g) => {
+          {sortedGroups.map((g) => {
             const isSelected = g.id === selectedGroupId;
             return (
               <button
@@ -260,9 +266,11 @@ export const PhoneMenuScreen: React.FC = () => {
     }, 600);
   };
 
-  const handlePointerDownFoodPhoto = () => {
+  const handlePointerDownFoodPhoto = (mode: 'add' | 'edit') => {
+    setTargetPhotoMode(mode);
     didTriggerFoodHoldRef.current = false;
-    if (!addPhotoPath) return;
+    const photo = mode === 'add' ? addPhotoPath : editPhotoPath;
+    if (!photo) return;
     foodHoldTimerRef.current = setTimeout(() => {
       didTriggerFoodHoldRef.current = true;
       setIsPreviewFoodOpen(true);
@@ -276,18 +284,54 @@ export const PhoneMenuScreen: React.FC = () => {
     }
   };
 
-  const handlePhotoBoxClick = () => {
+  const handlePhotoBoxClick = (mode: 'add' | 'edit') => {
     if (didTriggerFoodHoldRef.current) {
       didTriggerFoodHoldRef.current = false;
       return;
     }
-    if (addPhotoPath) {
+    setTargetPhotoMode(mode);
+    const photo = mode === 'add' ? addPhotoPath : editPhotoPath;
+    if (photo) {
       setIsPhotoActionsOpen(true);
     } else {
-      setTargetPhotoMode('add');
       foodFileInputRef.current?.click();
     }
   };
+
+  // Tangani tombol ESC pada keyboard (Windows) & Tombol Back hardware/gestur (Android)
+  useEffect(() => {
+    if (!isCropFoodOpen && !isPreviewFoodOpen && !isPhotoActionsOpen && !isAddOpen && !editingItem) {
+      return undefined;
+    }
+
+    return registerBackHandler(() => {
+      if (isCropFoodOpen) {
+        setIsCropFoodOpen(false);
+        if (cropFoodImageSrc) {
+          URL.revokeObjectURL(cropFoodImageSrc);
+          setCropFoodImageSrc(null);
+        }
+        return true;
+      }
+      if (isPreviewFoodOpen) {
+        setIsPreviewFoodOpen(false);
+        return true;
+      }
+      if (isPhotoActionsOpen) {
+        setIsPhotoActionsOpen(false);
+        return true;
+      }
+      if (isAddOpen) {
+        setIsAddOpen(false);
+        return true;
+      }
+      if (editingItem) {
+        setEditingItem(null);
+        return true;
+      }
+      return false;
+    }, 70);
+  }, [isCropFoodOpen, isPreviewFoodOpen, isPhotoActionsOpen, isAddOpen, editingItem, cropFoodImageSrc]);
 
   // Filter items sesuai kategori dan pencarian
   const filteredItems = useMemo(() => {
@@ -326,8 +370,11 @@ export const PhoneMenuScreen: React.FC = () => {
     setEditPrice(item.price_idr);
     setEditPriceStr(formatThousands(item.price_idr));
     setEditAvailable(item.available);
-    setEditGroupId(item.group_id);
+    let gid = item.group_id;
+    if (gid.startsWith('g-makanan')) gid = 'g-makanan';
+    setEditGroupId(gid);
     setEditPhotoPath(item.photo_path || null);
+    setTargetPhotoMode('edit');
   };
 
   const handleSaveEdit = async () => {
@@ -674,177 +721,180 @@ export const PhoneMenuScreen: React.FC = () => {
               >
                 Ubah Detail Menu
               </b>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: editAvailable ? 'var(--accent)' : 'var(--ink-3)' }}>
-                  {editAvailable ? 'Tersedia' : 'Habis'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setEditAvailable(!editAvailable)}
-                  aria-label={editAvailable ? 'Tersedia' : 'Habis'}
-                  title={editAvailable ? 'Tersedia' : 'Habis'}
+              <button
+                type="button"
+                onClick={() => setEditAvailable(!editAvailable)}
+                aria-label={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                title={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                style={{
+                  width: '44px',
+                  height: '24px',
+                  borderRadius: 'var(--r-pill)',
+                  background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+                  border: 'none',
+                  padding: '2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  transition: 'background 0.2s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <div
                   style={{
-                    width: '44px',
-                    height: '24px',
+                    width: '20px',
+                    height: '20px',
                     borderRadius: 'var(--r-pill)',
-                    background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box',
-                    transition: 'background 0.2s ease',
+                    background: '#ffffff',
+                    transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
+                    transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
-                >
-                  <div
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                    }}
-                  />
-                </button>
-              </div>
+                />
+              </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-              {/* Foto Makanan */}
-              <div>
-                <label
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
+              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) - Sejajar Rapi Presisi */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                {/* Box Foto Makanan (52x52) */}
+                <div
+                  onClick={() => handlePhotoBoxClick('edit')}
+                  onPointerDown={() => handlePointerDownFoodPhoto('edit')}
+                  onPointerUp={handlePointerUpFoodPhoto}
+                  onPointerLeave={handlePointerUpFoodPhoto}
+                  onPointerCancel={handlePointerUpFoodPhoto}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
+                  title={editPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
                   style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Foto Makanan (1:1)
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: 'var(--r-md)',
-                      background: 'var(--ctl)',
-                      border: '1px solid var(--ctl-line)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      display: 'grid',
-                      placeItems: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {editPhotoPath ? (
-                      <img
-                        src={editPhotoPath}
-                        alt="Foto makanan"
-                        draggable={false}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--ink-3)"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                        <circle cx="9" cy="9" r="2" />
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                      </svg>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetPhotoMode('edit');
-                        foodFileInputRef.current?.click();
-                      }}
-                      style={{
-                        flex: 1,
-                        height: '38px',
-                        borderRadius: 'var(--r-md)',
-                        background: 'var(--ctl)',
-                        border: '1px solid var(--ctl-line)',
-                        color: 'var(--ink)',
-                        fontSize: 'var(--t-xs)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {editPhotoPath ? 'Ganti Foto' : 'Pilih Foto (1:1)'}
-                    </button>
-                    {editPhotoPath && (
-                      <button
-                        type="button"
-                        onClick={() => setEditPhotoPath(null)}
-                        style={{
-                          height: '38px',
-                          padding: '0 12px',
-                          borderRadius: 'var(--r-md)',
-                          background: 'transparent',
-                          border: '1px solid var(--ctl-line)',
-                          color: 'var(--danger)',
-                          fontSize: 'var(--t-xs)',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Hapus
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Nama Menu
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    padding: '0 12px',
+                    width: '52px',
+                    height: '52px',
                     borderRadius: 'var(--r-md)',
                     background: 'var(--ctl)',
                     border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
+                    cursor: 'pointer',
                     boxSizing: 'border-box',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    touchAction: 'none',
                   }}
-                />
+                >
+                  {editPhotoPath ? (
+                    <img
+                      src={editPhotoPath}
+                      alt="Foto makanan"
+                      draggable={false}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
+                        zIndex: 1,
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--ink-3)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                  )}
+
+                  {/* Shield pelindung anti-copy / anti-hold */}
+                  <div
+                    style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  />
+
+                  {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '2px',
+                      right: '2px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: 'var(--r-pill)',
+                      background: 'rgba(28, 20, 18, 0.82)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      border: '1px solid var(--ctl-line)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      zIndex: 3,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                      color: 'var(--ink)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Input Nama Menu (52px) */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: 'var(--ink-3)',
+                      marginBottom: '6px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Nama Menu
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '52px',
+                      padding: '0 14px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
+                      border: '1px solid var(--ctl-line)',
+                      color: 'var(--ink)',
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 700,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
               </div>
 
+              {/* Baris Kedua: Harga Jual */}
               <div>
                 <label
                   style={{
@@ -904,11 +954,13 @@ export const PhoneMenuScreen: React.FC = () => {
                 </div>
               </div>
 
+              {/* Baris Ketiga: Kategori Menu (Drop Up) */}
               <CategoryDropdown
-                label="Kategori"
+                label="Kategori Menu"
                 selectedGroupId={editGroupId}
                 groups={groups}
                 onSelectGroup={(id) => setEditGroupId(id)}
+                direction="up"
               />
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
@@ -995,13 +1047,13 @@ export const PhoneMenuScreen: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) */}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                {/* Box Foto Makanan */}
+              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) - Sejajar Rapi Presisi */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                {/* Box Foto Makanan (52x52) */}
                 <div
                   className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
-                  onClick={handlePhotoBoxClick}
-                  onPointerDown={handlePointerDownFoodPhoto}
+                  onClick={() => handlePhotoBoxClick('add')}
+                  onPointerDown={() => handlePointerDownFoodPhoto('add')}
                   onPointerUp={handlePointerUpFoodPhoto}
                   onPointerLeave={handlePointerUpFoodPhoto}
                   onPointerCancel={handlePointerUpFoodPhoto}
@@ -1010,8 +1062,8 @@ export const PhoneMenuScreen: React.FC = () => {
                   aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
                   title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
                   style={{
-                    width: '56px',
-                    height: '56px',
+                    width: '52px',
+                    height: '52px',
                     borderRadius: 'var(--r-md)',
                     background: 'var(--ctl)',
                     border: shakeField === 'photo' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
@@ -1025,7 +1077,6 @@ export const PhoneMenuScreen: React.FC = () => {
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     touchAction: 'none',
-                    marginTop: '22px',
                   }}
                 >
                   {addPhotoPath ? (
@@ -1078,19 +1129,18 @@ export const PhoneMenuScreen: React.FC = () => {
                       position: 'absolute',
                       bottom: '2px',
                       right: '2px',
-                      width: '20px',
-                      height: '20px',
+                      width: '18px',
+                      height: '18px',
                       borderRadius: 'var(--r-pill)',
-                      background: 'color-mix(in srgb, var(--acrylic-bg) 80%, rgba(0, 0, 0, 0.6))',
-                      backdropFilter: 'blur(10px)',
-                      WebkitBackdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.45)',
-                      color: 'var(--ink)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      background: 'rgba(28, 20, 18, 0.82)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      border: '1px solid var(--ctl-line)',
+                      display: 'grid',
+                      placeItems: 'center',
                       zIndex: 3,
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
+                      color: 'var(--ink)',
                       pointerEvents: 'none',
                     }}
                   >
@@ -1101,7 +1151,7 @@ export const PhoneMenuScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Input Nama Menu */}
+                {/* Input Nama Menu (52px) */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <label
                     style={{
@@ -1129,7 +1179,7 @@ export const PhoneMenuScreen: React.FC = () => {
                     }}
                     style={{
                       width: '100%',
-                      height: '56px',
+                      height: '52px',
                       padding: '0 14px',
                       borderRadius: 'var(--r-md)',
                       background: 'var(--ctl)',
@@ -1281,7 +1331,6 @@ export const PhoneMenuScreen: React.FC = () => {
               className="tk-btn-flat"
               onClick={() => {
                 setIsPhotoActionsOpen(false);
-                setTargetPhotoMode('add');
                 foodFileInputRef.current?.click();
               }}
               style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
@@ -1297,7 +1346,11 @@ export const PhoneMenuScreen: React.FC = () => {
               className="tk-btn-flat"
               onClick={() => {
                 setIsPhotoActionsOpen(false);
-                setAddPhotoPath(null);
+                if (targetPhotoMode === 'add') {
+                  setAddPhotoPath(null);
+                } else {
+                  setEditPhotoPath(null);
+                }
               }}
               style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px', color: 'var(--danger)' }}
             >
@@ -1320,7 +1373,7 @@ export const PhoneMenuScreen: React.FC = () => {
       )}
 
       {/* Lightbox Pratinjau Foto Makanan (Sama Persis Profil saat di-hold) */}
-      {isPreviewFoodOpen && addPhotoPath && (
+      {isPreviewFoodOpen && (targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath) && (
         <div
           className="tk-phone-overlay ov"
           onClick={() => setIsPreviewFoodOpen(false)}
@@ -1357,8 +1410,8 @@ export const PhoneMenuScreen: React.FC = () => {
               }}
             >
               <img
-                src={addPhotoPath}
-                alt={addName || 'Foto makanan'}
+                src={(targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath) || ''}
+                alt={(targetPhotoMode === 'add' ? addName : editName) || 'Foto makanan'}
                 draggable={false}
                 style={{
                   position: 'absolute',
@@ -1387,7 +1440,6 @@ export const PhoneMenuScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsPreviewFoodOpen(false);
-                  setTargetPhotoMode('add');
                   foodFileInputRef.current?.click();
                 }}
                 aria-label="Sunting foto makanan"
@@ -1420,7 +1472,7 @@ export const PhoneMenuScreen: React.FC = () => {
               </button>
             </div>
             <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>
-              {addName || 'Foto Makanan'}
+              {(targetPhotoMode === 'add' ? addName : editName) || 'Foto Makanan'}
             </b>
             <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
               <button
@@ -1428,7 +1480,11 @@ export const PhoneMenuScreen: React.FC = () => {
                 className="tk-btn-flat"
                 onClick={() => {
                   setIsPreviewFoodOpen(false);
-                  setAddPhotoPath(null);
+                  if (targetPhotoMode === 'add') {
+                    setAddPhotoPath(null);
+                  } else {
+                    setEditPhotoPath(null);
+                  }
                 }}
                 style={{ flex: 1, height: '40px', color: 'var(--danger)', fontSize: 'var(--t-xs)', fontWeight: 700 }}
               >

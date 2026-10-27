@@ -153,11 +153,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 
   const categories = [
     { key: 'Semua', label: 'Semua' },
-    { key: 'Snack', label: 'Snack' },
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
-    { key: 'Roti', label: 'Roti' },
     { key: 'Minuman', label: 'Minuman' },
+    { key: 'Roti', label: 'Roti' },
+    { key: 'Snack', label: 'Snack' },
   ];
 
   // Filter items berdasarkan kategori dan pencarian
@@ -166,11 +166,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
       // 1. Kategori
       if (selectedCategory !== 'Semua') {
         const catLower = selectedCategory.toLowerCase();
-        if (catLower === 'makanan' && !item.group_id.includes('makanan')) return false;
-        if (catLower === 'mie' && !item.group_id.includes('mie')) return false;
-        if (catLower === 'snack' && !item.group_id.includes('snack')) return false;
-        if (catLower === 'roti' && !item.group_id.includes('roti')) return false;
-        if (catLower === 'minuman' && !item.group_id.includes('minuman')) return false;
+        const itemCat = ((item as any).category || '').toLowerCase();
+        if (catLower === 'makanan' && !item.group_id.includes('makanan') && itemCat !== 'makanan') return false;
+        if (catLower === 'mie' && !item.group_id.includes('mie') && itemCat !== 'mie') return false;
+        if (catLower === 'minuman' && !item.group_id.includes('minuman') && !item.group_id.includes('coffee') && itemCat !== 'minuman') return false;
+        if (catLower === 'roti' && !item.group_id.includes('roti') && itemCat !== 'roti') return false;
+        if (catLower === 'snack' && !item.group_id.includes('snack') && itemCat !== 'snack') return false;
       }
       // 2. Query pencarian
       if (searchQuery.trim().length > 0) {

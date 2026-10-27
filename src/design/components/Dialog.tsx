@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { registerBackHandler } from '../../lib/device/backButton.ts';
 
 export interface DialogProps {
   isOpen: boolean;
@@ -34,6 +35,14 @@ export const Dialog: React.FC<DialogProps> = ({
       document.querySelector('.tk-tablet-root')?.classList.remove('tk-has-modal');
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !onClose) return undefined;
+    return registerBackHandler(() => {
+      onClose();
+      return true;
+    }, 50);
+  }, [isOpen, onClose]);
 
 
   if (!isOpen) return null;

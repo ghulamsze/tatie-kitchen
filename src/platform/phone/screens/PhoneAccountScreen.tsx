@@ -6,6 +6,7 @@ import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
 import { Cashier } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
+import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 
 export interface PhoneAccountScreenProps {
   onOpenPrintMenu?: () => void;
@@ -23,6 +24,85 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   const [selectedCashierToRemove, setSelectedCashierToRemove] = useState<Cashier | null>(null);
   const [canConfirmRemove, setCanConfirmRemove] = useState(false);
   const [rejectingCashierId, setRejectingCashierId] = useState<string | null>(null);
+
+  // Profil Pemilik Lokal (Khusus di perangkat ini saja via localStorage)
+  const [ownerAvatar, setOwnerAvatar] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('tk_owner_avatar');
+    } catch {
+      return null;
+    }
+  });
+  const [isCropOwnerOpen, setIsCropOwnerOpen] = useState(false);
+  const [cropOwnerImageSrc, setCropOwnerImageSrc] = useState<string | null>(null);
+  const [isOwnerActionsOpen, setIsOwnerActionsOpen] = useState(false);
+  const [isOwnerPreviewOpen, setIsOwnerPreviewOpen] = useState(false);
+  const ownerFileInputRef = useRef<HTMLInputElement>(null);
+  const ownerHoldTimerRef = useRef<number | null>(null);
+  const didTriggerOwnerHoldRef = useRef(false);
+
+  const handleOwnerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropOwnerImageSrc(url);
+    setIsCropOwnerOpen(true);
+    e.target.value = '';
+  };
+
+  const handleOwnerCropComplete = (croppedBlob: Blob) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setOwnerAvatar(dataUrl);
+      try {
+        localStorage.setItem('tk_owner_avatar', dataUrl);
+      } catch {}
+      setIsCropOwnerOpen(false);
+      if (cropOwnerImageSrc) {
+        URL.revokeObjectURL(cropOwnerImageSrc);
+        setCropOwnerImageSrc(null);
+      }
+    };
+    reader.readAsDataURL(croppedBlob);
+  };
+
+  const handleRemoveOwnerPhoto = () => {
+    setOwnerAvatar(null);
+    try {
+      localStorage.removeItem('tk_owner_avatar');
+    } catch {}
+    setIsOwnerActionsOpen(false);
+  };
+
+  const startOwnerHold = () => {
+    didTriggerOwnerHoldRef.current = false;
+    if (!ownerAvatar) return;
+    ownerHoldTimerRef.current = window.setTimeout(() => {
+      didTriggerOwnerHoldRef.current = true;
+      triggerHapticFeedback([30]);
+      setIsOwnerPreviewOpen(true);
+    }, 450);
+  };
+
+  const cancelOwnerHold = () => {
+    if (ownerHoldTimerRef.current) {
+      clearTimeout(ownerHoldTimerRef.current);
+      ownerHoldTimerRef.current = null;
+    }
+  };
+
+  const handleOwnerAvatarClick = () => {
+    if (didTriggerOwnerHoldRef.current) {
+      didTriggerOwnerHoldRef.current = false;
+      return;
+    }
+    if (ownerAvatar) {
+      setIsOwnerActionsOpen(true);
+    } else {
+      ownerFileInputRef.current?.click();
+    }
+  };
 
   const holdTimerRef = useRef<number | null>(null);
   const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -47,7 +127,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
 
   // Sembunyikan navbar saat dialog terbuka
   useEffect(() => {
-    if (isAddCashierOpen || selectedCashierToRemove || isThemeOpen) {
+    if (isAddCashierOpen || selectedCashierToRemove || isThemeOpen || isCropOwnerOpen || isOwnerActionsOpen || isOwnerPreviewOpen) {
       document.body.classList.add('has-modal');
     } else {
       document.body.classList.remove('has-modal');
@@ -55,12 +135,38 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     return () => {
       document.body.classList.remove('has-modal');
     };
-  }, [isAddCashierOpen, selectedCashierToRemove, isThemeOpen]);
+  }, [isAddCashierOpen, selectedCashierToRemove, isThemeOpen, isCropOwnerOpen, isOwnerActionsOpen, isOwnerPreviewOpen]);
 
-  // Tangani tombol back default Android saat dialog tambah/hapus kasir terbuka
+  // Tangani tombol back default Android & Escape Windows saat ada modal/sheet terbuka
   useEffect(() => {
-    if (!isAddCashierOpen && !selectedCashierToRemove) return;
+    if (
+      !isAddCashierOpen &&
+      !selectedCashierToRemove &&
+      !isThemeOpen &&
+      !isCropOwnerOpen &&
+      !isOwnerActionsOpen &&
+      !isOwnerPreviewOpen
+    ) {
+      return undefined;
+    }
+
     return registerBackHandler(() => {
+      if (isCropOwnerOpen) {
+        setIsCropOwnerOpen(false);
+        if (cropOwnerImageSrc) {
+          URL.revokeObjectURL(cropOwnerImageSrc);
+          setCropOwnerImageSrc(null);
+        }
+        return true;
+      }
+      if (isOwnerPreviewOpen) {
+        setIsOwnerPreviewOpen(false);
+        return true;
+      }
+      if (isOwnerActionsOpen) {
+        setIsOwnerActionsOpen(false);
+        return true;
+      }
       if (selectedCashierToRemove) {
         setSelectedCashierToRemove(null);
         return true;
@@ -69,9 +175,21 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         setIsAddCashierOpen(false);
         return true;
       }
+      if (isThemeOpen) {
+        setIsThemeOpen(false);
+        return true;
+      }
       return false;
     }, 85);
-  }, [isAddCashierOpen, selectedCashierToRemove]);
+  }, [
+    isAddCashierOpen,
+    selectedCashierToRemove,
+    isThemeOpen,
+    isCropOwnerOpen,
+    isOwnerActionsOpen,
+    isOwnerPreviewOpen,
+    cropOwnerImageSrc,
+  ]);
 
   // Pastikan minimal ada kasir bawaan sesuai preview.pdf
   const displayCashiers = cashiers.length > 0
@@ -144,6 +262,15 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
 
   return (
     <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
+      {/* Input File Tersembunyi untuk Upload Foto Profil Pemilik */}
+      <input
+        ref={ownerFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleOwnerFileChange}
+        style={{ display: 'none' }}
+      />
+
       {/* 1. Judul Layar Sesuai Frame 5 PDF */}
       <h1 className="tk-phone-title">Akun</h1>
 
@@ -157,11 +284,20 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         }}
       >
         <div
+          onClick={handleOwnerAvatarClick}
+          onPointerDown={startOwnerHold}
+          onPointerUp={cancelOwnerHold}
+          onPointerLeave={cancelOwnerHold}
+          onPointerCancel={cancelOwnerHold}
+          role="button"
+          tabIndex={0}
+          aria-label="Foto Profil Pemilik (Tahan untuk melihat pratinjau)"
+          title={ownerAvatar ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto profil"}
           style={{
-            width: '64px',
-            height: '64px',
+            width: '68px',
+            height: '68px',
             borderRadius: 'var(--r-xl)',
-            background: 'var(--accent)',
+            background: ownerAvatar ? 'var(--ctl)' : 'var(--accent)',
             color: 'var(--on-accent)',
             display: 'grid',
             placeItems: 'center',
@@ -170,10 +306,73 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
             fontWeight: 800,
             marginBottom: '8px',
             boxShadow: '0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent)',
+            position: 'relative',
+            cursor: 'pointer',
+            overflow: 'hidden',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'none',
           }}
         >
-          P
+          {ownerAvatar ? (
+            <img
+              src={ownerAvatar}
+              alt="Profil Pemilik"
+              draggable={false}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+                zIndex: 1,
+              }}
+            />
+          ) : (
+            <span style={{ position: 'relative', zIndex: 1, userSelect: 'none' }}>P</span>
+          )}
+
+          {/* Shield anti-copy/hold */}
+          <div
+            style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          />
+
+          {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '3px',
+              right: '3px',
+              width: '20px',
+              height: '20px',
+              borderRadius: 'var(--r-pill)',
+              background: 'rgba(28, 20, 18, 0.85)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid var(--ctl-line)',
+              display: 'grid',
+              placeItems: 'center',
+              zIndex: 3,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+              color: 'var(--ink)',
+              pointerEvents: 'none',
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </div>
         </div>
+
         <b
           style={{
             fontSize: 'var(--t-lg)',
@@ -562,6 +761,218 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </div>,
         portalTarget
       )}
+
+      {/* 10. Sheet Opsi Foto Profil Pemilik */}
+      {isOwnerActionsOpen && portalTarget && createPortal(
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsOwnerActionsOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          style={{ zIndex: 99 }}
+        >
+          <div
+            className="g-liquid tk-phone-sheet sh"
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+          >
+            <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)', marginBottom: '4px' }}>
+              Foto Profil Pemilik
+            </b>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => {
+                setIsOwnerActionsOpen(false);
+                setIsOwnerPreviewOpen(true);
+              }}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Lihat Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => {
+                setIsOwnerActionsOpen(false);
+                ownerFileInputRef.current?.click();
+              }}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>Ganti Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={handleRemoveOwnerPhoto}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px', color: 'var(--danger)' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>Hapus Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => setIsOwnerActionsOpen(false)}
+              style={{ height: '44px', marginTop: '4px' }}
+            >
+              Batal
+            </button>
+          </div>
+        </div>,
+        portalTarget
+      )}
+
+      {/* 11. Lightbox Pratinjau Foto Profil Pemilik (Zoom Out) */}
+      {isOwnerPreviewOpen && ownerAvatar && portalTarget && createPortal(
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsOwnerPreviewOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          style={{ zIndex: 100 }}
+        >
+          <div
+            className="g-liquid"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              padding: '24px 20px',
+              borderRadius: 'var(--r-xl)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              width: '88%',
+              maxWidth: '320px',
+              textAlign: 'center',
+              animation: 'tk-fade-in 0.2s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '180px',
+                height: '180px',
+                borderRadius: 'var(--r-lg)',
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+                background: 'var(--ctl)',
+                border: '1px solid var(--ctl-line)',
+              }}
+            >
+              <img
+                src={ownerAvatar}
+                alt="Foto Profil Pemilik"
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                  zIndex: 1,
+                  animation: 'tk-photo-zoom-out 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                }}
+              />
+              <div
+                style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOwnerPreviewOpen(false);
+                  ownerFileInputRef.current?.click();
+                }}
+                aria-label="Sunting foto profil"
+                title="Sunting foto profil"
+                className="g-liquid"
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  right: '8px',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: 'var(--r-pill)',
+                  border: '1px solid rgba(255, 255, 255, 0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 5,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+                  color: 'var(--ink)',
+                  background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            </div>
+            <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>
+              Foto Profil Pemilik
+            </b>
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button
+                type="button"
+                className="tk-btn-flat"
+                onClick={() => {
+                  setIsOwnerPreviewOpen(false);
+                  handleRemoveOwnerPhoto();
+                }}
+                style={{ flex: 1, height: '40px', color: 'var(--danger)', fontSize: 'var(--t-xs)', fontWeight: 700 }}
+              >
+                Hapus Foto
+              </button>
+              <button
+                type="button"
+                className="tk-btn-lime"
+                onClick={() => setIsOwnerPreviewOpen(false)}
+                style={{ flex: 1, height: '40px', fontSize: 'var(--t-xs)' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>,
+        portalTarget
+      )}
+
+      {/* 12. Dialog Crop Foto Profil Pemilik 1:1 Resolusi Tetap */}
+      <CropProfileDialog
+        isOpen={isCropOwnerOpen}
+        imageSrc={cropOwnerImageSrc}
+        onClose={() => {
+          setIsCropOwnerOpen(false);
+          if (cropOwnerImageSrc) {
+            URL.revokeObjectURL(cropOwnerImageSrc);
+            setCropOwnerImageSrc(null);
+          }
+        }}
+        onCropComplete={handleOwnerCropComplete}
+      />
     </div>
   );
 };

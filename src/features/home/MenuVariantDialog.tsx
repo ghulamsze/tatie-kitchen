@@ -21,7 +21,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
   if (!item || !item.variants || item.variants.length === 0) return null;
 
   const isBolu = item.name.toLowerCase() === 'bolu';
-  const isCakeUltah = item.name.toLowerCase().includes('cake');
+  const isCakeUltah = item.name.toLowerCase().includes('cake') || item.name.toLowerCase().includes('ulang tahun');
 
   return (
     <Dialog
@@ -32,7 +32,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
         isBolu
           ? 'Pilih varian rasa bolu dan ukuran yang diinginkan'
           : isCakeUltah
-          ? 'Pilih varian harga cake ultah untuk pesanan ini'
+          ? 'Pilih varian harga kue ulang tahun untuk pesanan ini'
           : 'Pilih varian atau ukuran untuk pesanan ini'
       }
     >

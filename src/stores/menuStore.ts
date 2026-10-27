@@ -675,7 +675,7 @@ export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
     id: 'm-cake-ultah',
     shop_id: 'shop-001',
     group_id: 'g-snack',
-    name: 'Cake Ultah',
+    name: 'Kue Ulang Tahun',
     price_idr: 100000,
     available: true,
     photo_path: null,
@@ -1269,11 +1269,11 @@ export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
 ];
 
 export const SEED_MENU_GROUPS: MenuGroup[] = [
-  { id: 'g-makanan-1', shop_id: 'shop-001', category: 'makanan', name: 'Nasi goreng', icon_key: 'Nasi goreng', sort: 1 },
-  { id: 'g-makanan-2', shop_id: 'shop-001', category: 'makanan', name: 'Nasi ayam', icon_key: 'Nasi ayam', sort: 2 },
-  { id: 'g-mie', shop_id: 'shop-001', category: 'mie', name: 'Mie', icon_key: 'Mie', sort: 4 },
-  { id: 'g-snack', shop_id: 'shop-001', category: 'snack', name: 'Camilan dan roti', icon_key: 'Camilan', sort: 5 },
-  { id: 'g-minuman', shop_id: 'shop-001', category: 'minuman', name: 'Kopi dan minuman', icon_key: 'Kopi', sort: 6 },
+  { id: 'g-makanan', shop_id: 'shop-001', category: 'makanan', name: 'Makanan', icon_key: 'Makanan', sort: 1 },
+  { id: 'g-mie', shop_id: 'shop-001', category: 'mie', name: 'Mie', icon_key: 'Mie', sort: 2 },
+  { id: 'g-minuman', shop_id: 'shop-001', category: 'minuman', name: 'Minuman', icon_key: 'Minuman', sort: 3 },
+  { id: 'g-roti', shop_id: 'shop-001', category: 'roti', name: 'Roti', icon_key: 'Roti', sort: 4 },
+  { id: 'g-snack', shop_id: 'shop-001', category: 'snack', name: 'Snack', icon_key: 'Snack', sort: 5 },
 ];
 
 export const TOP_SELLERS_DEFAULT: [string, number][] = [
@@ -1345,7 +1345,11 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
   } catch (err) {
     logError('menuStore:loadSavedAvailability', err);
   }
-  return result;
+  return result.map((it) => {
+    let gid = it.group_id;
+    if (gid.startsWith('g-makanan')) gid = 'g-makanan';
+    return gid !== it.group_id ? { ...it, group_id: gid } : it;
+  });
 };
 
 export const useMenuStore = create<MenuState>((set, get) => ({

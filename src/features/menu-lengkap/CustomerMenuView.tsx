@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useMenuStore, TOP_SELLERS_DEFAULT } from '../../stores/menuStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
+import { registerBackHandler } from '../../lib/device/backButton.ts';
 
 export interface CustomerMenuViewProps {
   onClose: () => void;
@@ -173,7 +174,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
   {
-    title: 'Kue, donat & cake ultah',
+    title: 'Kue, donat & kue ulang tahun',
     category: 'snack',
     iconType: 'snack',
     items: [
@@ -182,7 +183,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Donat', defaultPrice: 18000 },
       { name: 'Brownies', defaultPrice: 50000 },
       { name: 'Bolu', defaultPrice: 50000 },
-      { name: 'Cake Ultah', defaultPrice: 100000 },
+      { name: 'Kue Ulang Tahun', defaultPrice: 100000 },
     ],
   },
 
@@ -271,16 +272,25 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman'>('semua');
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti' | 'snack'>('semua');
   const { items } = useMenuStore();
 
+  // Tangani tombol ESC pada Windows dan Back button pada Android
+  useEffect(() => {
+    return registerBackHandler(() => {
+      onClose();
+      return true;
+    }, 25);
+  }, [onClose]);
+
+  // Urutan kategori alfabetis A-Z setelah 'Semua' sesuai instruksi
   const categories = [
     { key: 'semua', label: 'Semua' },
-    { key: 'snack', label: 'Snack' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'mie', label: 'Mie' },
-    { key: 'roti', label: 'Roti' },
     { key: 'minuman', label: 'Minuman' },
+    { key: 'roti', label: 'Roti' },
+    { key: 'snack', label: 'Snack' },
   ] as const;
 
   const getItemInfo = (name: string, fallbackPrice: number) => {
@@ -291,11 +301,56 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     };
   };
 
-  const displayedGroups = MENU_GROUPS_CATALOG.filter((group) => {
-    // Sesuai instruksi: saat buka kartu menu "semua", jangan render kartu menu di "snack", "minuman", "makanan" dan seterusnya
-    if (selectedCategory === 'semua') return false;
-    return group.category === selectedCategory;
-  });
+  // Selalu sesuaikan dengan tambahan menu baru yang diinput di toko
+  const allGroups = useMemo(() => {
+    const groupsMap = new Map<string, MenuGroupDefinition>();
+    MENU_GROUPS_CATALOG.forEach((grp) => {
+      groupsMap.set(grp.title, { ...grp, items: [...grp.items] });
+    });
+
+    const catalogNames = new Set<string>();
+    MENU_GROUPS_CATALOG.forEach((grp) => {
+      grp.items.forEach((it) => catalogNames.add(it.name.toLowerCase()));
+    });
+
+    // Item dari store yang belum terdaftar di katalog statis
+    const extraItems = items.filter(
+      (it) => it.active !== false && !catalogNames.has(it.name.toLowerCase())
+    );
+
+    extraItems.forEach((it) => {
+      let cat: 'makanan' | 'mie' | 'minuman' | 'roti' | 'snack' = 'makanan';
+      const gid = (it.group_id || '').toLowerCase();
+      const itemCat = ((it as any).category || '').toLowerCase();
+
+      if (gid.includes('makanan') || itemCat === 'makanan') cat = 'makanan';
+      else if (gid.includes('mie') || itemCat === 'mie') cat = 'mie';
+      else if (gid.includes('minuman') || gid.includes('coffee') || itemCat === 'minuman') cat = 'minuman';
+      else if (gid.includes('roti') || itemCat === 'roti') cat = 'roti';
+      else if (gid.includes('snack') || itemCat === 'snack') cat = 'snack';
+
+      const title = `Menu Tambahan ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+      if (!groupsMap.has(title)) {
+        groupsMap.set(title, {
+          title,
+          category: cat,
+          iconType: cat === 'minuman' ? 'iced-coffee' : cat === 'mie' ? 'noodle' : cat === 'roti' ? 'bread' : cat === 'snack' ? 'snack' : 'rice',
+          items: [],
+        });
+      }
+      groupsMap.get(title)!.items.push({
+        name: it.name,
+        defaultPrice: it.price_idr,
+      });
+    });
+
+    return Array.from(groupsMap.values());
+  }, [items]);
+
+  const displayedGroups = useMemo(() => {
+    if (selectedCategory === 'semua') return [];
+    return allGroups.filter((group) => group.category === selectedCategory);
+  }, [allGroups, selectedCategory]);
 
   return (
     <div className="scr tk-customer-menu-overlay" role="dialog" aria-modal="true" aria-label="Menu Lengkap Pembeli">
@@ -371,7 +426,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               <div
                 className="photo-layer"
                 style={{
-                  background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('/assets/images/makanan berat/nasgor telur.webp') center/cover no-repeat`,
+                  background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('/assets/images/makanan_berat/nasgor_telur.webp') center/cover no-repeat`,
                 }}
               />
               <div className="blur-layer" />
