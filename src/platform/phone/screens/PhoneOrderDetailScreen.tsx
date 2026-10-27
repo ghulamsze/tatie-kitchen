@@ -73,7 +73,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
     const paymentLine = isQris
       ? 'Metode: QRIS'
       : isTransfer
-      ? 'Metode: Transfer Bank'
+      ? 'Metode: TF Bank'
       : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}`;
 
     const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\n${paymentLine}\n\nTerima kasih atas kunjungan Anda!`;
@@ -247,7 +247,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
                 letterSpacing: '0.04em',
               }}
             >
-              {order.payment_method?.toUpperCase() === 'QRIS' ? 'QRIS' : order.payment_method?.toLowerCase() === 'transfer' ? 'Transfer' : 'Tunai'}
+              {isQris ? 'QRIS' : isTransfer ? 'TF Bank' : 'Tunai'}
             </span>
             <span>{dateStr}</span>
           </div>
@@ -347,30 +347,34 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             <span>{formatRupiah(order.total_idr)}</span>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 'var(--t-xs)',
-              color: 'var(--ink-2)',
-            }}
-          >
-            <span>Tunai</span>
-            <span>{formatRupiah(cashReceived)}</span>
-          </div>
+          {!isQris && !isTransfer && (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 'var(--t-xs)',
+                  color: 'var(--ink-2)',
+                }}
+              >
+                <span>Tunai</span>
+                <span>{formatRupiah(cashReceived)}</span>
+              </div>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 'var(--t-xs)',
-              fontWeight: 700,
-              color: 'var(--ink)',
-            }}
-          >
-            <span>Kembalian</span>
-            <span>{formatRupiah(changeAmount)}</span>
-          </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 'var(--t-xs)',
+                  fontWeight: 700,
+                  color: 'var(--ink)',
+                }}
+              >
+                <span>Kembalian</span>
+                <span>{formatRupiah(changeAmount)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

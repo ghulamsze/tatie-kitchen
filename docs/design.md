@@ -1,16 +1,18 @@
 # design.md Tatie Kitchen
 
-**Sumber kebenaran visual: kode yang dibangun (src/).** Dibangun ulang dari kode nyata, 22 Oktober 2026.
+**Sumber kebenaran visual: kode yang dibangun (src/).** Diperbarui 27 Oktober 2026.
 Reference HTML adalah sejarah, bukan sumber kebenaran.
-Cakupan fase sekarang: tablet kasir, landscape 1024 x 640.
+Cakupan:
+1. **Tablet Kasir POS:** Landscape 1024 x 640 (Fase Utama Operasional Kasir).
+2. **Smartphone Android / HP:** Portrait ~360-430 x 780-920 (Monitoring Transaksi Pemilik, Laporan Penjualan, Manajemen Kasir, Pratinjau Cetak Menu Fisik).
 
 ---
 
 ## 1. Prinsip
 
-- Satu sumber kebenaran: semua layar memakai token dari `src/design/tokens.css`.
+- Satu sumber kebenaran: semua layar memakai token dari `src/design/tokens.css` dan `src/design/phone.css`.
 - Konsisten di atas segalanya: skala teks, grid, bentuk, material, prioritas highlight.
-- Satu tombol lime per layar. Aturan ini dipatuhi di semua layar.
+- Satu tombol lime per layar di alur transaksi tablet. Pada HP, navigasi menggunakan floating pill liquid glass dan kontrol aksi sekunder berbasis acrylic.
 - Hormati prefers-reduced-motion dan prefers-reduced-transparency.
 
 ---
@@ -179,11 +181,16 @@ Ikon (.tk-toast-icon): 24x24px, bulat, bg --accent, warna --on-accent. Danger: b
 ### 9.8 NavbarPill (src/design/components/NavbarPill.tsx)
 .tk-navbar: position absolute; left 50%; bottom 16px; translateX(-50%); padding 4px;
   radius --r-pill; z-index 50. Material: liquid glass.
-Tiga item: Home, Riwayat, Akun.
+Tiga item dengan ikon SVG adaptif (Active: Solid Fill, Inactive: Outline):
+1. **Beranda:** Ikon Home (`M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z`)
+2. **Riwayat:** Ikon Menu / Resep / Transaksi (`M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2`)
+3. **Akun:** Ikon Profile / Pengguna (`path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"` + `circle cx="12" cy="7" r="4"`)
 Indikator elastis (.tk-nav-elastic-indicator): posisi dari offsetLeft+offsetWidth tab.
-  Animasi 220ms cubic-bezier(0,0,0.2,1). Saat drag: no transition.
-Item (.tk-navbar-item): h 40px, padding 0 22px, font --t-sm/--l-sm, bobot 700.
-  Aktif: warna #ffffff hardcoded + text-shadow. (Pelanggaran hardcoded)
+  Animasi 220ms cubic-bezier(0,0,0.2,1). Saat swipe/drag: sync langsung tanpa lag.
+Item (.tk-navbar-item): h 40px, padding 0 24px (HP min(330px, 100%-32px)).
+  Aktif: Solid Fill + warna `var(--on-accent)`.
+  Inaktif: Outline + warna `var(--ink-2)`.
+Otomatis tersembunyi (`display: none !important; opacity: 0; pointer-events: none`) saat ada modal, sheet, pratinjau cetak, atau overlay rincian aktif (`isModalOrOverlayActive` atau `body.has-modal`).
 isBlocked: opacity 0.45, filter blur(3px), pointer-events none.
 ResizeObserver mengukur ulang tab saat resize.
 
@@ -400,17 +407,22 @@ Belum diimplementasi:
 
 ---
 
-## 15. Dalam Referensi Tapi Belum Dibangun
+## 15. Fitur yang Sudah Dibangun & Sisa Roadmap
 
-- Sheet konfirmasi tandai habis/tersedia (state 2b-2f): hold kartu ada di store, sheet belum.
-- RPC set_item_availability belum dipanggil dari UI.
-- Pilih tanggal kustom di sheet riwayat (kalender/date-picker).
-- Kembalian besar di Bayar (referensi: --t-3xl terpisah; kode: field --t-lg biasa).
-- Layar laptop admin (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu).
-- Layar Android pemilik dan iOS pemilik.
-- Fitur cetak menu (PDF/print).
-- Device login flow (tombol "Masuk Perangkat" ada, handler belum).
-- Antrean offline (outbox) - saat ini fallback lokal langsung.
+### Sudah Selesai Dibangun (Fase Tablet & Android HP):
+- [SELESAI] Layar Android HP / Smartphone Pemilik (`src/platform/phone/`): Beranda, Riwayat, Rincian Order Struk, Laporan Penjualan, Akun & Kasir.
+- [SELESAI] Ikon Navbar Adaptif (Solid Fill saat aktif, Outline saat inaktif) pada Tablet & HP: Home, Menu/Riwayat, Profile/Akun.
+- [SELESAI] Fitur Pilih Tanggal Kustom pada Bottom Sheet Riwayat & Laporan (`PhoneDateRangeSheet.tsx`).
+- [SELESAI] Fitur Cetak Menu Fisik A4 (`PhonePrintMenuPreview.tsx` & `PrintMenuDocument.tsx`) dengan print dialog browser/native.
+- [SELESAI] Grafik Penjualan Lengkap: Pembagian jam pesan per 2 jam (Hari Ini) dan tren harian (Rentang Waktu).
+- [SELESAI] Foto menu makanan asli pada daftar Menu Terlaris di Laporan Penjualan.
+- [SELESAI] Sinkronisasi real-time dua arah Supabase (`initPosRealtimeSync`).
+- [SELESAI] Penanganan tombol Back fisik Android bertingkat (`registerBackHandler`).
+
+### Sisa Roadmap Mendatang:
+- Layar Backoffice Laptop Admin (layar lebar khusus PC).
+- Sheet konfirmasi tandai habis/tersedia dengan hold gesture di kasir tablet.
+- Kembalian besar nominal ekstra di tablet.
 
 ---
 
@@ -419,7 +431,41 @@ Belum diimplementasi:
 Ada: tokens.test.ts, components.test.tsx, tabletA.test.tsx, tabletB.test.tsx,
   supabase.test.ts, formatters.test.ts, e2e/ Playwright.
 
-Belum ada:
-- Playwright memverifikasi pasangan font-size/line-height semua palet (gelap+terang).
-- Audit kelipatan 4 untuk padding/margin/gap/height kontrol.
-- Audit kontras warna otomatis.
+---
+
+## 17. Spesifikasi Sistem Desain Platform Smartphone (src/design/phone.css)
+
+### 17.1 Layar & Layout Dasar
+- `.tk-phone-root`: Container utama berorientasi vertikal (portrait), mendukung CSS variable `--bg-t` (0: Beranda, 0.5: Riwayat, 1: Akun) untuk transisi gradien latar belakang yang mulus dan tanpa pemotongan.
+- `.tk-phone-screen`: Container layar HP dengan padding terstandarisasi (`padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px))`), mendukung scroll halus via `.tk-custom-slider`.
+- `.tk-phone-title`: Heading level 1 halaman HP (`font-size: var(--t-xl); line-height: var(--l-xl); font-weight: 800; color: var(--ink); margin: 8px 4px 16px;`).
+
+### 17.2 Kartu Hero & Metrik Omzet
+- `.tk-phone-hero`: Menggunakan material `.g-acrylic`, radius `var(--r-xl)` (32px), padding `20px 22px`.
+- `.tk-phone-hero-amount`: Nominal rupiah besar `var(--t-xl)` (32px) dengan font-weight 800. Terdapat tombol toggle mata (`👁`) untuk menyembunyikan nominal omzet menjadi bulatan titik (`● ● ● ● ● ●`) demi privasi pemilik di tempat umum.
+
+### 17.3 Kartu & Baris Transaksi
+- `.tk-phone-list-card`: Container daftar transaksi ber-radius `var(--r-xl)`, border `var(--ctl-line)`, background `var(--card-bg)`.
+- `.tk-phone-row`: Baris transaksi dengan tinggi nyaman, pembagian 2 kolom: Meja & Jumlah item di kiri, Nominal rupiah, Jam WITA & Badge metode pembayaran di kanan.
+- Badge Pembayaran Bersih: `Tunai`, `QRIS`, dan `TF Bank` (disingkat agar tidak terpotong menjadi dua baris di struk maupun daftar riwayat).
+
+### 17.4 Pola Dialog & Full-Screen Overlay
+Navigasi di perangkat HP mengadopsi pola **Overlay Kontekstual** daripada pergantian tab yang destruktif:
+- **Semua Riwayat:** Dibuka melalui tombol borderless teks `Semua riwayat ›` di Beranda. Layar riwayat terbuka sebagai overlay penuh tanpa memindahkan tab navbar dari Beranda. Terdapat tombol `‹ Kembali` di kiri atas.
+- **Laporan Penjualan:** Tombol pemicu di Beranda menggunakan styling pill `.tk-btn-appearance` tanpa sub-deskripsi teks yang mengganggu. Saat ditekan, membuka overlay laporan penuh.
+- **Rincian Pesanan & Struk:** Terbuka di z-index tertinggi dengan opsi Bagikan Struk (Web Share) dan Unduh Gambar PNG struk kasir termal.
+- **Integrasi Tombol Back Android:** Ditangani terstruktur via `registerBackHandler`. Menekan tombol back akan menutup overlay aktif satu per satu secara berurutan sebelum berpindah tab atau keluar aplikasi.
+
+### 17.5 Hierarki Layar Laporan Penjualan (PhoneSalesReportScreen)
+1. **Navigasi:** Tombol `‹ Kembali` borderless di kiri atas.
+2. **Judul:** `Laporan Penjualan` (bersih tanpa sub-deskripsi).
+3. **Pemicu Rentang Waktu:** Pill `.tk-phone-range-trigger` dinamis (`Hari ini`, `Kemarin`, `7 hari terakhir`, `30 hari terakhir`, `Semua waktu`, atau kalender kustom).
+4. **Hero Total Penjualan:** Total omzet rupiah, jumlah transaksi, dan jumlah total item porsi terjual.
+5. **Grafik Penjualan Interaktif:**
+   - Single-day (Hari Ini/Kemarin/Kustom): Pembagian jam pesan per 2 jam (`08-10`, `10-12`, ..., `22-24`).
+   - Multi-day (7 hari/30 hari): Batang harian per tanggal.
+   - Fitur Tap to Inspect: Mengetuk batang langsung menampilkan nominal dan jumlah transaksi pada jam/tanggal tersebut.
+6. **Rincian Metode Pembayaran:** Kartu grid 3 kolom (`Tunai`, `QRIS`, `TF Bank`).
+7. **Rata-rata Nilai Transaksi:** Metrik rata-rata belanja per pesanan.
+8. **Menu Terlaris:** Peringkat 1-5 dilengkapi foto piringan asli makanan dari `photo_path`, porsi terjual, dan kontribusi pendapatan rupiah.
+

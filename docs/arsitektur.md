@@ -53,11 +53,11 @@ tatie-kitchen/
     design/                   tokens.css, tema, palet, komponen dasar
     features/
       intro/  profil/  home/  menu-lengkap/  bayar/  struk/  riwayat/  akun/
-    platform/tablet/          layar khusus tablet (fase ini)
-    platform/laptop/          kosong, placeholder
-    platform/phone/           kosong, placeholder
+    platform/tablet/          layar khusus tablet landscape POS
+    platform/phone/           layar khusus smartphone portrait (Beranda, Riwayat, Laporan, Akun, Struk, Cetak)
+    platform/laptop/          placeholder untuk backoffice laptop
   e2e/                        Playwright
-  capacitor.config.ts         dibuat di fase APK
+  capacitor.config.ts         konfigurasi Capacitor Android POS
   .env.example
 ```
 
@@ -253,32 +253,56 @@ Daftar uji:
 - Data: order tersimpan di Supabase dengan total dari server; mencoba ulang order yang sama tidak menggandakan data; perangkat device tidak bisa mengubah harga.
 - Intro sekitar 1,25 detik, dan 0,7 detik dengan reduced-motion.
 
-## 11. Peta jalan (belum dikerjakan)
+## 11. Peta Jalan & Status Implementasi
 
-1. Laptop: web admin pemilik (Home, Riwayat, Menu, Kasir, Laporan, Pengaturan, Akun, Cetak menu) menggunakan folder `src/platform/laptop/`, lalu dibungkus Electron menjadi `.exe`. Login autentikasi Supabase Auth.
-2. Android & iOS pemilik: Capacitor menggunakan folder `src/platform/phone/`, pemantauan transaksi harian real-time (read-only).
-3. Supabase Realtime Subscription: Direncanakan aktif pada fase Laptop dan Mobile monitoring. Pada fase Tablet Kasir Beta, fungsi `subscribeToMenuChanges()` disediakan sebagai stub/logger peringatan karena perubahan menu kasir diperbarui saat peluncuran atau refresh manual.
-Setiap tahap memakai skema Supabase yang sama dan hanya menambah folder di `src/platform/`.
+1. **Tablet Kasir POS (`src/platform/tablet/`) [SELESAI]:** Landscape 1024x640, keranjang dinamis, kalkulator pembayaran, split pembayaran (Tunai, QRIS, TF Bank), struk termal, offline outbox idempotensial.
+2. **Smartphone Android / HP (`src/platform/phone/`) [SELESAI]:** Portrait ~360-430px, pemantauan transaksi harian real-time, rincian struk & cetak gambar PNG, laporan penjualan dengan grafik pembagian jam pesan dan foto menu terlaris, filter tanggal kustom, manajemen kasir dengan proteksi hold, dan pratinjau cetak menu fisik A4.
+3. **Laptop Backoffice (`src/platform/laptop/`) [FASE BERIKUTNYA]:** Web admin analitik dan backoffice manajemen menu/kasir untuk layar PC/laptop.
 
-## 12. Keputusan yang telah dikonfirmasi pemilik
+---
+
+## 12. Keputusan yang Telah Dikonfirmasi Pemilik
 
 - **Akun Pemilik / Admin**: `robertusamaresi@gmail.com` (kata sandi: `tatiekitchen*1`) dan `ghulamsze@gmail.com`.
 - **Perangkat Tablet**: POS Kasir khusus, TIDAK memerlukan login akun/autentikasi (langsung masuk ke pemilihan kasir/layar kasir).
 - **Zona Waktu**: WITA (Asia/Makassar, UTC+8) telah terkonfigurasi pada format tanggal, jam, dan perputaran antrean harian (reset 00:00 WITA).
-- **Antrean Offline (Outbox)**: Telah diimplementasikan via `syncQueueStore` dengan auto-sync saat koneksi kembali online, sehingga kasir tidak macet jika jaringan terputus.
+- **Antrean Offline (Outbox)**: Diimplementasikan via `syncQueueStore` dengan auto-sync saat koneksi kembali online, menjamin kasir tetap lancar meski offline.
+- **Label Pembayaran Ringkas**: `Tunai`, `QRIS`, dan `TF Bank` (disingkat dari "Transfer Bank" agar tidak membuat teks terpotong menjadi 2 baris).
 - **Rekening Transfer Toko**: Bank Kaltimtara, No. Rek `1747037252`, a.n. `Hartati Jahri`.
 - **Nama Paket Aplikasi**: `com.tatiekitchen.kasir`.
 
-## 13. Arsitektur Realtime (Fase Laptop & Mobile Monitoring)
+---
 
-- **Tabel yang Membutuhkan Realtime**:
-  1. `menu_items`: Pembaruan status ketersediaan menu (`available`) atau perubahan harga agar kasir dan pembeli selalu melihat data terkini secara langsung.
-  2. `orders` & `order_items`: Notifikasi transaksi masuk seketika dari kasir tablet ke dashboard monitoring pemilik di laptop dan ponsel.
-- **Pola Langganan (Subscription Pattern)**:
-  - Menggunakan saluran per-toko (*per-shop channel*): `supabase.channel(`shop:${shop_id}:changes`)`.
-  - Filter Postgres Changes: `filter: `shop_id=eq.${shop_id}``.
-  - Manajemen Siklus Hidup (*Lifecycle*): Hanya aktif saat aplikasi berada di latar depan (*foreground*). Channel otomatis di-unsubscribe saat aplikasi diminimalkan atau masuk background guna menghemat daya baterai dan kuota websocket.
-- **Jadwal Implementasi**:
-  - Diimplementasikan penuh pada Fase 7+ bersamaan dengan pembangunan antarmuka Laptop Web Admin dan aplikasi Android/iOS pemilik.
-  - Pada fase Tablet Kasir Beta saat ini, POS menggunakan transaksi RPC idempotensial dan antrean offline `syncQueueStore`.
+## 13. Arsitektur Realtime Supabase (Dua Arah)
+
+- **Modul Sinkronisasi:** `src/lib/supabase/realtime.ts` (`initPosRealtimeSync()`).
+- **Tabel Tersinkronisasi Secara Langsung:**
+  1. `orders` & `order_items`: Setiap order baru yang dibuat di kasir tablet langsung memicu broadcast realtime dan ter-update otomatis pada layar Beranda, Riwayat, dan Laporan di HP pemilik tanpa perlu refresh.
+  2. `menu_items`: Pembaruan status ketersediaan menu (`available`) langsung tersinkronisasi ke seluruh perangkat.
+  3. `cashiers`: Tambah kasir baru dari tablet maupun HP langsung terupdate seketika.
+- **Pola Langganan (Subscription Pattern):**
+  - Menggunakan channel Postgres Changes Supabase: `orders_channel`, `menu_items_channel`, `cashiers_channel`.
+  - Dilengkapi deduplikasi event (`seenOrderIds`) dan reconnect handler otomatis saat jaringan pulih.
+
+---
+
+## 14. Arsitektur Navigasi & Overlay Smartphone (src/platform/phone/)
+
+- **Root Controller (`PhoneRoot.tsx`):**
+  Mengatur tab bar bawah (`NavbarPill`) dengan 3 tab: `Beranda`, `Riwayat`, dan `Akun`.
+- **Sistem Overlay Kontekstual:**
+  Sub-halaman tidak berpindah tab, melainkan dibuka sebagai full-screen overlay di atas Beranda:
+  - `isAllHistoryOpen`: Membuka riwayat lengkap tanpa meninggalkan tab Beranda.
+  - `isSalesReportOpen`: Membuka laporan penjualan lengkap dengan grafik dan statistik.
+  - `selectedOrderId`: Membuka rincian order struk termal.
+  - `isPrintMenuOpen`: Membuka pratinjau cetak menu fisik A4.
+- **Stack Tombol Back Android (`src/lib/device/backButton.ts`):**
+  Menggunakan `registerBackHandler(callback, priority)` untuk menangkap tombol back perangkat Android.
+  Prioritas penutupan:
+  1. Rincian pesanan (`selectedOrderId`) -> Prioritas 10
+  2. Pratinjau cetak menu (`isPrintMenuOpen`) -> Prioritas 10
+  3. Laporan penjualan (`isSalesReportOpen`) -> Prioritas 10
+  4. Semua riwayat (`isAllHistoryOpen`) -> Prioritas 10
+  5. Jika di tab Riwayat/Akun -> Kembali ke tab Beranda.
+  6. Menahan agar aplikasi tidak keluar tanpa sengaja saat berada di Beranda.
 

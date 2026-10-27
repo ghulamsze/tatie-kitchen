@@ -5,6 +5,7 @@ import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneOrderDetailScreen } from './screens/PhoneOrderDetailScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
+import { PhoneSalesReportScreen } from './screens/PhoneSalesReportScreen.tsx';
 import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
@@ -15,6 +16,8 @@ export const PhoneRoot: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('Beranda');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState<boolean>(false);
+  const [isAllHistoryOpen, setIsAllHistoryOpen] = useState<boolean>(false);
+  const [isSalesReportOpen, setIsSalesReportOpen] = useState<boolean>(false);
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
   useEffect(() => {
@@ -25,7 +28,9 @@ export const PhoneRoot: React.FC = () => {
     };
   }, []);
 
-  const isModalOrOverlayActive = Boolean(selectedOrderId || isPrintMenuOpen);
+  const isModalOrOverlayActive = Boolean(
+    selectedOrderId || isPrintMenuOpen || isAllHistoryOpen || isSalesReportOpen
+  );
 
   // Tangani tombol back default Android agar tidak menutup aplikasi
   useEffect(() => {
@@ -40,15 +45,25 @@ export const PhoneRoot: React.FC = () => {
         setIsPrintMenuOpen(false);
         return true;
       }
-      // 3. Jika sedang di tab selain Beranda, kembali ke Beranda
+      // 3. Jika ada overlay laporan penjualan terbuka, tutup laporan
+      if (isSalesReportOpen) {
+        setIsSalesReportOpen(false);
+        return true;
+      }
+      // 4. Jika ada overlay semua riwayat terbuka dari beranda, tutup riwayat
+      if (isAllHistoryOpen) {
+        setIsAllHistoryOpen(false);
+        return true;
+      }
+      // 5. Jika sedang di tab selain Beranda, kembali ke Beranda
       if (activeTab !== 'Beranda') {
         setActiveTab('Beranda');
         return true;
       }
-      // 4. Jika di Beranda dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
+      // 6. Jika di Beranda dan tidak ada modal, tetap tahan agar aplikasi tidak tertutup tanpa sengaja
       return true;
     }, 10);
-  }, [selectedOrderId, isPrintMenuOpen, activeTab]);
+  }, [selectedOrderId, isPrintMenuOpen, isAllHistoryOpen, isSalesReportOpen, activeTab]);
 
   // Nilai posisi gradasi latar dinamis: 0 (Beranda), 0.5 (Riwayat), 1 (Akun)
   const bgT = activeTab === 'Beranda' ? 0 : activeTab === 'Riwayat' ? 0.5 : 1;
@@ -113,7 +128,8 @@ export const PhoneRoot: React.FC = () => {
         {activeTab === 'Beranda' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             <PhoneHomeScreen
-              onNavigateToHistory={() => setActiveTab('Riwayat')}
+              onOpenAllHistory={() => setIsAllHistoryOpen(true)}
+              onOpenSalesReport={() => setIsSalesReportOpen(true)}
               onSelectOrder={(id) => setSelectedOrderId(id)}
             />
           </div>
@@ -131,13 +147,50 @@ export const PhoneRoot: React.FC = () => {
           </div>
         )}
 
+        {/* Overlay Semua Riwayat jika dibuka dari Beranda */}
+        {isAllHistoryOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 60,
+              background: 'var(--scr-bg)',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'tk-fade-in 0.2s ease-out',
+            }}
+          >
+            <PhoneHistoryScreen
+              onBack={() => setIsAllHistoryOpen(false)}
+              onSelectOrder={(id) => setSelectedOrderId(id)}
+            />
+          </div>
+        )}
+
+        {/* Overlay Laporan Penjualan jika dibuka dari Beranda */}
+        {isSalesReportOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 60,
+              background: 'var(--scr-bg)',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'tk-fade-in 0.2s ease-out',
+            }}
+          >
+            <PhoneSalesReportScreen onBack={() => setIsSalesReportOpen(false)} />
+          </div>
+        )}
+
         {/* Overlay Detail Pesanan jika dipilih */}
         {selectedOrderId && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              zIndex: 60,
+              zIndex: 70,
               background: 'var(--scr-bg)',
               display: 'flex',
               flexDirection: 'column',
@@ -154,7 +207,7 @@ export const PhoneRoot: React.FC = () => {
             style={{
               position: 'absolute',
               inset: 0,
-              zIndex: 70,
+              zIndex: 80,
               background: 'var(--scr-bg)',
               display: 'flex',
               flexDirection: 'column',

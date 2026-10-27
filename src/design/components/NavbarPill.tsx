@@ -82,7 +82,7 @@ const renderNavIcon = (item: NavItem, isActive: boolean) => {
         </svg>
       );
     case 'Akun':
-      // Icon Pengaturan (Gear/Settings): active = fill, inactive = outline
+      // Icon Profil/Akun (User/Profile): active = fill, inactive = outline
       return isActive ? (
         <svg
           width="22"
@@ -92,11 +92,7 @@ const renderNavIcon = (item: NavItem, isActive: boolean) => {
           stroke="none"
           aria-hidden="true"
         >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM9.456 2.052a1.5 1.5 0 0 1 1.488-.052l.245.127c.475.247.986.377 1.506.38a3.42 3.42 0 0 0 1.504-.378l.247-.128a1.5 1.5 0 0 1 2.062.59l1.196 2.072a1.5 1.5 0 0 1-.417 1.996l-.213.149c-.43.3-.77.7-.992 1.17a3.42 3.42 0 0 0-.001 2.984c.221.47.561.87.992 1.17l.213.149a1.5 1.5 0 0 1 .417 1.996l-1.196 2.072a1.5 1.5 0 0 1-2.062.59l-.247-.128a3.42 3.42 0 0 0-3.01-.002l-.245.128a1.5 1.5 0 0 1-2.062-.59l-1.196-2.072a1.5 1.5 0 0 1 .417-1.996l.213-.149c.43-.3.77-.7.992-1.17a3.42 3.42 0 0 0 0-2.984c-.222-.47-.562-.87-.992-1.17l-.213-.149a1.5 1.5 0 0 1-.417-1.996l1.196-2.072a1.5 1.5 0 0 1 .574-.538z"
-          />
+          <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2.5c-3.67 0-10 1.84-10 5.5v1a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-1c0-3.66-6.33-5.5-10-5.5z" />
         </svg>
       ) : (
         <svg
@@ -110,8 +106,8 @@ const renderNavIcon = (item: NavItem, isActive: boolean) => {
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       );
   }
@@ -516,7 +512,12 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
             title={item}
             disabled={isBlocked}
           >
-            {renderNavIcon(item, isCurrentActive)}
+            <span className="tk-nav-icon-outline" aria-hidden="true">
+              {renderNavIcon(item, false)}
+            </span>
+            <span className="tk-nav-icon-fill" aria-hidden="true">
+              {renderNavIcon(item, true)}
+            </span>
           </button>
         );
       })}

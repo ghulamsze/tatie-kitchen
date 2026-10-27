@@ -25,6 +25,7 @@ export function useSwipeNav({
   const navbarHoldTimerRef = useRef<number | null>(null);
   const navbarPointerStartXRef = useRef<number>(0);
   const navbarPointerStartYRef = useRef<number>(0);
+  const navbarPointerCurrentXRef = useRef<number>(0);
   const isNavbarPointerDownRef = useRef<boolean>(false);
 
   // References ke elemen DOM untuk manipulasi langsung hardware-accelerated 60/120 FPS
@@ -286,9 +287,10 @@ export function useSwipeNav({
     const padding = 4;
     const innerWidth = rect.width - padding * 2;
     if (innerWidth <= 0) return tRef.current;
+    const itemWidth = innerWidth / tabs.length;
     const relativeX = clientX - rect.left - padding;
-    const p = (relativeX / innerWidth) * (tabs.length - 1);
-    return Math.max(0, Math.min(tabs.length - 1, p));
+    const rawIndex = (relativeX - itemWidth / 2) / itemWidth;
+    return Math.max(0, Math.min(tabs.length - 1, rawIndex));
   }, [tabs.length]);
 
   const getNearestTabIndexFromClientX = useCallback((clientX: number): number => {
@@ -316,6 +318,7 @@ export function useSwipeNav({
     isNavbarPointerDownRef.current = true;
     navbarPointerStartXRef.current = e.clientX;
     navbarPointerStartYRef.current = e.clientY;
+    navbarPointerCurrentXRef.current = e.clientX;
     dragSourceRef.current = 'navbar';
 
     if (navbarHoldTimerRef.current !== null) {
@@ -323,27 +326,28 @@ export function useSwipeNav({
       navbarHoldTimerRef.current = null;
     }
 
-    // Deteksi HOLD lebih lama (450ms) agar ketukan biasa tidak terhitung sebagai hold
+    // Deteksi HOLD (300ms) sama seperti di Android HP
     navbarHoldTimerRef.current = window.setTimeout(() => {
       if (isNavbarPointerDownRef.current) {
         isDraggingRef.current = true;
         dragSourceRef.current = 'navbar';
         setIsDragging(true);
         setIsNavbarHolding(true);
-        const progressT = getContinuousProgressFromClientX(e.clientX);
+        const progressT = getContinuousProgressFromClientX(navbarPointerCurrentXRef.current);
         applyT(progressT, true);
       }
-    }, 450);
+    }, 300);
   }, [cancelOngoingAnimation, getContinuousProgressFromClientX, applyT]);
 
   const handleNavbarPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (!isNavbarPointerDownRef.current || dragSourceRef.current !== 'navbar') return;
 
+    navbarPointerCurrentXRef.current = e.clientX;
     const dx = Math.abs(e.clientX - navbarPointerStartXRef.current);
     const dy = Math.abs(e.clientY - navbarPointerStartYRef.current);
 
-    // Perlu gerakan yang jelas (> 16px) untuk memicu drag agar ketukan biasa tidak terganggu
-    if (!isDraggingRef.current && (dx > 16 || dy > 16)) {
+    // Geser sedikit (> 10px) langsung memicu drag seperti di HP
+    if (!isDraggingRef.current && (dx > 10 || dy > 10)) {
       if (navbarHoldTimerRef.current !== null) {
         clearTimeout(navbarHoldTimerRef.current);
         navbarHoldTimerRef.current = null;

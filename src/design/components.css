@@ -396,6 +396,27 @@
   opacity: 1 !important;
 }
 
+/* Toggle icon navbar: outline saat non-aktif, fill saat aktif */
+.tk-navbar-item .tk-nav-icon-fill {
+  display: none !important;
+}
+
+.tk-navbar-item .tk-nav-icon-outline {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.tk-navbar-item.active .tk-nav-icon-fill {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.tk-navbar-item.active .tk-nav-icon-outline {
+  display: none !important;
+}
+
 .tk-navbar-item:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;

@@ -10,9 +10,10 @@ import { PhoneDateRangeSheet } from '../components/PhoneDateRangeSheet.tsx';
 
 export interface PhoneHistoryScreenProps {
   onSelectOrder?: (orderId: string) => void;
+  onBack?: () => void;
 }
 
-export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelectOrder }) => {
+export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelectOrder, onBack }) => {
   const { orders, selectedRange, setRange, setSelectedOrder } = useHistoryStore();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -105,6 +106,32 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
 
   return (
     <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
+      {/* 0. Navigasi Kembali jika dibuka sebagai overlay dari Beranda */}
+      {onBack && (
+        <div style={{ margin: '8px 4px 12px 4px' }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--ink-2)',
+              fontSize: 'var(--t-sm)',
+              lineHeight: 'var(--l-sm)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              padding: '6px 0',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span>‹</span>
+            <span>Kembali</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. Header Riwayat Bersih Sesuai Frame 2 PDF */}
       <h1 className="tk-phone-title">Riwayat</h1>
 
@@ -143,23 +170,23 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       ) : (
         <div
+          className="tk-phone-scrollable tk-custom-slider"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
             flex: 1,
             minHeight: 0,
-            overflow: 'hidden',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: onBack ? '32px' : 'calc(100px + env(safe-area-inset-bottom, 0px))',
           }}
         >
           {groupedOrders.map(([dateTitle, dayOrders]) => (
             <div
               key={dateTitle}
-              className="tk-phone-list-card tk-custom-slider"
+              className="tk-phone-list-card"
               style={{
-                maxHeight: 'calc(100vh - 215px)',
-                overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch',
                 paddingRight: '6px',
               }}
             >
@@ -189,7 +216,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                   pm === 'qris'
                     ? 'QRIS'
                     : pm.includes('transfer')
-                    ? 'Transfer Bank'
+                    ? 'TF Bank'
                     : 'Tunai';
 
                 return (

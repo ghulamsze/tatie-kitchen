@@ -55,7 +55,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
     const paymentLine = isQris
       ? 'Metode: QRIS'
       : isTransfer
-      ? 'Metode: Transfer Bank'
+      ? 'Metode: TF Bank'
       : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}`;
 
     const shareText = `*${shop.name}*\n${shop.address}\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\n${paymentLine}\n\nTerima kasih atas pesanan Anda!`;
@@ -232,7 +232,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
         ) : isTransfer ? (
           <div className="row-between" style={{ fontWeight: 700 }}>
             <span>Metode:</span>
-            <span>Transfer Bank</span>
+            <span>TF Bank</span>
           </div>
         ) : (
           <>
@@ -281,7 +281,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
             Pembayaran berhasil
           </h3>
           <p style={{ margin: '6px 0 0', color: 'var(--ink-2)', fontSize: 'var(--t-sm)' }}>
-            Kembalian {formatRupiah(change)}
+            {isQris ? 'Metode QRIS' : isTransfer ? 'Metode TF Bank' : `Kembalian ${formatRupiah(change)}`}
           </p>
         </div>
 

@@ -75,28 +75,41 @@
   overflow: visible;
 }
 
-/* BRImo Sculpted Shoulder Shapes (Highlight samping atas kiri & kanan) */
-.tk-phone-hero::before,
-.tk-phone-hero::after {
-  content: "";
-  position: absolute;
-  top: -4px;
-  width: 32px;
-  height: 10px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 70%, #ffffff) 0%, color-mix(in srgb, var(--accent) 25%, transparent) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
-  pointer-events: none;
-  z-index: 2;
+/* Animasi Transisi Nominal Cepat & Halus */
+@keyframes tk-amount-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.98);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
-.tk-phone-hero::before {
-  left: 16px;
+.tk-amount-animate {
+  display: inline-block;
+  animation: tk-amount-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
 }
 
-.tk-phone-hero::after {
-  right: 16px;
+/* Animasi Eye Button Snap */
+@keyframes tk-eye-pop {
+  0% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tk-eye-animate {
+  animation: tk-eye-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tk-phone-hero-amount {
@@ -176,7 +189,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  height: 48px;
+  height: 52px;
+  min-height: 52px;
+  box-sizing: border-box;
+  flex-shrink: 0;
   border-radius: var(--r-pill);
   background: var(--ctl);
   border: 1px solid var(--ctl-line);

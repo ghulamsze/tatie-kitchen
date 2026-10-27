@@ -247,6 +247,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                     status: 'paid',
                     queue_no: nextQueueNo,
                     business_date: todayDateStr,
+                    payment_method: normalizedPaymentMethod,
                   })
                   .select()
                   .single();
