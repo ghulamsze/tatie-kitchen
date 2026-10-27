@@ -7,6 +7,7 @@ import { PhoneRoot } from '../platform/phone/PhoneRoot.tsx';
 import { ComponentGallery } from '../dev/ComponentGallery.tsx';
 import { TabletRoot } from '../platform/tablet/TabletRoot.tsx';
 import { useHistoryStore } from '../stores/historyStore.ts';
+import { WebDevControls } from './WebDevControls.tsx';
 
 export const AppShell: React.FC = () => {
   const device = useDevice();
@@ -18,32 +19,6 @@ export const AppShell: React.FC = () => {
     useHistoryStore.getState().setSelectedOrder(null);
   }, [device]);
 
-  // Masuk fullscreen otomatis saat pertama dibuka, keluar dengan Esc (browser handle sendiri)
-  useEffect(() => {
-    const enterFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch {
-        // Browser menolak fullscreen (misal iframe) — abaikan
-      }
-    };
-    // Fullscreen hanya bisa dipanggil setelah interaksi user, tunggu click/touch pertama
-    const onFirstInteraction = () => {
-      enterFullscreen();
-      window.removeEventListener('click', onFirstInteraction);
-      window.removeEventListener('touchstart', onFirstInteraction);
-    };
-    window.addEventListener('click', onFirstInteraction, { once: true });
-    window.addEventListener('touchstart', onFirstInteraction, { once: true });
-
-    return () => {
-      window.removeEventListener('click', onFirstInteraction);
-      window.removeEventListener('touchstart', onFirstInteraction);
-    };
-  }, []);
-
   // Cek jika pengguna membuka rute galeri langsung
   const isGalleryRoute = typeof window !== 'undefined' && window.location.pathname === '/dev/gallery';
 
@@ -51,19 +26,19 @@ export const AppShell: React.FC = () => {
     return <ComponentGallery />;
   }
 
-  if (device.formFactor === 'phone') {
-    return (
-      <PhoneDevFrame device={device}>
-        <PhoneRoot />
-      </PhoneDevFrame>
-    );
-  }
-
-  // Tablet & Laptop langsung mengakses antarmuka Tablet dalam DevFrame
   return (
-    <DevFrame device={device}>
-      <TabletRoot />
-    </DevFrame>
+    <>
+      {device.formFactor === 'phone' ? (
+        <PhoneDevFrame device={device}>
+          <PhoneRoot />
+        </PhoneDevFrame>
+      ) : (
+        <DevFrame device={device}>
+          <TabletRoot />
+        </DevFrame>
+      )}
+      {!device.native && <WebDevControls currentMode={device.formFactor} />}
+    </>
   );
 };
 
