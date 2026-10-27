@@ -1,2 +1,0 @@
-// Placeholder feature akun
-export {};

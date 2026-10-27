@@ -1,2 +1,0 @@
-// Placeholder feature struk
-export {};

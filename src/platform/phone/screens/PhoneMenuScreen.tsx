@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useMenuStore } from '../../../stores/menuStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
@@ -189,6 +189,151 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   );
 };
 
+interface PhoneMenuItemCardProps {
+  item: MenuItem;
+  onEdit: (item: MenuItem) => void;
+  onToggle: (id: string, newAvailable: boolean) => void;
+}
+
+const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, onEdit, onToggle }) => {
+  const isAvailable = item.available;
+
+  return (
+    <div
+      className="g-acrylic tk-phone-menu-card"
+      onClick={() => onEdit(item)}
+      role="button"
+      tabIndex={0}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '12px 14px',
+        borderRadius: 'var(--r-lg)',
+        gap: '12px',
+        cursor: 'pointer',
+        opacity: isAvailable ? 1 : 0.6,
+        filter: isAvailable ? 'none' : 'grayscale(100%)',
+        transition: 'opacity 0.2s ease, filter 0.2s ease',
+        position: 'relative',
+        contentVisibility: 'auto',
+        containIntrinsicSize: '0 76px',
+        contain: 'layout style paint',
+        transform: 'translateZ(0)',
+      }}
+    >
+      {/* Thumbnail Gambar / Icon SVG Menu */}
+      <div
+        style={{
+          width: '52px',
+          height: '52px',
+          borderRadius: 'var(--r-md)',
+          background: 'var(--ctl)',
+          border: '1px solid var(--ctl-line)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        {item.photo_path ? (
+          <img
+            src={item.photo_path}
+            alt={item.name}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--ink-3)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+            <line x1="6" y1="1" x2="6" y2="4" />
+            <line x1="10" y1="1" x2="10" y2="4" />
+            <line x1="14" y1="1" x2="14" y2="4" />
+          </svg>
+        )}
+      </div>
+
+      {/* Deskripsi Nama & Harga */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <span
+          style={{
+            fontSize: 'var(--t-sm)',
+            lineHeight: 'var(--l-sm)',
+            fontWeight: 800,
+            color: 'var(--ink)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </span>
+        <span
+          style={{
+            fontSize: 'var(--t-xs)',
+            lineHeight: 'var(--l-xs)',
+            fontWeight: 700,
+            color: 'var(--accent)',
+          }}
+        >
+          {formatRupiah(item.price_idr)}
+        </span>
+      </div>
+
+      {/* Liquid Toggle Ketersediaan Menu */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          triggerHapticFeedback([25]);
+          onToggle(item.id, !isAvailable);
+        }}
+        aria-label={isAvailable ? 'Tandai habis' : 'Tandai tersedia'}
+        title={isAvailable ? 'Klik untuk tandai habis' : 'Klik untuk tandai tersedia'}
+        style={{
+          width: '46px',
+          height: '26px',
+          borderRadius: 'var(--r-pill)',
+          background: isAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+          border: 'none',
+          padding: '2px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          boxSizing: 'border-box',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            width: '22px',
+            height: '22px',
+            borderRadius: 'var(--r-pill)',
+            background: '#ffffff',
+            transform: isAvailable ? 'translateX(20px)' : 'translateX(0px)',
+            transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxShadow: 'var(--sh-sm)',
+          }}
+        />
+      </button>
+    </div>
+  );
+});
+PhoneMenuItemCard.displayName = 'PhoneMenuItemCard';
+
 export const PhoneMenuScreen: React.FC = () => {
   const { items, groups, selectedCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
 
@@ -364,7 +509,7 @@ export const PhoneMenuScreen: React.FC = () => {
     });
   }, [items, selectedCategory, search, groups]);
 
-  const handleOpenEdit = (item: MenuItem) => {
+  const handleOpenEdit = useCallback((item: MenuItem) => {
     setEditingItem(item);
     setEditName(item.name);
     setEditPrice(item.price_idr);
@@ -375,7 +520,11 @@ export const PhoneMenuScreen: React.FC = () => {
     setEditGroupId(gid);
     setEditPhotoPath(item.photo_path || null);
     setTargetPhotoMode('edit');
-  };
+  }, []);
+
+  const handleToggleAvailability = useCallback((id: string, newAvailable: boolean) => {
+    toggleItemAvailability(id, newAvailable);
+  }, [toggleItemAvailability]);
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
@@ -534,7 +683,7 @@ export const PhoneMenuScreen: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Daftar Kartu Menu Kafe */}
+      {/* 4. Daftar Kartu Menu Kafe (Dioptimalkan dengan CSS Culling & Virtualization untuk Low-Device) */}
       <div
         className="tk-custom-slider"
         style={{
@@ -545,6 +694,8 @@ export const PhoneMenuScreen: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorY: 'contain',
         }}
       >
         {filteredItems.length === 0 ? (
@@ -560,137 +711,14 @@ export const PhoneMenuScreen: React.FC = () => {
             </p>
           </div>
         ) : (
-          filteredItems.map((item) => {
-            const isAvailable = item.available;
-
-            return (
-              <div
-                key={item.id}
-                className="g-acrylic"
-                onClick={() => handleOpenEdit(item)}
-                role="button"
-                tabIndex={0}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 14px',
-                  borderRadius: 'var(--r-lg)',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  opacity: isAvailable ? 1 : 0.6,
-                  filter: isAvailable ? 'none' : 'grayscale(100%)',
-                  transition: 'opacity 0.2s ease, filter 0.2s ease',
-                  position: 'relative',
-                }}
-              >
-                {/* Thumbnail Gambar / Icon SVG Menu */}
-                <div
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.photo_path ? (
-                    <img
-                      src={item.photo_path}
-                      alt={item.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--ink-3)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                      <line x1="6" y1="1" x2="6" y2="4" />
-                      <line x1="10" y1="1" x2="10" y2="4" />
-                      <line x1="14" y1="1" x2="14" y2="4" />
-                    </svg>
-                  )}
-                </div>
-
-                {/* Deskripsi Nama & Harga */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span
-                    style={{
-                      fontSize: 'var(--t-sm)',
-                      lineHeight: 'var(--l-sm)',
-                      fontWeight: 800,
-                      color: 'var(--ink)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {item.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 'var(--t-xs)',
-                      lineHeight: 'var(--l-xs)',
-                      fontWeight: 700,
-                      color: 'var(--accent)',
-                    }}
-                  >
-                    {formatRupiah(item.price_idr)}
-                  </span>
-                </div>
-
-                {/* Liquid Toggle Ketersediaan Menu */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerHapticFeedback([25]);
-                    toggleItemAvailability(item.id, !isAvailable);
-                  }}
-                  aria-label={isAvailable ? 'Tandai habis' : 'Tandai tersedia'}
-                  title={isAvailable ? 'Klik untuk tandai habis' : 'Klik untuk tandai tersedia'}
-                  style={{
-                    width: '46px',
-                    height: '26px',
-                    borderRadius: 'var(--r-pill)',
-                    background: isAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: isAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-                      boxShadow: 'var(--sh-sm)',
-                    }}
-                  />
-                </button>
-              </div>
-            );
-          })
+          filteredItems.map((item) => (
+            <PhoneMenuItemCard
+              key={item.id}
+              item={item}
+              onEdit={handleOpenEdit}
+              onToggle={handleToggleAvailability}
+            />
+          ))
         )}
       </div>
 

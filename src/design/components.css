@@ -80,21 +80,21 @@
   height: var(--c-md);
 }
 
-/* Tombol Bahaya Solid Tegas (Menggambarkan Hapus / Destructive Action) */
+/* Tombol Bahaya Solid Selaras Tema (Menggambarkan Hapus tanpa kontras berlebihan) */
 .tk-btn-danger {
   background: var(--danger) !important;
   color: #ffffff !important;
-  border: none !important;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25) !important;
 }
 
 .tk-btn-danger:hover {
-  background: #b91c1c !important;
+  background: #a83138 !important;
 }
 
 .tk-btn-danger:active {
   transform: scale(0.98);
-  background: #991b1b !important;
+  background: #94292f !important;
 }
 
 /* ===== 2. CHIP ===== */
@@ -1855,5 +1855,16 @@ body.tk-modal-open .tk-navbar,
   }
 }
 
+/* ===== OPTIMISASI PERFORMA LAYAR MENU HP / LOW-DEVICE CULLING ===== */
+.tk-phone-menu-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 76px;
+  contain: layout style paint;
+  transform: translateZ(0);
+}
 
-
+/* Reduksi beban blur shader pada kartu berulang di layar HP agar GPU tidak drop fps */
+.tk-phone-screen .tk-phone-menu-card.g-acrylic {
+  -webkit-backdrop-filter: blur(10px) saturate(130%);
+  backdrop-filter: blur(10px) saturate(130%);
+}

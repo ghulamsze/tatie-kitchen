@@ -1,2 +1,0 @@
-// Placeholder feature profil
-export {};
