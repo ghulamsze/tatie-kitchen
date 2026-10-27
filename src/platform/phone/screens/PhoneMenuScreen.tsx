@@ -21,6 +21,7 @@ interface CategoryDropdownProps {
   selectedGroupId: string;
   groups: { id: string; name: string }[];
   onSelectGroup: (groupId: string) => void;
+  direction?: 'down' | 'up';
 }
 
 const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
@@ -28,6 +29,7 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   selectedGroupId,
   groups,
   onSelectGroup,
+  direction = 'down',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,6 +49,8 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
       document.removeEventListener('pointerdown', handleClickOutside as any);
     };
   }, [isOpen]);
+
+  const isUp = direction === 'up';
 
   return (
     <div ref={containerRef} style={{ position: 'relative' }}>
@@ -99,7 +103,9 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
           strokeLinecap="round"
           strokeLinejoin="round"
           style={{
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transform: isUp
+              ? (isOpen ? 'rotate(0deg)' : 'rotate(180deg)')
+              : (isOpen ? 'rotate(180deg)' : 'rotate(0deg)'),
             transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             opacity: 0.75,
           }}
@@ -108,13 +114,15 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
         </svg>
       </button>
 
-      {/* Dropdown Options Popup */}
+      {/* Dropdown / Dropup Options Popup */}
       {isOpen && (
         <div
           role="listbox"
           style={{
             position: 'absolute',
-            top: 'calc(100% + 4px)',
+            ...(isUp
+              ? { bottom: 'calc(100% + 4px)', top: 'auto' }
+              : { top: 'calc(100% + 4px)', bottom: 'auto' }),
             left: 0,
             right: 0,
             zIndex: 60,
@@ -176,7 +184,7 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
 };
 
 export const PhoneMenuScreen: React.FC = () => {
-  const { items, groups, selectedCategory, setCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
+  const { items, groups, selectedCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
 
   const [search, setSearch] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -231,10 +239,55 @@ export const PhoneMenuScreen: React.FC = () => {
     reader.readAsDataURL(croppedBlob);
   };
 
-  // Daftar kategori chip
-  const categories = useMemo(() => {
-    return ['Semua', 'Makanan', 'Mie', 'Snack', 'Minuman'];
-  }, []);
+  // State validasi shake reject red & interaksi foto makanan
+  const [shakeField, setShakeField] = useState<'photo' | 'name' | 'price' | null>(null);
+  const [isPreviewFoodOpen, setIsPreviewFoodOpen] = useState(false);
+  const [isPhotoActionsOpen, setIsPhotoActionsOpen] = useState(false);
+  const foodHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didTriggerFoodHoldRef = useRef(false);
+  const addNameInputRef = useRef<HTMLInputElement>(null);
+  const addPriceInputRef = useRef<HTMLInputElement>(null);
+
+  const triggerShake = (field: 'photo' | 'name' | 'price') => {
+    setShakeField(field);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([40, 50, 40]);
+      }
+    } catch {}
+    setTimeout(() => {
+      setShakeField(null);
+    }, 600);
+  };
+
+  const handlePointerDownFoodPhoto = () => {
+    didTriggerFoodHoldRef.current = false;
+    if (!addPhotoPath) return;
+    foodHoldTimerRef.current = setTimeout(() => {
+      didTriggerFoodHoldRef.current = true;
+      setIsPreviewFoodOpen(true);
+    }, 450);
+  };
+
+  const handlePointerUpFoodPhoto = () => {
+    if (foodHoldTimerRef.current) {
+      clearTimeout(foodHoldTimerRef.current);
+      foodHoldTimerRef.current = null;
+    }
+  };
+
+  const handlePhotoBoxClick = () => {
+    if (didTriggerFoodHoldRef.current) {
+      didTriggerFoodHoldRef.current = false;
+      return;
+    }
+    if (addPhotoPath) {
+      setIsPhotoActionsOpen(true);
+    } else {
+      setTargetPhotoMode('add');
+      foodFileInputRef.current?.click();
+    }
+  };
 
   // Filter items sesuai kategori dan pencarian
   const filteredItems = useMemo(() => {
@@ -294,8 +347,26 @@ export const PhoneMenuScreen: React.FC = () => {
   };
 
   const handleSaveAdd = async () => {
+    // 1. Wajib ada foto makanan
+    if (!addPhotoPath) {
+      triggerShake('photo');
+      return;
+    }
+
+    // 2. Wajib ada nama menu
     const trimmed = addName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      triggerShake('name');
+      addNameInputRef.current?.focus();
+      return;
+    }
+
+    // 3. Wajib ada harga jual > 0
+    if (!addPrice || addPrice <= 0) {
+      triggerShake('price');
+      addPriceInputRef.current?.focus();
+      return;
+    }
 
     const selectedGroup = groups.find((g) => g.id === addGroupId) || groups[0];
 
@@ -314,6 +385,7 @@ export const PhoneMenuScreen: React.FC = () => {
     setAddPriceStr('15.000');
     setAddAvailable(true);
     setAddPhotoPath(null);
+    setShakeField(null);
     setIsAddOpen(false);
   };
 
@@ -369,7 +441,7 @@ export const PhoneMenuScreen: React.FC = () => {
       </div>
 
       {/* 2. Pencarian Menu Sama Persis dengan Tablet */}
-      <div style={{ margin: '0 4px 12px', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div style={{ margin: '0 4px 16px', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center' }}>
         <input
           type="text"
           className="tk-input"
@@ -413,46 +485,6 @@ export const PhoneMenuScreen: React.FC = () => {
             ✕
           </button>
         )}
-      </div>
-
-      {/* 3. Bar Chip Kategori (Sama dengan Tablet, Semua Kategori Tampil Rapi Tanpa Terpotong) */}
-      <div
-        className="tk-category-nav tk-chips-bar"
-        style={{
-          display: 'flex',
-          gap: '6px',
-          width: '100%',
-          padding: '0 4px 12px',
-          margin: 0,
-          flexShrink: 0,
-          boxSizing: 'border-box',
-        }}
-      >
-        {categories.map((cat) => {
-          const isSelected = selectedCategory === cat;
-          return (
-            <button
-              key={cat}
-              type="button"
-              className={`tk-chip ${isSelected ? 'active lime' : ''}`}
-              onClick={() => setCategory(cat)}
-              aria-pressed={isSelected}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                height: '36px',
-                padding: '0 4px',
-                fontSize: '12px',
-                lineHeight: '36px',
-                fontWeight: isSelected ? 800 : 700,
-                textAlign: 'center',
-                boxSizing: 'border-box',
-              }}
-            >
-              {cat}
-            </button>
-          );
-        })}
       </div>
 
       {/* 4. Daftar Kartu Menu Kafe */}
@@ -929,193 +961,211 @@ export const PhoneMenuScreen: React.FC = () => {
               >
                 Tambah Menu Baru
               </b>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: addAvailable ? 'var(--accent)' : 'var(--ink-3)' }}>
-                  {addAvailable ? 'Tersedia' : 'Habis'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAddAvailable(!addAvailable)}
-                  aria-label={addAvailable ? 'Tersedia' : 'Habis'}
-                  title={addAvailable ? 'Tersedia' : 'Habis'}
+              <button
+                type="button"
+                onClick={() => setAddAvailable(!addAvailable)}
+                aria-label={addAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                title={addAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                style={{
+                  width: '44px',
+                  height: '24px',
+                  borderRadius: 'var(--r-pill)',
+                  background: addAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+                  border: 'none',
+                  padding: '2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  transition: 'background 0.2s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <div
                   style={{
-                    width: '44px',
-                    height: '24px',
+                    width: '20px',
+                    height: '20px',
                     borderRadius: 'var(--r-pill)',
-                    background: addAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
+                    background: '#ffffff',
+                    transform: addAvailable ? 'translateX(20px)' : 'translateX(0px)',
+                    transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
+              {/* Baris Pertama: Box Foto (kiri) & Input Nama Menu (kanan) */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                {/* Box Foto Makanan */}
+                <div
+                  className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
+                  onClick={handlePhotoBoxClick}
+                  onPointerDown={handlePointerDownFoodPhoto}
+                  onPointerUp={handlePointerUpFoodPhoto}
+                  onPointerLeave={handlePointerUpFoodPhoto}
+                  onPointerCancel={handlePointerUpFoodPhoto}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
+                  title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: 'var(--r-md)',
+                    background: 'var(--ctl)',
+                    border: shakeField === 'photo' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
                     boxSizing: 'border-box',
-                    transition: 'background 0.2s ease',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    touchAction: 'none',
+                    marginTop: '22px',
                   }}
                 >
+                  {addPhotoPath ? (
+                    <img
+                      src={addPhotoPath}
+                      alt="Foto makanan baru"
+                      draggable={false}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
+                        zIndex: 1,
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={shakeField === 'photo' ? 'var(--danger)' : 'var(--ink-3)'}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                  )}
+
+                  {/* Shield pelindung anti-copy / anti-hold */}
+                  <div
+                    style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  />
+
+                  {/* Icon Sunting Liquid Glass di ujung kanan bawah */}
                   <div
                     style={{
+                      position: 'absolute',
+                      bottom: '2px',
+                      right: '2px',
                       width: '20px',
                       height: '20px',
                       borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: addAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                    }}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-              {/* Foto Makanan */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Foto Makanan (1:1)
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: 'var(--r-md)',
-                      background: 'var(--ctl)',
-                      border: '1px solid var(--ctl-line)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      display: 'grid',
-                      placeItems: 'center',
-                      flexShrink: 0,
+                      background: 'color-mix(in srgb, var(--acrylic-bg) 80%, rgba(0, 0, 0, 0.6))',
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.45)',
+                      color: 'var(--ink)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 3,
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
+                      pointerEvents: 'none',
                     }}
                   >
-                    {addPhotoPath ? (
-                      <img
-                        src={addPhotoPath}
-                        alt="Foto makanan baru"
-                        draggable={false}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--ink-3)"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                        <circle cx="9" cy="9" r="2" />
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                      </svg>
-                    )}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
                   </div>
+                </div>
 
-                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetPhotoMode('add');
-                        foodFileInputRef.current?.click();
-                      }}
-                      style={{
-                        flex: 1,
-                        height: '38px',
-                        borderRadius: 'var(--r-md)',
-                        background: 'var(--ctl)',
-                        border: '1px solid var(--ctl-line)',
-                        color: 'var(--ink)',
-                        fontSize: 'var(--t-xs)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {addPhotoPath ? 'Ganti Foto' : 'Pilih Foto (1:1)'}
-                    </button>
-                    {addPhotoPath && (
-                      <button
-                        type="button"
-                        onClick={() => setAddPhotoPath(null)}
-                        style={{
-                          height: '38px',
-                          padding: '0 12px',
-                          borderRadius: 'var(--r-md)',
-                          background: 'transparent',
-                          border: '1px solid var(--ctl-line)',
-                          color: 'var(--danger)',
-                          fontSize: 'var(--t-xs)',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Hapus
-                      </button>
-                    )}
-                  </div>
+                {/* Input Nama Menu */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: shakeField === 'name' ? 'var(--danger)' : 'var(--ink-3)',
+                      marginBottom: '6px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      transition: 'color 0.15s ease',
+                    }}
+                  >
+                    Nama Menu
+                  </label>
+                  <input
+                    ref={addNameInputRef}
+                    type="text"
+                    className={shakeField === 'name' ? 'tk-field-rejecting' : ''}
+                    placeholder="Contoh: Kopi Susu Aren"
+                    value={addName}
+                    onChange={(e) => {
+                      setAddName(e.target.value);
+                      if (shakeField === 'name') setShakeField(null);
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '56px',
+                      padding: '0 14px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
+                      border: shakeField === 'name' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
+                      color: 'var(--ink)',
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 700,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
                 </div>
               </div>
 
+              {/* Baris Kedua: Harga Jual */}
               <div>
                 <label
                   style={{
                     display: 'block',
                     fontSize: '11px',
                     fontWeight: 800,
-                    color: 'var(--ink-3)',
+                    color: shakeField === 'price' ? 'var(--danger)' : 'var(--ink-3)',
                     marginBottom: '6px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                  }}
-                >
-                  Nama Menu
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Kopi Susu Aren"
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    padding: '0 12px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
+                    transition: 'color 0.15s ease',
                   }}
                 >
                   Harga Jual
                 </label>
-                <div className="tk-price-field">
+                <div
+                  className={`tk-price-field ${shakeField === 'price' ? 'tk-field-rejecting' : ''}`}
+                  style={{
+                    border: shakeField === 'price' ? '1.5px solid var(--danger)' : undefined,
+                  }}
+                >
                   <span
                     style={{
                       fontSize: 'var(--t-sm)',
@@ -1132,6 +1182,7 @@ export const PhoneMenuScreen: React.FC = () => {
                     Rp
                   </span>
                   <input
+                    ref={addPriceInputRef}
                     type="text"
                     inputMode="numeric"
                     className="tk-no-focus-outline"
@@ -1141,6 +1192,7 @@ export const PhoneMenuScreen: React.FC = () => {
                       const formatted = formatThousands(e.target.value);
                       setAddPriceStr(formatted);
                       setAddPrice(parseThousands(formatted));
+                      if (shakeField === 'price') setShakeField(null);
                     }}
                     style={{
                       flex: 1,
@@ -1160,11 +1212,13 @@ export const PhoneMenuScreen: React.FC = () => {
                 </div>
               </div>
 
+              {/* Baris Ketiga: Kategori Menu (Drop Up) */}
               <CategoryDropdown
                 label="Kategori Menu"
                 selectedGroupId={addGroupId}
                 groups={groups}
                 onSelectGroup={(id) => setAddGroupId(id)}
+                direction="up"
               />
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
@@ -1185,6 +1239,209 @@ export const PhoneMenuScreen: React.FC = () => {
                   Tambah Menu
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Opsi Foto Makanan (Sama Persis Profil saat diklik) */}
+      {isPhotoActionsOpen && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsPhotoActionsOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          style={{ zIndex: 99 }}
+        >
+          <div
+            className="g-liquid tk-phone-sheet sh"
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+          >
+            <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)', marginBottom: '4px' }}>
+              Foto Makanan
+            </b>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => {
+                setIsPhotoActionsOpen(false);
+                setIsPreviewFoodOpen(true);
+              }}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Lihat Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => {
+                setIsPhotoActionsOpen(false);
+                setTargetPhotoMode('add');
+                foodFileInputRef.current?.click();
+              }}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>Ganti Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => {
+                setIsPhotoActionsOpen(false);
+                setAddPhotoPath(null);
+              }}
+              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px', color: 'var(--danger)' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>Hapus Foto</span>
+            </button>
+            <button
+              type="button"
+              className="tk-btn-flat"
+              onClick={() => setIsPhotoActionsOpen(false)}
+              style={{ height: '44px', marginTop: '4px' }}
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Pratinjau Foto Makanan (Sama Persis Profil saat di-hold) */}
+      {isPreviewFoodOpen && addPhotoPath && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsPreviewFoodOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          style={{ zIndex: 100 }}
+        >
+          <div
+            className="g-liquid"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              padding: '24px 20px',
+              borderRadius: 'var(--r-xl)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              width: '88%',
+              maxWidth: '320px',
+              textAlign: 'center',
+              animation: 'tk-fade-in 0.2s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '180px',
+                height: '180px',
+                borderRadius: 'var(--r-lg)',
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+                background: 'var(--ctl)',
+                border: '1px solid var(--ctl-line)',
+              }}
+            >
+              <img
+                src={addPhotoPath}
+                alt={addName || 'Foto makanan'}
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                  zIndex: 1,
+                  animation: 'tk-photo-zoom-out 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                }}
+              />
+              {/* Pelindung anti copy/hold */}
+              <div
+                style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              />
+              {/* Icon sunting liquid glass di pojok kanan bawah */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPreviewFoodOpen(false);
+                  setTargetPhotoMode('add');
+                  foodFileInputRef.current?.click();
+                }}
+                aria-label="Sunting foto makanan"
+                title="Sunting foto makanan"
+                className="g-liquid"
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  right: '8px',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: 'var(--r-pill)',
+                  border: '1px solid rgba(255, 255, 255, 0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 5,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+                  color: 'var(--ink)',
+                  background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            </div>
+            <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>
+              {addName || 'Foto Makanan'}
+            </b>
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button
+                type="button"
+                className="tk-btn-flat"
+                onClick={() => {
+                  setIsPreviewFoodOpen(false);
+                  setAddPhotoPath(null);
+                }}
+                style={{ flex: 1, height: '40px', color: 'var(--danger)', fontSize: 'var(--t-xs)', fontWeight: 700 }}
+              >
+                Hapus Foto
+              </button>
+              <button
+                type="button"
+                className="tk-btn-lime"
+                onClick={() => setIsPreviewFoodOpen(false)}
+                style={{ flex: 1, height: '40px', fontSize: 'var(--t-xs)' }}
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

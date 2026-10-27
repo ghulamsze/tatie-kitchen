@@ -368,10 +368,11 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         </div>
       </div>
 
-      {/* 4. Tiga Tombol Aksi: Cetak, Bagikan & Download PNG */}
+      {/* 4. Tiga Tombol Aksi: Cetak, Bagikan & Download PNG (Hanya Icon) */}
       <div
         style={{
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '8px',
           margin: '0 4px 24px',
           boxSizing: 'border-box',
@@ -381,52 +382,44 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           type="button"
           className="tk-btn-flat"
           onClick={handlePrintReceipt}
+          aria-label="Cetak struk"
+          title="Cetak struk"
           style={{
-            flex: 'none',
-            padding: '0 12px',
             height: '48px',
-            fontSize: 'var(--t-sm)',
-            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
             boxSizing: 'border-box',
+            padding: 0,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="6 9 6 2 18 2 18 9" />
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
             <rect x="6" y="14" width="12" height="8" />
           </svg>
-          <span style={{ whiteSpace: 'nowrap' }}>Cetak</span>
         </button>
 
         <button
           type="button"
           className="tk-btn-flat"
           onClick={handleShare}
+          aria-label="Bagikan struk"
+          title="Bagikan struk"
           style={{
-            flex: 'none',
-            padding: '0 14px',
             height: '48px',
-            fontSize: 'var(--t-sm)',
-            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
             boxSizing: 'border-box',
+            padding: 0,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
             <polyline points="16 6 12 2 8 6" />
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
-          <span style={{ whiteSpace: 'nowrap' }}>Bagikan</span>
         </button>
 
         <button
@@ -434,26 +427,42 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           className="tk-btn-lime"
           onClick={handleDownloadPng}
           disabled={isDownloading}
+          aria-label={isDownloading ? 'Menyimpan PNG...' : 'Download PNG'}
+          title={isDownloading ? 'Menyimpan...' : 'Download PNG'}
           style={{
-            flex: 1,
-            padding: '0 10px',
             height: '48px',
-            fontSize: 'var(--t-sm)',
-            fontWeight: 800,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
             boxSizing: 'border-box',
+            padding: 0,
+            opacity: isDownloading ? 0.7 : 1,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            style={{
+              animation: isDownloading ? 'spin 1s linear infinite' : 'none',
+            }}
+          >
+            {isDownloading ? (
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            ) : (
+              <>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </>
+            )}
           </svg>
-          <span style={{ whiteSpace: 'nowrap' }}>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
         </button>
       </div>
 

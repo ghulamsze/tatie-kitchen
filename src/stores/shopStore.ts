@@ -21,7 +21,7 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   name: "Tati’e Kitchen",
   timezone: 'Asia/Makassar',
   phone_no: '0812-3456-7890',
-  address: 'Jl. Tamalate 2 No. 8, Makassar',
+  address: 'RT 04, Desa Srinanti, Kec. Sei Menggaris, Kab. Nunukan, Kalimantan Utara',
   bank_name: 'Bank Kaltimtara',
   bank_account: '1747037252',
   bank_account_holder: 'Hartati Jahri',
@@ -35,7 +35,11 @@ const loadSavedShop = (): ShopSettings => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...DEFAULT_SHOP_SETTINGS, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      const address = (parsed?.address && !parsed.address.includes('Tamalate'))
+        ? parsed.address
+        : DEFAULT_SHOP_SETTINGS.address;
+      return { ...DEFAULT_SHOP_SETTINGS, ...parsed, address };
     }
   } catch (err) {
     logError('shopStore:loadSavedShop', err);

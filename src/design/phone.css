@@ -175,6 +175,14 @@
   overflow: visible !important;
 }
 
+/* Animasi Merah Menolak Khusus Field Input & Box Foto */
+.tk-field-rejecting {
+  border-color: var(--danger) !important;
+  animation: tk-shake-reject 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--danger) 45%, transparent) !important;
+  will-change: transform;
+}
+
 .tk-phone-dot {
   width: 8px;
   height: 8px;

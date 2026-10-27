@@ -65,7 +65,7 @@ export function buildReceiptEscPos(data: ReceiptPrintData): Uint8Array {
     cashierName = 'Kasir',
     notes,
     shopName = 'Tati’e Kitchen',
-    shopAddress = 'Jl. Tamalate 2 No. 8, Makassar',
+    shopAddress = 'RT 04, Desa Srinanti, Kec. Sei Menggaris, Kab. Nunukan, Kalimantan Utara',
   } = data;
 
   const parts: (Uint8Array | number[])[] = [];
