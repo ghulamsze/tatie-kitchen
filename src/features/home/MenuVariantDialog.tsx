@@ -105,7 +105,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
             >
               2. Pilih Ukuran
             </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '4px 2px', margin: '-2px 0 0 0' }}>
               {[
                 { size: 'M', price: 50000 },
                 { size: 'L', price: 90000 },
@@ -130,14 +130,17 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                     border: '1.5px solid var(--ctl-line)',
                     cursor: 'pointer',
                     transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxSizing: 'border-box',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = 'var(--accent)';
+                    e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 14%, var(--acrylic))';
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 6px 16px color-mix(in srgb, var(--accent) 20%, transparent)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = 'var(--ctl-line)';
+                    e.currentTarget.style.background = 'color-mix(in srgb, var(--acrylic) 85%, transparent)';
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = 'none';
                   }}
@@ -170,10 +173,11 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '12px',
-            margin: '16px 0 20px',
+            margin: '10px -4px 14px -4px',
+            padding: '6px 4px 6px 4px',
             maxHeight: '340px',
             overflowY: 'auto',
-            paddingRight: '4px',
+            boxSizing: 'border-box',
           }}
         >
           {item.variants.map((variant) => (
@@ -193,6 +197,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                 cursor: 'pointer',
                 transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                boxSizing: 'border-box',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'var(--accent)';
@@ -228,10 +233,11 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
             display: 'grid',
             gridTemplateColumns: item.variants.length > 3 ? 'repeat(2, 1fr)' : '1fr',
             gap: '12px',
-            margin: '16px 0 20px',
+            margin: '10px -4px 14px -4px',
+            padding: '6px 4px 6px 4px',
             maxHeight: '340px',
             overflowY: 'auto',
-            paddingRight: '4px',
+            boxSizing: 'border-box',
           }}
         >
           {item.variants.map((variant) => {

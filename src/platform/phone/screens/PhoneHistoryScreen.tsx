@@ -26,24 +26,21 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
 
   // Label rentang waktu untuk tombol pill trigger
   const triggerLabel = useMemo(() => {
-    const today = new Date();
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
     if (customDate) {
-      return formatDate(new Date(`${customDate}T12:00:00+08:00`));
+      return `Rentang: ${formatDate(new Date(`${customDate}T12:00:00+08:00`))}`;
     }
     switch (selectedRange) {
       case 'hari-ini':
-        return `Hari ini · ${formatDate(today)}`;
+        return 'Rentang: Hari ini';
       case 'kemarin':
-        return `Kemarin · ${formatDate(yesterday)}`;
+        return 'Rentang: Kemarin';
       case '7-hari':
-        return '7 hari terakhir';
+        return 'Rentang: 7 Hari';
       case '30-hari':
-        return '30 hari terakhir';
+        return 'Rentang: 30 Hari';
       case 'semua':
       default:
-        return 'Semua waktu';
+        return 'Rentang: Semua';
     }
   }, [selectedRange, customDate]);
 
@@ -162,22 +159,31 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       )}
 
-      {/* 1. Header Riwayat Bersih dengan Tombol Pill Rentang Waktu di Samping Kanan Teks Riwayat */}
+      {/* 1. Header Riwayat Bersih dengan Tombol Rentang Waktu Rata Tengah Sumbu Y */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '10px',
+          gap: '12px',
           margin: '0 4px 16px',
+          minHeight: '40px',
           flexShrink: 0,
         }}
       >
-        <h1 className="tk-phone-title" style={{ margin: 0 }}>
+        <h1
+          className="tk-phone-title"
+          style={{
+            margin: 0,
+            lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
           Riwayat
         </h1>
 
-        {/* 2. Tombol Pill Trigger Rentang Waktu di Sebelah Kanan Teks */}
+        {/* 2. Tombol Trigger Rentang Waktu di Sebelah Kanan Teks (Sama Rata Tengah Sudut Y) */}
         <div
           className="tk-phone-range-trigger rg g"
           onClick={() => setIsSheetOpen(true)}
@@ -185,7 +191,13 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
           tabIndex={0}
           aria-haspopup="dialog"
           aria-label="Pilih rentang waktu"
-          style={{ flexShrink: 0, margin: 0 }}
+          style={{
+            flexShrink: 0,
+            margin: 0,
+            height: '36px',
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               setIsSheetOpen(true);
@@ -193,7 +205,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
           }}
         >
           <span>{triggerLabel}</span>
-          <span style={{ color: 'var(--ink-3)' }}>▾</span>
+          <span style={{ color: 'var(--ink-3)', fontSize: '10px' }}>▼</span>
         </div>
       </div>
 

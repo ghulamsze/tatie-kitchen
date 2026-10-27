@@ -101,10 +101,10 @@ export const HistoryScreen: React.FC = React.memo(() => {
             setTempRange(selectedRange);
             setIsRangeSheetOpen(true);
           }}
-          style={{ height: '40px', padding: '0 18px', fontSize: 'var(--t-sm)' }}
+          style={{ height: '40px', padding: '0 18px', fontSize: 'var(--t-sm)', fontWeight: 800 }}
           aria-label="Pilih rentang waktu"
         >
-          <span>Rentang: {rangeLabels[selectedRange]}</span>
+          <span style={{ fontWeight: 800 }}>Rentang: {rangeLabels[selectedRange]}</span>
           <span style={{ fontSize: '10px', opacity: 0.7 }}>▼</span>
         </button>
       </div>
@@ -252,14 +252,14 @@ export const HistoryScreen: React.FC = React.memo(() => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 fontSize: 'var(--t-md)',
-                fontWeight: tempRange === key ? 800 : 500,
+                fontWeight: 800,
                 cursor: 'pointer',
                 border: tempRange === key ? '2px solid var(--ring)' : '1px solid var(--ctl-line)',
                 background: tempRange === key ? 'var(--sel)' : 'var(--ctl)',
                 color: 'var(--ink)',
               }}
             >
-              <span>{rangeLabels[key]}</span>
+              <span style={{ fontWeight: 800 }}>{rangeLabels[key]}</span>
               {tempRange === key && <span style={{ color: 'var(--accent-ink)', fontWeight: 800 }}>✓</span>}
             </button>
           ))}

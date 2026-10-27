@@ -59,24 +59,21 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
 
   // Label rentang waktu untuk tombol pill trigger (persis seperti di Riwayat)
   const triggerLabel = useMemo(() => {
-    const today = new Date();
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
     if (customDate) {
-      return formatDate(new Date(`${customDate}T12:00:00+08:00`));
+      return `Rentang: ${formatDate(new Date(`${customDate}T12:00:00+08:00`))}`;
     }
     switch (selectedRange) {
       case 'hari-ini':
-        return `Hari ini · ${formatDate(today)}`;
+        return 'Rentang: Hari ini';
       case 'kemarin':
-        return `Kemarin · ${formatDate(yesterday)}`;
+        return 'Rentang: Kemarin';
       case '7-hari':
-        return '7 hari terakhir';
+        return 'Rentang: 7 Hari';
       case '30-hari':
-        return '30 hari terakhir';
+        return 'Rentang: 30 Hari';
       case 'semua':
       default:
-        return 'Semua waktu';
+        return 'Rentang: Semua';
     }
   }, [selectedRange, customDate]);
 
@@ -482,7 +479,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           Laporan Penjualan
         </h1>
 
-        {/* 3. Tombol Pill Trigger Rentang Waktu Kompak Seukuran Tab */}
+        {/* 3. Tombol Trigger Rentang Waktu Kompak Seukuran Tab */}
         <div
           className="tk-phone-range-trigger rg g"
           onClick={() => setIsRangeSheetOpen(true)}
@@ -492,7 +489,9 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           aria-label="Pilih rentang waktu laporan"
           style={{
             margin: 0,
+            height: '36px',
             display: 'inline-flex',
+            alignItems: 'center',
             alignSelf: 'flex-start',
             flexShrink: 0,
           }}
@@ -503,7 +502,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           }}
         >
           <span>{triggerLabel}</span>
-          <span style={{ color: 'var(--ink-3)' }}>▾</span>
+          <span style={{ color: 'var(--ink-3)', fontSize: '10px' }}>▼</span>
         </div>
       </div>
 

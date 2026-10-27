@@ -182,25 +182,25 @@
   flex-shrink: 0;
 }
 
-/* Rentang Waktu Pill Trigger (Kompak seukuran tab) */
+/* Rentang Waktu Trigger (Bentuk Rounded Rectangle sama persis dengan Tablet) */
 .tk-phone-range-trigger,
 .rg.g {
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  height: 32px;
-  min-height: 32px;
+  padding: 0 14px;
+  height: 36px;
+  min-height: 36px;
   box-sizing: border-box;
   flex-shrink: 0;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
   background: var(--ctl);
   border: 1px solid var(--ctl-line);
   color: var(--ink);
   font-size: var(--t-xs);
   line-height: var(--l-xs);
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.1s ease;
@@ -340,7 +340,7 @@ body:has(.tk-overlay) .tk-phone-screen {
   border-radius: var(--r-md);
   background: var(--ctl);
   border: 1px solid var(--ctl-line);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--t-md);
   line-height: var(--l-md);
   color: var(--ink);
