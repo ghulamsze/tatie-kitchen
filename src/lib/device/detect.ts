@@ -44,15 +44,15 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   if (env.urlSearch) {
     const params = new URLSearchParams(env.urlSearch);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (paramDevice === 'auto') {
+    if (params.has('phone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+      overrideVal = 'phone';
+    } else if (params.has('tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
+      overrideVal = 'tablet';
+    } else if (params.has('laptop') || paramDevice === 'laptop') {
+      overrideVal = 'laptop';
+    } else if (paramDevice === 'auto') {
       isAutoReset = true;
       overrideVal = null;
-    } else if (paramDevice === 'tablet' || paramDevice === 'tab') {
-      overrideVal = 'tablet';
-    } else if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
-      overrideVal = 'phone';
-    } else if (paramDevice === 'laptop') {
-      overrideVal = 'laptop';
     }
   }
 
@@ -61,10 +61,10 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   const isCapacitorNative = Boolean(env.capacitor?.isNative);
 
   if (!isAutoReset && !overrideVal && env.storedOverride) {
-    // Jangan biarkan storedOverride memaksa mode tablet di HP fisik:
-    // Jika perangkat adalah Capacitor native atau layar fisik < 600px, abaikan paksaan tablet lama
-    if (env.storedOverride === 'tablet' && (isCapacitorNative || (shortestSide > 0 && shortestSide < 600))) {
-      // Abaikan paksaan tablet pada ponsel fisik
+    // Jangan biarkan storedOverride memaksa mode tablet di HP fisik berlayar sempit
+    const isPhysPhone = shortestSide > 0 && shortestSide < 600 && /Mobile/i.test(ua);
+    if (env.storedOverride === 'tablet' && isPhysPhone) {
+      // Abaikan paksaan tablet pada ponsel fisik sempit
     } else if (env.storedOverride === 'tablet' || env.storedOverride === 'laptop' || env.storedOverride === 'phone') {
       overrideVal = env.storedOverride;
     }
@@ -78,7 +78,7 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     basePlatform = 'ios';
   } else if (/iPad/i.test(ua)) {
     basePlatform = 'ios';
-  } else if (/Macintosh/i.test(ua) && touchPoints > 1) {
+  } else if (/Macintosh/i.test(ua) && touchPoints > 0) {
     basePlatform = 'ios'; // iPadOS yang mengaku Mac
   } else if (/Android/i.test(ua)) {
     basePlatform = 'android';
@@ -110,8 +110,10 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   if (isCapacitorNative) {
     const capPlatform = env.capacitor?.platform;
     const platform: Platform = capPlatform === 'android' ? 'android' : capPlatform === 'ios' ? 'ios' : 'unknown';
-    // Di Android/iOS native: jika shortestSide >= 600 anggap tablet, jika di bawah itu anggap phone
-    const formFactor: FormFactor = shortestSide >= 600 ? 'tablet' : 'phone';
+    const hasMobileWord = /Mobile/i.test(ua);
+    const isTabletDimension = shortestSide >= 600 || Math.max(env.screenWidth || 0, env.screenHeight || 0) >= 900;
+    const isTablet = platform === 'ios' ? (/iPad/i.test(ua) || touchPoints > 0) : (!hasMobileWord || isTabletDimension);
+    const formFactor: FormFactor = isTablet ? 'tablet' : 'phone';
     return {
       platform,
       formFactor,
@@ -132,7 +134,7 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
 
     let formFactor: FormFactor = 'laptop';
     if (isMobile) {
-      formFactor = shortestSide >= 600 ? 'tablet' : 'phone';
+      formFactor = (shortestSide >= 600 || Math.max(env.screenWidth || 0, env.screenHeight || 0) >= 900) ? 'tablet' : 'phone';
     }
 
     return {
@@ -152,18 +154,16 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     return { platform: 'ios', formFactor: 'tablet', source: 'user-agent', native: false };
   }
 
-  if (/Macintosh/i.test(ua) && touchPoints > 1) {
+  if (/Macintosh/i.test(ua) && touchPoints > 0) {
     // iPadOS modern yang mengaku Macintosh dengan multitouch
     return { platform: 'ios', formFactor: 'tablet', source: 'user-agent', native: false };
   }
 
   if (/Android/i.test(ua)) {
-    // Penajam: jika sisi terpendek >= 600 px anggap tablet, atau tanpa kata 'Mobile'
+    // Android Tablet: Chrome di tablet Android tidak menyertakan kata 'Mobile', atau layar >= 600px/900px
     const hasMobileWord = /Mobile/i.test(ua);
-    let formFactor: FormFactor = hasMobileWord ? 'phone' : 'tablet';
-    if (shortestSide >= 600) {
-      formFactor = 'tablet';
-    }
+    const isTabletDimension = shortestSide >= 600 || Math.max(env.screenWidth || 0, env.screenHeight || 0) >= 900;
+    const formFactor: FormFactor = (!hasMobileWord || isTabletDimension) ? 'tablet' : 'phone';
     return { platform: 'android', formFactor, source: 'user-agent', native: false };
   }
 
@@ -213,34 +213,34 @@ export function getCurrentDevice(): DeviceInfo {
   if (search) {
     const params = new URLSearchParams(search);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (paramDevice === 'auto') {
-      try {
-        localStorage.removeItem(DEVICE_OVERRIDE_KEY);
-      } catch {
-        // ignore
-      }
-      storedOverride = null;
-    } else if (paramDevice === 'tablet' || paramDevice === 'tab') {
-      try {
-        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'tablet');
-      } catch {
-        // ignore
-      }
-      storedOverride = 'tablet';
-    } else if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+    if (params.has('phone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
       } catch {
         // ignore
       }
       storedOverride = 'phone';
-    } else if (paramDevice === 'laptop') {
+    } else if (params.has('tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
+      try {
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'tablet');
+      } catch {
+        // ignore
+      }
+      storedOverride = 'tablet';
+    } else if (params.has('laptop') || paramDevice === 'laptop') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'laptop');
       } catch {
         // ignore
       }
       storedOverride = 'laptop';
+    } else if (paramDevice === 'auto') {
+      try {
+        localStorage.removeItem(DEVICE_OVERRIDE_KEY);
+      } catch {
+        // ignore
+      }
+      storedOverride = null;
     }
   }
 
@@ -250,13 +250,11 @@ export function getCurrentDevice(): DeviceInfo {
   const screenW = Math.max(physWidth, window.innerWidth);
   const screenH = Math.max(physHeight, window.innerHeight);
 
-  // Jika perangkat fisik adalah ponsel (< 600px) atau Capacitor native tanpa parameter ?device=...,
+  // Jika perangkat fisik adalah ponsel (< 600px) atau ber-UA Mobile tanpa parameter ?device=...,
   // bersihkan storedOverride lama agar tidak pernah memaksakan mode tablet di HP Android
   if (storedOverride === 'tablet' && !search) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const isNativeCap = typeof window !== 'undefined' && Boolean((window as any).Capacitor?.isNativePlatform?.());
-    const isPhysPhone = Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600;
-    if (isNativeCap || isPhysPhone) {
+    const isPhysPhone = Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600 && /Mobile/i.test(navigator.userAgent);
+    if (isPhysPhone) {
       try {
         localStorage.removeItem(DEVICE_OVERRIDE_KEY);
       } catch {
@@ -305,7 +303,9 @@ export function setDeviceOverride(override: FormFactor | 'auto'): void {
   }
 
   // Update query string
-  const url = new URL(window.location.href);
-  url.searchParams.set('device', override);
-  window.location.href = url.toString();
+  if (override === 'auto') {
+    window.location.href = '/device?auto=true';
+  } else {
+    window.location.href = `/device?${override}=true`;
+  }
 }

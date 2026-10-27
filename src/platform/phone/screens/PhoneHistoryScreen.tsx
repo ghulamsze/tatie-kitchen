@@ -97,6 +97,25 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
     setCustomDate(newCustomDate);
   };
 
+  // Kelompok tanggal yang sedang terbuka (hanya "Hari ini" yang terbuka secara default)
+  const [openDates, setOpenDates] = useState<Record<string, boolean>>({});
+  const todayDateStr = useMemo(() => formatDate(new Date()), []);
+
+  const isDateOpen = (dateKey: string) => {
+    if (openDates[dateKey] !== undefined) {
+      return openDates[dateKey];
+    }
+    // Default: hanya hari ini yang terbuka otomatis, tanggal lain tertutup sampai ditekan
+    return dateKey === todayDateStr;
+  };
+
+  const toggleDate = (dateKey: string) => {
+    setOpenDates((prev) => ({
+      ...prev,
+      [dateKey]: !isDateOpen(dateKey),
+    }));
+  };
+
   const handleRowClick = (item: HistoryOrderWithItems) => {
     setSelectedOrder(item);
     if (onSelectOrder) {
@@ -105,10 +124,21 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
   };
 
   return (
-    <div className="tk-phone-screen" style={{ overflow: 'hidden' }}>
+    <div
+      className="tk-phone-screen tk-phone-scrollable tk-custom-slider"
+      style={{
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        height: '100%',
+        paddingBottom: onBack
+          ? 'calc(40px + env(safe-area-inset-bottom, 0px))'
+          : 'calc(100px + env(safe-area-inset-bottom, 0px))',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* 0. Navigasi Kembali jika dibuka sebagai overlay dari Beranda */}
       {onBack && (
-        <div style={{ margin: '8px 4px 12px 4px' }}>
+        <div style={{ margin: '8px 4px 10px 4px', flexShrink: 0 }}>
           <button
             type="button"
             onClick={onBack}
@@ -132,30 +162,44 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       )}
 
-      {/* 1. Header Riwayat Bersih Sesuai Frame 2 PDF */}
-      <h1 className="tk-phone-title">Riwayat</h1>
-
-      {/* 2. Tombol Pill Trigger Rentang Waktu (Liquid Glass Style) */}
+      {/* 1. Header Riwayat Bersih dengan Tombol Pill Rentang Waktu di Samping Kanan Teks Riwayat */}
       <div
-        className="tk-phone-range-trigger rg g"
-        onClick={() => setIsSheetOpen(true)}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-label="Pilih rentang waktu"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            setIsSheetOpen(true);
-          }
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          margin: '0 4px 16px',
+          flexShrink: 0,
         }}
       >
-        <span>{triggerLabel}</span>
-        <span style={{ color: 'var(--ink-3)' }}>▾</span>
+        <h1 className="tk-phone-title" style={{ margin: 0 }}>
+          Riwayat
+        </h1>
+
+        {/* 2. Tombol Pill Trigger Rentang Waktu di Sebelah Kanan Teks */}
+        <div
+          className="tk-phone-range-trigger rg g"
+          onClick={() => setIsSheetOpen(true)}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-label="Pilih rentang waktu"
+          style={{ flexShrink: 0, margin: 0 }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              setIsSheetOpen(true);
+            }
+          }}
+        >
+          <span>{triggerLabel}</span>
+          <span style={{ color: 'var(--ink-3)' }}>▾</span>
+        </div>
       </div>
 
       {/* 3. Daftar Transaksi Dikelompokkan per Tanggal */}
       {groupedOrders.length === 0 ? (
-        <div className="tk-phone-list-card">
+        <div className="tk-phone-list-card" style={{ flexShrink: 0 }}>
           <div
             style={{
               padding: '36px 16px',
@@ -170,124 +214,179 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
         </div>
       ) : (
         <div
-          className="tk-phone-scrollable tk-custom-slider"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            paddingBottom: onBack ? '32px' : 'calc(100px + env(safe-area-inset-bottom, 0px))',
+            flexShrink: 0,
+            width: '100%',
           }}
         >
-          {groupedOrders.map(([dateTitle, dayOrders]) => (
-            <div
-              key={dateTitle}
-              className="tk-phone-list-card"
-              style={{
-                paddingRight: '6px',
-              }}
-            >
-              {/* Header Tanggal */}
+          {groupedOrders.map(([dateTitle, dayOrders]) => {
+            const isExpanded = isDateOpen(dateTitle);
+            const isToday = dateTitle === todayDateStr;
+
+            return (
               <div
-                className="tk-phone-date-header dh2"
+                key={dateTitle}
+                className="tk-phone-list-card"
                 style={{
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 4,
-                  background: 'inherit',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
+                  flexShrink: 0,
+                  margin: '0 4px',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                {dateTitle}
-              </div>
+                {/* Header Tanggal Dropdown / Collapsible */}
+                <div
+                  className="tk-phone-date-header dh2"
+                  onClick={() => toggleDate(dateTitle)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  style={{
+                    background: 'var(--ctl)',
+                    color: 'var(--ink-2)',
+                    padding: '12px 16px',
+                    fontSize: 'var(--t-xs)',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    borderBottom: isExpanded ? '1px solid var(--ctl-line)' : 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    userSelect: 'none',
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      toggleDate(dateTitle);
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{dateTitle}</span>
+                    {isToday && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: 'var(--r-pill)',
+                          background: 'color-mix(in srgb, var(--accent) 20%, transparent)',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        Hari ini
+                      </span>
+                    )}
+                    <span style={{ color: 'var(--ink-3)', fontWeight: 600 }}>
+                      · {dayOrders.length} transaksi
+                    </span>
+                  </div>
 
-              {/* Baris Transaksi per Tanggal Sesuai Frame 2 PDF */}
-              {dayOrders.map((item) => {
-                const { order, items } = item;
-                const timeStr = formatTime(order.created_at);
-                const totalQty =
-                  items?.reduce((sum, it) => sum + (it.qty || 1), 0) || items?.length || 1;
-                const pm = (order.payment_method || 'tunai').toLowerCase();
-                const methodLabel =
-                  pm === 'qris'
-                    ? 'QRIS'
-                    : pm.includes('transfer')
-                    ? 'TF Bank'
-                    : 'Tunai';
-
-                return (
-                  <div
-                    key={order.id}
-                    className="tk-phone-row rw"
-                    onClick={() => handleRowClick(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        handleRowClick(item);
-                      }
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--ink-3)',
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      display: 'inline-block',
                     }}
                   >
-                    {/* Kolom Kiri: Meja & Jumlah Item */}
-                    <div>
-                      <b
-                        style={{
-                          display: 'block',
-                          fontSize: 'var(--t-md)',
-                          lineHeight: 'var(--l-md)',
-                          fontWeight: 800,
-                          color: 'var(--ink)',
-                        }}
-                      >
-                        Meja {order.table_no || '-'}
-                      </b>
-                      <span
-                        style={{
-                          display: 'block',
-                          color: 'var(--ink-3)',
-                          fontSize: 'var(--t-xs)',
-                          lineHeight: 'var(--l-xs)',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {totalQty} item
-                      </span>
-                    </div>
+                    ▼
+                  </span>
+                </div>
 
-                    {/* Kolom Kanan: Nominal Rupiah, Jam Transaksi, & Metode Pembayaran */}
-                    <div style={{ textAlign: 'right' }}>
-                      <b
+                {/* Baris Transaksi per Tanggal (Hanya saat terbuka) */}
+                {isExpanded &&
+                  dayOrders.map((item) => {
+                    const { order, items } = item;
+                    const timeStr = formatTime(order.created_at);
+                    const totalQty =
+                      items?.reduce((sum, it) => sum + (it.qty || 1), 0) || items?.length || 1;
+                    const pm = (order.payment_method || 'tunai').toLowerCase();
+                    const methodLabel =
+                      pm === 'qris'
+                        ? 'QRIS'
+                        : pm.includes('transfer')
+                        ? 'TF Bank'
+                        : 'Tunai';
+
+                    return (
+                      <div
+                        key={order.id}
+                        className="tk-phone-row rw"
+                        onClick={() => handleRowClick(item)}
+                        role="button"
+                        tabIndex={0}
                         style={{
-                          display: 'block',
-                          fontSize: 'var(--t-md)',
-                          lineHeight: 'var(--l-md)',
-                          fontWeight: 800,
-                          color: 'var(--ink)',
+                          flexShrink: 0,
+                          minHeight: '56px',
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleRowClick(item);
+                          }
                         }}
                       >
-                        {formatRupiah(order.total_idr)}
-                      </b>
-                      <span
-                        style={{
-                          display: 'block',
-                          color: 'var(--ink-3)',
-                          fontSize: 'var(--t-xs)',
-                          lineHeight: 'var(--l-xs)',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {timeStr} · {methodLabel}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                        {/* Kolom Kiri: Meja & Jumlah Item */}
+                        <div>
+                          <b
+                            style={{
+                              display: 'block',
+                              fontSize: 'var(--t-md)',
+                              lineHeight: 'var(--l-md)',
+                              fontWeight: 800,
+                              color: 'var(--ink)',
+                            }}
+                          >
+                            Meja {order.table_no || '-'}
+                          </b>
+                          <span
+                            style={{
+                              display: 'block',
+                              color: 'var(--ink-3)',
+                              fontSize: 'var(--t-xs)',
+                              lineHeight: 'var(--l-xs)',
+                              marginTop: '2px',
+                            }}
+                          >
+                            {totalQty} item
+                          </span>
+                        </div>
+
+                        {/* Kolom Kanan: Nominal Rupiah, Jam Transaksi, & Metode Pembayaran */}
+                        <div style={{ textAlign: 'right' }}>
+                          <b
+                            style={{
+                              display: 'block',
+                              fontSize: 'var(--t-md)',
+                              lineHeight: 'var(--l-md)',
+                              fontWeight: 800,
+                              color: 'var(--ink)',
+                            }}
+                          >
+                            {formatRupiah(order.total_idr)}
+                          </b>
+                          <span
+                            style={{
+                              display: 'block',
+                              color: 'var(--ink-3)',
+                              fontSize: 'var(--t-xs)',
+                              lineHeight: 'var(--l-xs)',
+                              marginTop: '2px',
+                            }}
+                          >
+                            {timeStr} · {methodLabel}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            );
+          })}
         </div>
       )}
 

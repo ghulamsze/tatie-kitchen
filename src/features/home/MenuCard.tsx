@@ -158,7 +158,9 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
 
       {/* Tag Harga Liquid Glass di Sudut Kanan Atas */}
       <span className="g-liquid price-tag">
-        {formatRupiah(item.price_idr)}
+        {item.variants && item.variants.length > 0
+          ? `Mulai ${formatRupiah(item.price_idr)}`
+          : formatRupiah(item.price_idr)}
       </span>
 
       {/* Nama Menu di Kiri Bawah */}

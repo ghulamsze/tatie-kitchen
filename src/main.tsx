@@ -6,8 +6,10 @@ import './design/components.css';
 import './design/phone.css';
 import './design/printMenu.css';
 import { initTheme } from './design/theme.ts';
+import { initSecureUrlSession } from './lib/security/secureSession.ts';
 
-// Inisialisasi tema dan palet
+// Inisialisasi token acak URL setiap refresh & tema
+initSecureUrlSession();
 initTheme();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { toPng } from 'html-to-image';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { usePrinterStore } from '../../stores/printerStore.ts';
@@ -8,6 +7,12 @@ import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { playPaymentSound } from '../../lib/sound/sound.ts';
 import { useShopStore } from '../../stores/shopStore.ts';
+import {
+  ReceiptPrintPortal,
+  printReceiptCrossPlatform,
+  downloadReceiptPngCrossPlatform,
+  shareReceiptCrossPlatform,
+} from './ReceiptPrintPortal.tsx';
 
 export interface ReceiptScreenProps {
   onNewOrder: () => void;
@@ -17,7 +22,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
   const { shop } = useShopStore();
   const { lastOrder, lastOrderItems, notes } = useCartStore();
   const { activeCashier } = useCashierStore();
-  const { autoPrint, isPrinting, printOrderReceipt, lastPrintResult } = usePrinterStore();
+  const { autoPrint, isPrinting, isConnected: isPrinterConnected, printOrderReceipt } = usePrinterStore();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -46,72 +51,46 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 1. Bagikan Struk via Web Share API atau salin teks
+  // 1. Bagikan Struk secara adaptif (berkas gambar PNG atau teks WhatsApp) di Android, iOS, Windows, Mac
   const handleShare = async () => {
-    const linesSummary = lastOrderItems
-      .map((item) => `${item.qty}x ${item.name_snapshot} (${formatRupiah(item.price_snapshot_idr * item.qty)})`)
-      .join('\n');
-
-    const paymentLine = isQris
-      ? 'Metode: QRIS'
-      : isTransfer
-      ? 'Metode: TF Bank'
-      : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(change)}`;
-
-    const shareText = `*${shop.name}*\n${shop.address}\n*NOMOR ANTRIAN: ${formatQueueNo(queueNo)}*\nNo. Struk: ${orderId}\nMeja: ${tableNo}\nKasir: ${cashierName}\nWaktu: ${formatDate(orderDate)} ${formatTime(orderDate)}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(total)}\n${paymentLine}\n\nTerima kasih atas pesanan Anda!`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Struk ${shop.name} - Meja ${tableNo}`,
-          text: shareText,
-        });
-        showToast('Struk berhasil dibagikan');
-      } catch (err: unknown) {
-        if ((err as Error)?.name !== 'AbortError') {
-          await navigator.clipboard.writeText(shareText);
-          showToast('Ringkasan struk disalin ke clipboard');
-        }
-      }
-    } else {
-      await navigator.clipboard.writeText(shareText);
-      showToast('Ringkasan struk disalin ke clipboard');
-    }
+    await shareReceiptCrossPlatform({
+      shopName: shop.name || 'Tati’e Kitchen',
+      shopAddress: shop.address || 'Makassar',
+      order: lastOrder,
+      items: lastOrderItems,
+      cashierName,
+      element: receiptRef.current,
+      onShowToast: showToast,
+    });
   };
 
-  // 2. Unduh Struk sebagai berkas PNG
+  // 2. Unduh Struk sebagai berkas PNG (mendukung Android WebView, iOS Safari, dan Laptop)
   const handleDownloadPng = async () => {
     if (!receiptRef.current) return;
     try {
       setIsDownloading(true);
-      const dataUrl = await toPng(receiptRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
+      await downloadReceiptPngCrossPlatform({
+        element: receiptRef.current,
+        filename: `struk-${orderId}.png`,
+        title: `Struk ${shop.name} #${formatQueueNo(queueNo)}`,
+        onShowToast: showToast,
       });
-      const link = document.createElement('a');
-      link.download = `struk-${orderId}.png`;
-      link.href = dataUrl;
-      link.click();
-      showToast('Struk berhasil diunduh sebagai gambar PNG');
-    } catch {
-      showToast('Gagal mengunduh gambar struk');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // 3. Cetak Struk via Printer Thermal Bluetooth VSC MP-58X
+  // 3. Cetak Struk lintas perangkat (Bluetooth printer jika terhubung, fallback ke dialog cetak sistem)
   const handlePrintReceipt = async () => {
-    if (!lastOrder) {
-      showToast('Tidak ada transaksi aktif untuk dicetak');
-      return;
-    }
-    const success = await printOrderReceipt(lastOrder, lastOrderItems, cashierName, notes);
-    if (success) {
-      showToast(`Struk antrian #${formatQueueNo(queueNo)} berhasil dicetak!`);
-    } else {
-      showToast(lastPrintResult?.message || 'Gagal mengirim perintah cetak');
-    }
+    await printReceiptCrossPlatform({
+      order: lastOrder,
+      items: lastOrderItems,
+      cashierName,
+      notes,
+      printOrderReceipt,
+      isPrinterConnected,
+      onShowToast: showToast,
+    });
   };
 
   // Cetak otomatis jika fitur auto-print diaktifkan
@@ -351,6 +330,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           <Toast message={toastMessage} />
         </div>
       )}
+
+      {/* Portal Khusus Pencetakan Thermal Sistem (AirPrint / Android Print / Windows) */}
+      <ReceiptPrintPortal
+        shop={shop}
+        order={lastOrder}
+        items={lastOrderItems}
+        cashierName={cashierName}
+        notes={notes}
+      />
     </div>
   );
 };

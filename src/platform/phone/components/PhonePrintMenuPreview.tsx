@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PrintMenuDocument } from './PrintMenuDocument.tsx';
+import { Toast } from '../../../design/components/Toast.tsx';
 
 export interface PhonePrintMenuPreviewProps {
   isOpen: boolean;
@@ -18,6 +19,13 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
   const [isMargin4433, setIsMargin4433] = useState(initialMargin4433);
   const [isInkSaver, setIsInkSaver] = useState(initialInkSaver);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const [isAndroidConfirmOpen, setIsAndroidConfirmOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Pastikan class modal terpasang saat preview aktif
   useEffect(() => {
@@ -31,15 +39,114 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePrint = () => {
+  const isWindows = typeof navigator !== 'undefined' && /Windows NT|Win32|Win64|Windows/i.test(navigator.userAgent);
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await fetch('/assets/docs/tatie-kitchen-menu.pdf');
+      const blob = await res.blob();
+
+      // Jika mendeteksi Windows Desktop: unduh langsung via link Blob URL tanpa membuka share sheet sistem
+      if (isWindows) {
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'tatie-kitchen-menu.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+        showToast('Berkas PDF menu berhasil diunduh ke folder Downloads');
+        setIsAndroidConfirmOpen(false);
+        return;
+      }
+
+      // Untuk Android / iOS: gunakan Share API jika didukung (agar bisa disimpan ke Files / dibagikan ke percetakan)
+      const file = new File([blob], 'tatie-kitchen-menu.pdf', { type: 'application/pdf' });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'Menu Tati’e Kitchen (A4)',
+            files: [file],
+          });
+          showToast('Berkas PDF menu berhasil disimpan / dibagikan');
+          setIsAndroidConfirmOpen(false);
+          return;
+        } catch (err: unknown) {
+          if ((err as Error)?.name === 'AbortError') return;
+        }
+      }
+
+      // Fallback standar via Blob URL
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'tatie-kitchen-menu.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+
+      showToast('Berkas PDF menu tersimpan di perangkat Anda');
+      setIsAndroidConfirmOpen(false);
+    } catch {
+      window.open('/assets/docs/tatie-kitchen-menu.pdf', '_blank');
+      showToast('Membuka berkas PDF menu...');
+      setIsAndroidConfirmOpen(false);
+    }
+  };
+
+  const executeSystemPrint = () => {
+    setIsAndroidConfirmOpen(false);
     if (typeof window !== 'undefined' && typeof window.print === 'function') {
+      document.body.classList.add('is-printing-menu');
       setTimeout(() => {
         try {
           window.print();
-        } catch {
-          // ignore
+        } finally {
+          setTimeout(() => {
+            document.body.classList.remove('is-printing-menu');
+          }, 1500);
         }
-      }, 60);
+      }, 80);
+    }
+  };
+
+  const handleCetakDokumenA4 = async () => {
+    // Jika di Android di mana window.print sering tidak didukung atau terblokir:
+    if (isAndroid) {
+      setIsAndroidConfirmOpen(true);
+      return;
+    }
+
+    // Coba picu cetak sistem bawaan browser (Windows / iOS / macOS)
+    let printFired = false;
+    if (typeof window !== 'undefined' && typeof window.print === 'function') {
+      try {
+        document.body.classList.add('is-printing-menu');
+
+        const onBeforePrint = () => { printFired = true; };
+        window.addEventListener('beforeprint', onBeforePrint);
+
+        window.print();
+        printFired = true;
+
+        setTimeout(() => {
+          window.removeEventListener('beforeprint', onBeforePrint);
+          document.body.classList.remove('is-printing-menu');
+        }, 1500);
+      } catch {
+        printFired = false;
+      }
+    }
+
+    // Jika tidak terjadi sesuatu (window.print diblokir atau gagal):
+    // Sistem otomatis mengarahkan untuk unduh berkas PDF nya
+    if (!printFired) {
+      showToast('Pencetakan tidak merespons, otomatis mengunduh PDF...');
+      await handleDownloadPdf();
     }
   };
 
@@ -258,30 +365,32 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
                   </div>
                 </div>
 
-                {/* Tombol Eksekusi Cetak Dokumen A4 */}
-                <button
-                  type="button"
-                  className="tk-btn-flat"
-                  onClick={handlePrint}
-                  style={{
-                    width: '100%',
-                    height: '46px',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9" />
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                    <rect x="6" y="14" width="12" height="8" />
-                  </svg>
-                  <span>Cetak dokumen A4</span>
-                </button>
+                {/* Tombol Aksi Tunggal: Cetak dokumen A4 (Otomatis unduh PDF jika tidak ada respons cetak) */}
+                <div style={{ marginTop: '8px' }}>
+                  <button
+                    type="button"
+                    className="tk-btn-lime"
+                    onClick={handleCetakDokumenA4}
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      fontSize: 'var(--t-xs)',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 6 2 18 2 18 9" />
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                      <rect x="6" y="14" width="12" height="8" />
+                    </svg>
+                    <span>Cetak dokumen A4</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -319,6 +428,63 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
             />
           </div>
         </div>
+
+        {/* Dialog Otomatis Konfirmasi Simpan PDF untuk Android */}
+        {isAndroidConfirmOpen && (
+          <div
+            className="tk-phone-overlay ov"
+            onClick={() => setIsAndroidConfirmOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Konfirmasi Simpan Berkas PDF Menu"
+            style={{ zIndex: 120 }}
+          >
+            <div
+              className="g-liquid tk-phone-dialog"
+              onClick={(e) => e.stopPropagation()}
+              style={{ gap: '14px', maxWidth: '340px' }}
+            >
+              <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)', fontWeight: 800, color: 'var(--ink)' }}>
+                Simpan Berkas PDF Menu?
+              </b>
+              <span style={{ fontSize: 'var(--t-xs)', lineHeight: '1.4', color: 'var(--ink-2)' }}>
+                Di sebagian perangkat Android pencetakan langsung lewat browser terkendala. Anda dapat menyimpan berkas .pdf menu langsung ke perangkat untuk dibawa atau dicetak manual di percetakan.
+              </span>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className="tk-btn-lime"
+                  onClick={handleDownloadPdf}
+                  style={{ width: '100%', height: '46px', fontSize: 'var(--t-xs)', fontWeight: 800 }}
+                >
+                  Simpan Berkas .PDF
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="tk-btn-flat"
+                    onClick={() => setIsAndroidConfirmOpen(false)}
+                    style={{ flex: 1, height: '40px', fontSize: 'var(--t-xs)' }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    className="tk-btn-flat"
+                    onClick={executeSystemPrint}
+                    style={{ flex: 1, height: '40px', fontSize: 'var(--t-xs)' }}
+                  >
+                    Coba Cetak
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notifikasi */}
+        {toastMessage && <Toast message={toastMessage} visible={true} />}
       </div>
     </>
   );

@@ -36,7 +36,7 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Hapus kasir?"
-      description={`Apakah Anda yakin ingin menghapus profil "${cashier.name}"? Tindakan ini dapat dibatalkan melalui pengaturan database.`}
+      description={`Hapus akun kasir "${cashier.name}" dari daftar kasir toko?`}
     >
       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
         <Button

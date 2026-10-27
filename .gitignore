@@ -48,3 +48,6 @@ keystore.properties
 
 # Logs
 *.log
+
+# Root scratch PDFs
+/*.pdf

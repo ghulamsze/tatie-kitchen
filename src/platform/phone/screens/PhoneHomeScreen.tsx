@@ -78,7 +78,7 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
         alignItems: 'center',
         fontSize: 'var(--t-xl)',
         lineHeight: 1,
-        letterSpacing: '-0.02em',
+        letterSpacing: '0',
         userSelect: 'none',
         height: '32px',
         paddingRight: '4px',
@@ -103,7 +103,6 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
           alignItems: 'center',
           lineHeight: 1,
           height: '100%',
-          paddingRight: '2px',
         }}
       >
         {chars.map((char, idx) => {
@@ -120,7 +119,7 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
                   justifyContent: 'center',
                   position: 'relative',
                   height: '100%',
-                  width: isVisible ? '0.30em' : '0px',
+                  width: isVisible ? '0.28em' : '0px',
                   opacity: isVisible ? 1 : 0,
                   overflow: 'hidden',
                   transition:
@@ -150,6 +149,12 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
             );
           }
 
+          const digitWidth = isVisible
+            ? char === '1'
+              ? '0.40em'
+              : '0.62em'
+            : '0.52em';
+
           return (
             <span
               key={`digit-${idx}`}
@@ -159,8 +164,7 @@ const RollingAmount: React.FC<{ amount: number; isVisible: boolean }> = ({
                 justifyContent: 'center',
                 position: 'relative',
                 height: '100%',
-                width: isVisible ? '0.66em' : '0.48em',
-                padding: '0 1px',
+                width: digitWidth,
                 overflow: 'hidden',
                 transition: 'width 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)',
                 textAlign: 'center',
@@ -364,7 +368,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
         </span>
       </div>
 
-      {/* 3. Bagian Transaksi Terbaru dengan Tombol Semua Riwayat di Sebelah Kanan */}
+      {/* 3. Bagian Transaksi Riwayat dengan Tombol Semua Riwayat di Sebelah Kanan */}
       <div
         style={{
           margin: '18px 4px 6px',
@@ -373,9 +377,9 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
           justifyContent: 'space-between',
         }}
       >
-        <div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <h2 className="tk-phone-section-title" style={{ margin: 0 }}>
-            Terbaru
+            Riwayat
           </h2>
           <span
             style={{
@@ -383,8 +387,6 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
               lineHeight: 'var(--l-xs)',
               color: 'var(--ink-3)',
               fontWeight: 600,
-              display: 'block',
-              marginTop: '2px',
             }}
           >
             {formatDate(new Date())}

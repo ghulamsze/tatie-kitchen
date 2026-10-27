@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export type MemberRole = 'owner' | 'device';
-export type MenuCategory = 'makanan' | 'mie' | 'snack' | 'minuman';
+export type MenuCategory = 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman';
 
 export interface Shop {
   id: string;
@@ -41,6 +41,11 @@ export interface MenuGroup {
   sort: number;
 }
 
+export interface MenuVariant {
+  name: string;
+  price_idr: number;
+}
+
 export interface MenuItem {
   id: string;
   shop_id: string;
@@ -52,6 +57,7 @@ export interface MenuItem {
   sort: number;
   active: boolean;
   created_at: string;
+  variants?: MenuVariant[];
 }
 
 export interface Order {

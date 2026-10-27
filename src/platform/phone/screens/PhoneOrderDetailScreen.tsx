@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { toPng } from 'html-to-image';
 import { useHistoryStore } from '../../../stores/historyStore.ts';
 import { useCashierStore } from '../../../stores/cashierStore.ts';
+import { usePrinterStore } from '../../../stores/printerStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import {
   formatRupiah,
@@ -10,6 +10,12 @@ import {
   formatQueueNo,
 } from '../../../lib/format/formatters.ts';
 import { Toast } from '../../../design/components/Toast.tsx';
+import {
+  ReceiptPrintPortal,
+  printReceiptCrossPlatform,
+  downloadReceiptPngCrossPlatform,
+  shareReceiptCrossPlatform,
+} from '../../../features/struk/ReceiptPrintPortal.tsx';
 
 export interface PhoneOrderDetailScreenProps {
   onBack?: () => void;
@@ -19,6 +25,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   const { selectedOrder } = useHistoryStore();
   const { cashiers } = useCashierStore();
   const { shop } = useShopStore();
+  const { isConnected: isPrinterConnected, printOrderReceipt } = usePrinterStore();
 
   const hiddenReceiptRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -61,42 +68,17 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   const isQris = paymentMethod.toUpperCase() === 'QRIS';
   const isTransfer = paymentMethod.toLowerCase().includes('transfer');
 
-  // 1. Bagikan Ringkasan Struk
+  // 1. Bagikan Ringkasan Struk secara lintas perangkat
   const handleShare = async () => {
-    const linesSummary = items
-      .map(
-        (it) =>
-          `${it.qty}x ${it.name_snapshot} (${formatRupiah(it.price_snapshot_idr * it.qty)})`
-      )
-      .join('\n');
-
-    const paymentLine = isQris
-      ? 'Metode: QRIS'
-      : isTransfer
-      ? 'Metode: TF Bank'
-      : `Tunai: ${formatRupiah(cashReceived)}\nKembalian: ${formatRupiah(changeAmount)}`;
-
-    const shareText = `*${shop.name || 'Tati’e Kitchen'}*\n${shop.address || 'Makassar'}\n*NOMOR ANTRIAN: ${formatQueueNo(order.queue_no || 1)}*\nMeja: ${order.table_no || '-'}\nKasir: ${cashierName}\nWaktu: ${dateStr} ${timeStr}\n--------------------\n${linesSummary}\n--------------------\nTotal: ${formatRupiah(order.total_idr)}\n${paymentLine}\n\nTerima kasih atas kunjungan Anda!`;
-
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: `Struk Meja ${order.table_no || '-'} #${formatQueueNo(order.queue_no || 1)}`,
-          text: shareText,
-        });
-        showToast('Struk berhasil dibagikan');
-      } catch (err: unknown) {
-        if ((err as Error)?.name !== 'AbortError') {
-          if (navigator.clipboard) {
-            await navigator.clipboard.writeText(shareText);
-            showToast('Ringkasan struk disalin ke clipboard');
-          }
-        }
-      }
-    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(shareText);
-      showToast('Ringkasan struk disalin ke clipboard');
-    }
+    await shareReceiptCrossPlatform({
+      shopName: shop.name || 'Tati’e Kitchen',
+      shopAddress: shop.address || 'Makassar',
+      order,
+      items,
+      cashierName,
+      element: hiddenReceiptRef.current,
+      onShowToast: showToast,
+    });
   };
 
   // 2. Unduh Gambar Struk PNG yang 100% Identik dengan Struk Tablet
@@ -104,20 +86,28 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
     if (!hiddenReceiptRef.current) return;
     try {
       setIsDownloading(true);
-      const dataUrl = await toPng(hiddenReceiptRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
+      await downloadReceiptPngCrossPlatform({
+        element: hiddenReceiptRef.current,
+        filename: `struk-antrean-${formatQueueNo(order.queue_no || 1)}-meja-${order.table_no || '0'}.png`,
+        title: `Struk Meja ${order.table_no || '-'} #${formatQueueNo(order.queue_no || 1)}`,
+        onShowToast: showToast,
       });
-      const link = document.createElement('a');
-      link.download = `struk-antrean-${formatQueueNo(order.queue_no || 1)}-meja-${order.table_no || '0'}.png`;
-      link.href = dataUrl;
-      link.click();
-      showToast('Struk berhasil diunduh sebagai gambar PNG');
-    } catch {
-      showToast('Gagal membuat gambar struk');
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  // 3. Cetak Struk lintas perangkat (Bluetooth printer jika terhubung, fallback ke cetak sistem)
+  const handlePrintReceipt = async () => {
+    await printReceiptCrossPlatform({
+      order,
+      items,
+      cashierName,
+      notes: order.notes,
+      printOrderReceipt,
+      isPrinterConnected,
+      onShowToast: showToast,
+    });
   };
 
   return (
@@ -378,7 +368,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         </div>
       </div>
 
-      {/* 4. Dua Tombol Aksi: Download PNG (1 Baris) & Bagikan (Tanpa Emoji) */}
+      {/* 4. Tiga Tombol Aksi: Cetak, Bagikan & Download PNG */}
       <div
         style={{
           display: 'flex',
@@ -390,10 +380,36 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         <button
           type="button"
           className="tk-btn-flat"
+          onClick={handlePrintReceipt}
+          style={{
+            flex: 'none',
+            padding: '0 12px',
+            height: '48px',
+            fontSize: 'var(--t-sm)',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          <span style={{ whiteSpace: 'nowrap' }}>Cetak</span>
+        </button>
+
+        <button
+          type="button"
+          className="tk-btn-flat"
           onClick={handleShare}
           style={{
             flex: 'none',
-            padding: '0 16px',
+            padding: '0 14px',
             height: '48px',
             fontSize: 'var(--t-sm)',
             fontWeight: 700,
@@ -420,7 +436,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           disabled={isDownloading}
           style={{
             flex: 1,
-            padding: '0 12px',
+            padding: '0 10px',
             height: '48px',
             fontSize: 'var(--t-sm)',
             fontWeight: 800,
@@ -440,6 +456,15 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           <span style={{ whiteSpace: 'nowrap' }}>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
         </button>
       </div>
+
+      {/* Portal Khusus Cetak Thermal Sistem */}
+      <ReceiptPrintPortal
+        shop={shop}
+        order={order}
+        items={items}
+        cashierName={cashierName}
+        notes={order.notes}
+      />
 
       {/* Notifikasi Toast */}
       {toastMessage && (

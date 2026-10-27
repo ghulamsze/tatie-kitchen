@@ -14,7 +14,20 @@ export type DateRangePreset = 'hari-ini' | 'kemarin' | '7-hari' | '30-hari' | 's
 // Riwayat transaksi default dikosongkan sesuai permintaan
 export const SEED_HISTORY_ORDERS: HistoryOrderWithItems[] = [];
 
-const HISTORY_RESET_KEY = 'tk_history_reset_20261024_v2';
+const HISTORY_RESET_KEY = 'tk_history_reset_20261027_v3';
+const RANGE_STORAGE_KEY = 'tk_history_selected_range';
+
+const loadSavedRange = (): DateRangePreset => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(RANGE_STORAGE_KEY) as DateRangePreset | null;
+      if (saved && ['hari-ini', 'kemarin', '7-hari', '30-hari', 'semua'].includes(saved)) {
+        return saved;
+      }
+    }
+  } catch {}
+  return 'hari-ini';
+};
 
 const loadSavedOrders = (): HistoryOrderWithItems[] => {
   try {
@@ -51,10 +64,17 @@ interface HistoryState {
 
 export const useHistoryStore = create<HistoryState>((set) => ({
   orders: loadSavedOrders(),
-  selectedRange: 'hari-ini',
+  selectedRange: loadSavedRange(),
   selectedOrder: null,
 
-  setRange: (range) => set({ selectedRange: range }),
+  setRange: (range) => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(RANGE_STORAGE_KEY, range);
+      }
+    } catch {}
+    set({ selectedRange: range });
+  },
   setSelectedOrder: (order) => set({ selectedOrder: order }),
 
   clearHistory: () => {

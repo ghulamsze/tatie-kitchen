@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useHistoryStore, DateRangePreset } from '../../../stores/historyStore.ts';
 import { useMenuStore } from '../../../stores/menuStore.ts';
 import {
@@ -21,6 +21,8 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
   const [customDate, setCustomDate] = useState<string | undefined>(undefined);
   const [isRangeSheetOpen, setIsRangeSheetOpen] = useState(false);
   const [selectedBarIdx, setSelectedBarIdx] = useState<number | null>(null);
+
+  const chartScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchOrders().catch(() => {});
@@ -163,25 +165,22 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
     return { sorted, totalItemsSold, maxQty };
   }, [filteredOrders, allMenuItems]);
 
-  const avgOrderValue = totalCount > 0 ? Math.round(totalOmzet / totalCount) : 0;
-
   // Apakah rentang waktu berupa satu hari penuh (Hari Ini / Kemarin / Pilih Tanggal)
   const isSingleDay = selectedRange === 'hari-ini' || selectedRange === 'kemarin' || Boolean(customDate);
 
   // Struktur Data Grafik:
-  // 1. Single Day: Pembagian Jam Pesan (08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22, 22-24)
+  // 1. Single Day: Jam Kerja 10.00 - 23.00 (10-12, 12-14, 14-16, 16-18, 18-20, 20-22, 22-23)
   // 2. Multi-Day (7 hari / 30 hari / semua): Pembagian Tanggal
   const chartData = useMemo(() => {
     if (isSingleDay) {
       const hourBuckets = [
-        { label: '08-10', startH: 8, endH: 10, fullLabel: '08:00 - 10:00', total: 0, count: 0 },
         { label: '10-12', startH: 10, endH: 12, fullLabel: '10:00 - 12:00', total: 0, count: 0 },
         { label: '12-14', startH: 12, endH: 14, fullLabel: '12:00 - 14:00', total: 0, count: 0 },
         { label: '14-16', startH: 14, endH: 16, fullLabel: '14:00 - 16:00', total: 0, count: 0 },
         { label: '16-18', startH: 16, endH: 18, fullLabel: '16:00 - 18:00', total: 0, count: 0 },
         { label: '18-20', startH: 18, endH: 20, fullLabel: '18:00 - 20:00', total: 0, count: 0 },
         { label: '20-22', startH: 20, endH: 22, fullLabel: '20:00 - 22:00', total: 0, count: 0 },
-        { label: '22-24', startH: 22, endH: 24, fullLabel: '22:00 - 24:00', total: 0, count: 0 },
+        { label: '22-23', startH: 22, endH: 23, fullLabel: '22:00 - 23:00', total: 0, count: 0 },
       ];
 
       filteredOrders.forEach(({ order }) => {
@@ -196,7 +195,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
 
         let bucket = hourBuckets.find((b) => hour >= b.startH && hour < b.endH);
         if (!bucket) {
-          if (hour < 8) bucket = hourBuckets[0];
+          if (hour < 10) bucket = hourBuckets[0];
           else bucket = hourBuckets[hourBuckets.length - 1];
         }
         bucket.total += total;
@@ -269,7 +268,6 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
 
     const items = Array.from(dateMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-10) // Tampilkan maksimal 10 hari terakhir agar muat rapi di layar
       .map(([, v]) => v);
 
     return {
@@ -284,6 +282,52 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
     const max = Math.max(...chartData.items.map((it) => it.total), 0);
     return max > 0 ? max : 1;
   }, [chartData]);
+
+  // Perhitungan titik koordinat penggabungan Bar Chart + Line Graph (Spline & Gradient Area)
+  const chartPoints = useMemo(() => {
+    const items = chartData.items;
+    const n = items.length;
+    if (n === 0) return [];
+    const isScrollable = n > 8;
+
+    return items.map((bar, idx) => {
+      const heightPercent = bar.total > 0
+        ? Math.max(12, Math.round((bar.total / maxChartValue) * 100))
+        : 6;
+
+      // X koordinat: jika scrollable, lebar kolom 42px + gap 8px (center = idx * 50 + 21).
+      // jika non-scrollable, sebar merata di canvas viewBox 1000 (center = (idx + 0.5) / n * 1000).
+      const x = isScrollable ? idx * 50 + 21 : Math.round(((idx + 0.5) / n) * 1000);
+      // Y koordinat: terbentang dari 100 (bawah) ke ~10 (atas)
+      const y = Math.round(100 - (heightPercent * 0.82 + 6));
+      return { x, y, bar };
+    });
+  }, [chartData, maxChartValue]);
+
+  const { linePath, areaPath } = useMemo(() => {
+    const pts = chartPoints;
+    if (pts.length === 0) return { linePath: '', areaPath: '' };
+    if (pts.length === 1) {
+      return {
+        linePath: `M ${pts[0].x} ${pts[0].y}`,
+        areaPath: `M ${pts[0].x} ${pts[0].y} L ${pts[0].x} 100 Z`,
+      };
+    }
+
+    let line = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i];
+      const p1 = pts[i + 1];
+      const dx = (p1.x - p0.x) / 3;
+      line += ` C ${p0.x + dx} ${p0.y}, ${p1.x - dx} ${p1.y}, ${p1.x} ${p1.y}`;
+    }
+
+    const first = pts[0];
+    const last = pts[pts.length - 1];
+    const area = `${line} L ${last.x} 100 L ${first.x} 100 Z`;
+
+    return { linePath: line, areaPath: area };
+  }, [chartPoints]);
 
   // Item bar yang sedang aktif diinspeksi (default ke yang memiliki omzet tertinggi jika ada, atau bar terakhir)
   const activeBar = useMemo(() => {
@@ -302,6 +346,13 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
     setCustomDate(newCustomDate);
     setSelectedBarIdx(null);
   };
+
+  // Otomatis scroll grafik ke tanggal terbaru di sisi kanan saat rentang berubah
+  useEffect(() => {
+    if (chartScrollRef.current) {
+      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+    }
+  }, [chartData, selectedRange]);
 
   return (
     <div
@@ -368,7 +419,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
       </div>
 
       {/* 4. Hero Card Ringkasan Omzet & Transaksi (Bersih tanpa bagian merah shoulder) */}
-      <div className="g-acrylic tk-phone-hero" style={{ margin: '0 4px 14px' }}>
+      <div className="g-acrylic tk-phone-hero" style={{ margin: '0 4px 14px', flexShrink: 0 }}>
         <span
           style={{
             fontSize: 'var(--t-sm)',
@@ -417,7 +468,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         </div>
       </div>
 
-      {/* 5. Grafik Penjualan (Bersih Tanpa Badge Header) */}
+      {/* 5. Grafik Penjualan (Scrollable horizontal & bebas bug squish) */}
       <div
         className="g-acrylic"
         style={{
@@ -427,10 +478,11 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
+          flexShrink: 0,
         }}
       >
-        {/* Header Grafik Bersih Tanpa Badge */}
-        <div>
+        {/* Header Grafik Bersih */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <span
             style={{
               fontSize: '11px',
@@ -455,6 +507,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
               borderRadius: 'var(--r-md)',
               background: 'var(--card-sub)',
               border: '1px solid var(--border)',
+              flexShrink: 0,
             }}
           >
             <span style={{ fontSize: 'var(--t-xs)', fontWeight: 700, color: 'var(--ink)' }}>
@@ -469,82 +522,184 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           </div>
         )}
 
-        {/* Visual Bar Chart */}
-        <div
-          style={{
-            height: '124px',
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: '6px',
-            paddingTop: '8px',
-            boxSizing: 'border-box',
-          }}
-        >
-          {chartData.items.map((bar, idx) => {
-            const heightPercent = bar.total > 0
-              ? Math.max(12, Math.round((bar.total / maxChartValue) * 100))
-              : 6;
-            const isSelected = activeBar?.fullLabel === bar.fullLabel;
+        {/* Visual Bar + Line Chart Tergabung (Scrollable horizontal jika data banyak) */}
+        {(() => {
+          const isScrollable = chartData.items.length > 8;
+          const totalTrackWidth = (chartData.items.length - 1) * 50 + 42;
 
-            return (
+          return (
+            <div
+              ref={chartScrollRef}
+              className="tk-custom-slider"
+              style={{
+                height: '148px',
+                minHeight: '148px',
+                flexShrink: 0,
+                overflowX: isScrollable ? 'auto' : 'hidden',
+                overflowY: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                paddingTop: '6px',
+                paddingBottom: '4px',
+                boxSizing: 'border-box',
+              }}
+            >
               <div
-                key={bar.fullLabel + idx}
-                onClick={() => setSelectedBarIdx(idx)}
                 style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  position: 'relative',
+                  width: isScrollable ? `${totalTrackWidth}px` : '100%',
+                  minWidth: '100%',
                   height: '100%',
-                  justifyContent: 'flex-end',
-                  cursor: 'pointer',
-                  userSelect: 'none',
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  gap: '8px',
                 }}
               >
-                {/* Kolom Bar */}
-                <div
+                {/* Overlay Garis Spline & Gradasi Area yang Menghubungkan Antar Batang */}
+                <svg
                   style={{
-                    width: '100%',
-                    maxWidth: '32px',
-                    height: `${heightPercent}%`,
-                    borderRadius: 'var(--r-sm)',
-                    background: isSelected
-                      ? 'var(--accent)'
-                      : bar.total > 0
-                      ? 'color-mix(in srgb, var(--accent) 45%, var(--ctl-line))'
-                      : 'var(--card-sub)',
-                    boxShadow: isSelected
-                      ? '0 0 12px color-mix(in srgb, var(--accent) 40%, transparent)'
-                      : 'none',
-                    transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease',
-                    minHeight: '6px',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: isScrollable ? `${totalTrackWidth}px` : '100%',
+                    height: '112px',
+                    pointerEvents: 'none',
+                    zIndex: 3,
+                    overflow: 'visible',
                   }}
-                />
-
-                {/* Label Bawah */}
-                <span
-                  style={{
-                    fontSize: '9px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? 'var(--ink)' : 'var(--ink-3)',
-                    marginTop: '6px',
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '100%',
-                  }}
+                  viewBox={isScrollable ? `0 0 ${totalTrackWidth} 100` : '0 0 1000 100'}
+                  preserveAspectRatio="none"
                 >
-                  {bar.label}
-                </span>
+                  <defs>
+                    <linearGradient id="tkSalesChartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
+                      <stop offset="70%" stopColor="var(--accent)" stopOpacity="0.05" />
+                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Area gradasi lembut menghubungkan dasar grafik */}
+                  {areaPath && <path d={areaPath} fill="url(#tkSalesChartAreaGrad)" />}
+
+                  {/* Garis lengkung halus (spline) yang menyambungkan seluruh puncak grafik */}
+                  {linePath && (
+                    <path
+                      d={linePath}
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeWidth={isScrollable ? 2.5 : 2.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+
+                  {/* Titik penghubung (dots) pada setiap puncak batang */}
+                  {chartPoints.map((pt, idx) => {
+                    const isSelected = activeBar?.fullLabel === pt.bar.fullLabel;
+                    const hasSales = pt.bar.total > 0;
+                    return (
+                      <g key={`pt-${idx}`}>
+                        {isSelected && (
+                          <circle
+                            cx={pt.x}
+                            cy={pt.y}
+                            r={isScrollable ? 6 : 7}
+                            fill="color-mix(in srgb, var(--accent) 35%, transparent)"
+                          />
+                        )}
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={isSelected ? (isScrollable ? 4 : 4.5) : (isScrollable ? 2.5 : 3)}
+                          fill={isSelected ? '#ffffff' : hasSales ? 'var(--accent)' : 'var(--card-sub)'}
+                          stroke="var(--accent)"
+                          strokeWidth={isSelected ? 2 : 1}
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* Batang-batang Bar Chart Interaktif */}
+                {chartData.items.map((bar, idx) => {
+                  const heightPercent = bar.total > 0
+                    ? Math.max(12, Math.round((bar.total / maxChartValue) * 100))
+                    : 6;
+                  const isSelected = activeBar?.fullLabel === bar.fullLabel;
+
+                  return (
+                    <div
+                      key={bar.fullLabel + idx}
+                      onClick={() => setSelectedBarIdx(idx)}
+                      style={{
+                        flex: isScrollable ? '0 0 42px' : 1,
+                        minWidth: isScrollable ? '42px' : 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        zIndex: 2,
+                      }}
+                    >
+                      {/* Area Track Batang Bar */}
+                      <div
+                        style={{
+                          flex: 1,
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          justifyContent: 'center',
+                          paddingBottom: '4px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '100%',
+                            maxWidth: isScrollable ? '26px' : '30px',
+                            height: `${heightPercent}%`,
+                            borderRadius: 'var(--r-sm)',
+                            background: isSelected
+                              ? 'color-mix(in srgb, var(--accent) 85%, transparent)'
+                              : bar.total > 0
+                              ? 'color-mix(in srgb, var(--accent) 35%, var(--card-sub))'
+                              : 'var(--card-sub)',
+                            boxShadow: isSelected
+                              ? '0 0 10px color-mix(in srgb, var(--accent) 40%, transparent)'
+                              : 'none',
+                            transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease',
+                            minHeight: '6px',
+                          }}
+                        />
+                      </div>
+
+                      {/* Label Jam/Tanggal */}
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: isSelected ? 800 : 600,
+                          color: isSelected ? 'var(--ink)' : 'var(--ink-3)',
+                          marginTop: '2px',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '100%',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {bar.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 6. Card Rincian Metode Pembayaran (Format Bubble Persis seperti Gambar 2) */}
-      <div style={{ margin: '0 4px 14px' }}>
+      <div style={{ margin: '0 4px 14px', flexShrink: 0 }}>
         <div style={{ margin: '0 0 8px 4px' }}>
           <span
             style={{
@@ -724,28 +879,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         </div>
       </div>
 
-      {/* 7. Statistik Rata-rata Transaksi */}
-      <div
-        className="g-acrylic"
-        style={{
-          borderRadius: 'var(--r-lg)',
-          padding: '12px 16px',
-          margin: '0 4px 14px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', fontWeight: 600 }}>
-          Rata-rata Nilai Transaksi
-        </span>
-        <b style={{ fontSize: 'var(--t-sm)', fontWeight: 800, color: 'var(--ink)' }}>
-          {formatRupiah(avgOrderValue)}
-        </b>
-      </div>
-
-      {/* 8. Menu Terlaris (Desain Keren dengan Medali, Foto Makanan Besar, & Bar Progres) */}
+      {/* 7. Menu Terlaris (Desain Keren dengan Medali, Foto Makanan Besar, & Bar Progres) */}
       {topItems.sorted.length > 0 && (
         <div
           className="g-acrylic"
@@ -756,9 +890,10 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <span
               style={{
                 fontSize: '11px',
@@ -769,9 +904,6 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
               }}
             >
               Menu Terlaris
-            </span>
-            <span style={{ fontSize: '11px', color: 'var(--ink-3)', fontWeight: 600 }}>
-              Top {topItems.sorted.length} Menu
             </span>
           </div>
 

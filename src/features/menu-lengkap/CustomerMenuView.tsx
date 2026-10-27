@@ -8,8 +8,8 @@ export interface CustomerMenuViewProps {
 
 interface MenuGroupDefinition {
   title: string;
-  category: 'makanan' | 'mie' | 'snack' | 'minuman';
-  iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack';
+  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman';
+  iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread';
   items: { name: string; defaultPrice: number }[];
 }
 
@@ -173,16 +173,56 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
   {
-    title: 'Burger dan roti',
+    title: 'Burger & kebab',
     category: 'snack',
     iconType: 'snack',
     items: [
       { name: 'Burger Telur', defaultPrice: 20000 },
       { name: 'Burger Daging', defaultPrice: 20000 },
       { name: 'Burger Komplit', defaultPrice: 25000 },
-      { name: 'Roti Bakar', defaultPrice: 25000 },
-      { name: 'Roti Jhon', defaultPrice: 30000 },
       { name: 'Kebab', defaultPrice: 30000 },
+    ],
+  },
+
+  // --- ROTI & KUE (KELOMPOK BARU) ---
+  {
+    title: 'Roti & pastry manis',
+    category: 'roti',
+    iconType: 'bread',
+    items: [
+      { name: 'Roti Bakar', defaultPrice: 25000 },
+      { name: 'Roti John', defaultPrice: 30000 },
+      { name: 'Roti Coklat', defaultPrice: 8000 },
+      { name: 'Roti Keju', defaultPrice: 8000 },
+      { name: 'Roti Meses', defaultPrice: 8000 },
+      { name: 'Roti Cream Keju', defaultPrice: 10000 },
+      { name: 'Roti Cream Meses', defaultPrice: 10000 },
+    ],
+  },
+  {
+    title: 'Roti spesial & pizza',
+    category: 'roti',
+    iconType: 'bread',
+    items: [
+      { name: 'Roti Abon', defaultPrice: 10000 },
+      { name: "Roti'O", defaultPrice: 10000 },
+      { name: 'Roti Sosis', defaultPrice: 10000 },
+      { name: 'Roti Pisang Coklat', defaultPrice: 10000 },
+      { name: 'Roti Pintal Sosis', defaultPrice: 15000 },
+      { name: 'Roti Sobek', defaultPrice: 30000 },
+      { name: 'Pizza Big', defaultPrice: 100000 },
+    ],
+  },
+  {
+    title: 'Kue, donat & cake ultah',
+    category: 'roti',
+    iconType: 'bread',
+    items: [
+      { name: 'Donat', defaultPrice: 18000 },
+      { name: 'Brownies', defaultPrice: 50000 },
+      { name: 'Bolu Vanila', defaultPrice: 50000 },
+      { name: 'Bolu Pandan', defaultPrice: 50000 },
+      { name: 'Cake Ultah', defaultPrice: 100000 },
     ],
   },
 ];
@@ -242,14 +282,15 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'snack' | 'minuman'>('semua');
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman'>('semua');
   const { items } = useMenuStore();
 
   const categories = [
     { key: 'semua', label: 'Semua' },
+    { key: 'snack', label: 'Snack' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'mie', label: 'Mie' },
-    { key: 'snack', label: 'Snack' },
+    { key: 'roti', label: 'Roti' },
     { key: 'minuman', label: 'Minuman' },
   ] as const;
 

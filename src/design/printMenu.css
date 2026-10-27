@@ -425,35 +425,29 @@
 }
 
 /* Kontainer Portal Cetak Khusus Browser Window.Print */
-#mps-print-portal {
+#mps-print-portal,
+#tk-receipt-print-portal {
   display: none;
 }
 
 /* ==========================================================================
    ATURAN CETAK PRINTER (@media print)
-   Menyembunyikan UI layar dan hanya mencetak halaman A4
+   Menyembunyikan UI layar dan mencetak dokumen menu A4 atau struk kasir
    ========================================================================== */
-@page {
-  size: 210mm 297mm;
-  margin: 0;
-}
-
 @media print {
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
-    width: 210mm !important;
-    min-width: 210mm !important;
     overflow: visible !important;
   }
 
-  /* Sembunyikan SEMUA elemen anak langsung dari body KECUALI portal dokumen cetak */
-  body > *:not(#mps-print-portal) {
+  /* 1. Cetak Dokumen Menu Fisik A4 */
+  body.is-printing-menu > *:not(#mps-print-portal) {
     display: none !important;
   }
 
-  #mps-print-portal {
+  body.is-printing-menu #mps-print-portal {
     display: block !important;
     position: static !important;
     width: 210mm !important;
@@ -461,6 +455,45 @@
     padding: 0 !important;
     background: transparent !important;
     overflow: visible !important;
+  }
+
+  /* 2. Cetak Struk Kasir Thermal 58mm */
+  body.is-printing-receipt > *:not(#tk-receipt-print-portal) {
+    display: none !important;
+  }
+
+  body.is-printing-receipt #tk-receipt-print-portal {
+    display: block !important;
+    position: static !important;
+    width: 54mm !important;
+    max-width: 54mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 0 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #tk-receipt-print-portal * {
+    color: #000000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  #tk-receipt-print-portal hr {
+    border: none !important;
+    border-top: 1px dashed #000000 !important;
+    margin: 4px 0 !important;
+  }
+
+  /* Fallback jika tidak ada class spesifik */
+  body:not(.is-printing-menu):not(.is-printing-receipt) > *:not(#mps-print-portal):not(#tk-receipt-print-portal) {
+    display: none !important;
   }
 
   #mps-print-portal #mps-root,

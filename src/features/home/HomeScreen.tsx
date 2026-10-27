@@ -4,6 +4,8 @@ import { useCartStore } from '../../stores/cartStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { MenuCard } from './MenuCard.tsx';
+import { MenuVariantDialog } from './MenuVariantDialog.tsx';
+import { MenuItem } from '../../lib/supabase/types.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
@@ -22,6 +24,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 }) => {
   const [isClearing, setIsClearing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedVariantItem, setSelectedVariantItem] = useState<MenuItem | null>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const handleManualRefresh = async () => {
@@ -136,6 +139,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     { key: 'Snack', label: 'Snack' },
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
+    { key: 'Roti', label: 'Roti' },
     { key: 'Minuman', label: 'Minuman' },
   ];
 
@@ -148,6 +152,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
         if (catLower === 'makanan' && !item.group_id.includes('makanan')) return false;
         if (catLower === 'mie' && !item.group_id.includes('mie')) return false;
         if (catLower === 'snack' && !item.group_id.includes('snack')) return false;
+        if (catLower === 'roti' && !item.group_id.includes('roti')) return false;
         if (catLower === 'minuman' && !item.group_id.includes('minuman')) return false;
       }
       // 2. Query pencarian
@@ -331,7 +336,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
                 key={item.id}
                 item={item}
                 isHeld={heldItem?.id === item.id}
-                onAdd={(it) => addItem(it)}
+                onAdd={(it) => {
+                  if (it.variants && it.variants.length > 0) {
+                    setSelectedVariantItem(it);
+                  } else {
+                    addItem(it);
+                  }
+                }}
                 onHold={(it) => setHeldItem(it)}
               />
             ))}
@@ -537,6 +548,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
           </div>
         </div>
       </div>
+
+      {/* Dialog Pilihan Varian Menu (Khusus Tablet) */}
+      <MenuVariantDialog
+        item={selectedVariantItem}
+        isOpen={Boolean(selectedVariantItem)}
+        onClose={() => setSelectedVariantItem(null)}
+        onSelectVariant={(variant) => {
+          if (selectedVariantItem) {
+            addItem({
+              ...selectedVariantItem,
+              id: `${selectedVariantItem.id}-${variant.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+              name: `${selectedVariantItem.name} (${variant.name})`,
+              price_idr: variant.price_idr,
+            });
+            setSelectedVariantItem(null);
+          }
+        }}
+      />
 
       {/* Toast Notifikasi Feedback Status */}
       {toastMessage && (
