@@ -19,6 +19,104 @@ export interface NavbarPillProps {
   isBlocked?: boolean;
 }
 
+const renderNavIcon = (item: NavItem, isActive: boolean) => {
+  switch (item) {
+    case 'Beranda':
+      // Icon Home: active = fill, inactive = outline
+      return isActive ? (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+          aria-hidden="true"
+        >
+          <path d="M11.293 2.293a1 1 0 0 1 1.414 0l9 9A1 1 0 0 1 21 13h-1v7.5A1.5 1.5 0 0 1 18.5 22h-4a1 1 0 0 1-1-1v-4.5a1.5 1.5 0 0 0-3 0V21a1 1 0 0 1-1 1h-4A1.5 1.5 0 0 1 4 20.5V13H3a1 1 0 0 1-.707-1.707l9-9z" />
+        </svg>
+      ) : (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 10.5L12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-4.5a1 1 0 0 1-1-1v-4a2 2 0 0 0-4 0v4a1 1 0 0 1-1 1H4.5A1.5 1.5 0 0 1 3 20v-9.5z" />
+        </svg>
+      );
+    case 'Riwayat':
+      // Icon Menu (3 lines): active = fill, inactive = outline
+      return isActive ? (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+          aria-hidden="true"
+        >
+          <rect x="3" y="4.75" width="18" height="3.5" rx="1.75" />
+          <rect x="3" y="10.25" width="18" height="3.5" rx="1.75" />
+          <rect x="3" y="15.75" width="18" height="3.5" rx="1.75" />
+        </svg>
+      ) : (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="4" y1="6.5" x2="20" y2="6.5" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="17.5" x2="20" y2="17.5" />
+        </svg>
+      );
+    case 'Akun':
+      // Icon Pengaturan (Gear/Settings): active = fill, inactive = outline
+      return isActive ? (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM9.456 2.052a1.5 1.5 0 0 1 1.488-.052l.245.127c.475.247.986.377 1.506.38a3.42 3.42 0 0 0 1.504-.378l.247-.128a1.5 1.5 0 0 1 2.062.59l1.196 2.072a1.5 1.5 0 0 1-.417 1.996l-.213.149c-.43.3-.77.7-.992 1.17a3.42 3.42 0 0 0-.001 2.984c.221.47.561.87.992 1.17l.213.149a1.5 1.5 0 0 1 .417 1.996l-1.196 2.072a1.5 1.5 0 0 1-2.062.59l-.247-.128a3.42 3.42 0 0 0-3.01-.002l-.245.128a1.5 1.5 0 0 1-2.062-.59l-1.196-2.072a1.5 1.5 0 0 1 .417-1.996l.213-.149c.43-.3.77-.7.992-1.17a3.42 3.42 0 0 0 0-2.984c-.222-.47-.562-.87-.992-1.17l-.213-.149a1.5 1.5 0 0 1-.417-1.996l1.196-2.072a1.5 1.5 0 0 1 .574-.538z"
+          />
+        </svg>
+      ) : (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      );
+  }
+};
+
 export const NavbarPill: React.FC<NavbarPillProps> = ({
   activeItem,
   onSelect,
@@ -414,9 +512,11 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
               }
             }}
             aria-current={activeItem === item ? 'page' : undefined}
+            aria-label={item}
+            title={item}
             disabled={isBlocked}
           >
-            {item}
+            {renderNavIcon(item, isCurrentActive)}
           </button>
         );
       })}
