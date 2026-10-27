@@ -4,6 +4,7 @@ import { Dialog, Button } from '../../design/components/index.ts';
 export interface CropProfileDialogProps {
   isOpen: boolean;
   imageSrc: string | null;
+  title?: string;
   onClose: () => void;
   onCropComplete: (croppedBlob: Blob) => Promise<void> | void;
 }
@@ -14,6 +15,7 @@ const OUTPUT_SIZE = 512; // Resolusi tetap 512x512 px (hemat memori, ultra-tajam
 export const CropProfileDialog: React.FC<CropProfileDialogProps> = ({
   isOpen,
   imageSrc,
+  title = 'Sesuaikan Foto Profil',
   onClose,
   onCropComplete,
 }) => {
@@ -163,8 +165,7 @@ export const CropProfileDialog: React.FC<CropProfileDialogProps> = ({
     <Dialog
       isOpen={isOpen}
       onClose={isProcessing ? undefined : onClose}
-      title="Sesuaikan Foto Profil"
-      description="Geser dan atur perbesaran agar foto pas di dalam bingkai 1:1"
+      title={title}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
         {/* Kotak Crop 1:1 (240x240 px) */}
@@ -296,19 +297,6 @@ export const CropProfileDialog: React.FC<CropProfileDialogProps> = ({
           >
             +
           </button>
-        </div>
-
-        {/* Badge Info Resolusi Tetap 1:1 */}
-        <div
-          style={{
-            fontSize: '11px',
-            color: 'var(--ink-3)',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Format Rasio 1:1 • Resolusi Tetap 512 × 512 px
         </div>
 
         {/* Tombol Aksi */}

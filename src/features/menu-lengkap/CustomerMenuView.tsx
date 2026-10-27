@@ -119,13 +119,10 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
   {
-    title: 'Tradisional dan berkuah',
+    title: 'Makanan berkuah',
     category: 'makanan',
     iconType: 'rice',
     items: [
-      { name: 'Nasi Goreng Telur Tradisional', defaultPrice: 25000 },
-      { name: 'Nasi Goreng Ayam Tradisional', defaultPrice: 35000 },
-      { name: 'Nasi Goreng Tradisional Komplit', defaultPrice: 40000 },
       { name: 'Soto Ayam', defaultPrice: 25000 },
       { name: 'Coto Makassar', defaultPrice: 30000 },
       { name: 'Pizza Big', defaultPrice: 100000 },
@@ -139,22 +136,12 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     iconType: 'noodle',
     items: [
       { name: 'Mie Goreng Komplit', defaultPrice: 40000 },
-      { name: 'Mie Kuah', defaultPrice: 30000 },
+      { name: 'Mie Titi', defaultPrice: 30000 },
       { name: 'Mie Goreng Telur', defaultPrice: 25000 },
       { name: 'Mie Goreng Ayam', defaultPrice: 35000 },
       { name: 'Mie Goreng Mercon Telur', defaultPrice: 25000 },
       { name: 'Mie Goreng Mercon Ayam', defaultPrice: 35000 },
       { name: 'Mie Goreng Mercon Komplit', defaultPrice: 40000 },
-    ],
-  },
-  {
-    title: 'Mie tradisional',
-    category: 'mie',
-    iconType: 'noodle',
-    items: [
-      { name: 'Mie Goreng Tradisional Telur', defaultPrice: 25000 },
-      { name: 'Mie Goreng Tradisional Ayam', defaultPrice: 35000 },
-      { name: 'Mie Goreng Tradisional Komplit', defaultPrice: 40000 },
     ],
   },
 

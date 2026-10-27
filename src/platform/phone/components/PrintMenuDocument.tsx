@@ -48,11 +48,8 @@ export const PrintMenuDocument: React.FC<PrintMenuDocumentProps> = ({
       ],
     },
     {
-      title: 'Tradisional dan berkuah',
+      title: 'Makanan berkuah',
       items: [
-        { name: 'Nasi Goreng Telur Tradisional', price: 25000 },
-        { name: 'Nasi Goreng Ayam Tradisional', price: 35000 },
-        { name: 'Nasi Goreng Tradisional Komplit', price: 40000 },
         { name: 'Soto Ayam', price: 25000 },
         { name: 'Coto Makassar', price: 30000 },
       ],
@@ -60,12 +57,11 @@ export const PrintMenuDocument: React.FC<PrintMenuDocumentProps> = ({
     {
       title: 'Mie',
       items: [
-        { name: 'Mie Kuah', price: 30000 },
+        { name: 'Mie Titi', price: 30000 },
         { name: 'Mie Goreng Telur', price: 25000 },
         { name: 'Mie Goreng Ayam', price: 35000 },
         { name: 'Mie Goreng Komplit', price: 40000 },
         { name: 'Mie Tek Tek', price: 30000 },
-        { name: 'Mie Goreng Tradisional', price: 25000 },
         { name: 'Indomie Goreng', price: 20000 },
       ],
     },

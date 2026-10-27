@@ -640,13 +640,38 @@ textarea,
   user-select: text !important;
 }
 
-input:focus,
-textarea:focus,
-input:focus-visible,
-textarea:focus-visible,
+input:not(.tk-no-focus-outline):focus,
+textarea:not(.tk-no-focus-outline):focus,
+input:not(.tk-no-focus-outline):focus-visible,
+textarea:not(.tk-no-focus-outline):focus-visible,
 .tk-input:focus,
 .tk-notes-input:focus {
   outline: 2px solid var(--accent, #d92b33) !important;
   outline-offset: 1px !important;
+}
+
+.tk-no-focus-outline,
+.tk-no-focus-outline:focus,
+.tk-no-focus-outline:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.tk-price-field {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--ctl);
+  border: 1px solid var(--ctl-line);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tk-price-field:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent);
 }
 

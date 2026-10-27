@@ -1833,4 +1833,16 @@ body.tk-modal-open .tk-navbar,
   }
 }
 
+@keyframes tk-photo-zoom-out {
+  0% {
+    transform: scale(1.12);
+    opacity: 0.88;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
 

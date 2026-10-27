@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useMenuStore } from '../../../stores/menuStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
+import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 
 function formatThousands(value: number | string): string {
   const digits = String(value).replace(/\D/g, '');
@@ -14,6 +15,165 @@ function parseThousands(value: string): number {
   const digits = value.replace(/\D/g, '');
   return digits ? parseInt(digits, 10) : 0;
 }
+
+interface CategoryDropdownProps {
+  label: string;
+  selectedGroupId: string;
+  groups: { id: string; name: string }[];
+  onSelectGroup: (groupId: string) => void;
+}
+
+const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
+  label,
+  selectedGroupId,
+  groups,
+  onSelectGroup,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || groups[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('pointerdown', handleClickOutside as any);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside as any);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <label
+        style={{
+          display: 'block',
+          fontSize: '11px',
+          fontWeight: 800,
+          color: 'var(--ink-3)',
+          marginBottom: '6px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+      </label>
+
+      {/* Trigger Button Liquid Glass */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        style={{
+          width: '100%',
+          height: '42px',
+          padding: '0 12px',
+          borderRadius: 'var(--r-md)',
+          background: 'var(--ctl)',
+          border: isOpen ? '1.5px solid var(--accent)' : '1px solid var(--ctl-line)',
+          color: 'var(--ink)',
+          fontSize: 'var(--t-sm)',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.15s ease',
+        }}
+      >
+        <span>{selectedGroup?.name || 'Pilih Kategori'}</span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            opacity: 0.75,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* Dropdown Options Popup */}
+      {isOpen && (
+        <div
+          role="listbox"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 60,
+            background: 'color-mix(in srgb, var(--acrylic-bg) 95%, #000 5%)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderRadius: 'var(--r-md)',
+            border: '1px solid var(--ctl-line)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
+            maxHeight: '190px',
+            overflowY: 'auto',
+            padding: '4px',
+            animation: 'tk-fade-in 0.15s ease',
+          }}
+        >
+          {groups.map((g) => {
+            const isSelected = g.id === selectedGroupId;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onSelectGroup(g.id);
+                  setIsOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: 'var(--r-sm)',
+                  background: isSelected ? 'color-mix(in srgb, var(--accent) 18%, transparent)' : 'transparent',
+                  color: isSelected ? 'var(--accent)' : 'var(--ink)',
+                  fontWeight: isSelected ? 800 : 600,
+                  fontSize: 'var(--t-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxSizing: 'border-box',
+                  transition: 'background 0.12s ease',
+                }}
+              >
+                <span>{g.name}</span>
+                {isSelected && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const PhoneMenuScreen: React.FC = () => {
   const { items, groups, selectedCategory, setCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
@@ -28,6 +188,7 @@ export const PhoneMenuScreen: React.FC = () => {
   const [editPriceStr, setEditPriceStr] = useState('0');
   const [editAvailable, setEditAvailable] = useState(true);
   const [editGroupId, setEditGroupId] = useState('');
+  const [editPhotoPath, setEditPhotoPath] = useState<string | null>(null);
 
   // Form tambah
   const [addName, setAddName] = useState('');
@@ -35,6 +196,40 @@ export const PhoneMenuScreen: React.FC = () => {
   const [addPriceStr, setAddPriceStr] = useState('15.000');
   const [addAvailable, setAddAvailable] = useState(true);
   const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
+  const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
+
+  // Foto Makanan Crop State (1:1 fixed resolution sesuai profil)
+  const [cropFoodImageSrc, setCropFoodImageSrc] = useState<string | null>(null);
+  const [isCropFoodOpen, setIsCropFoodOpen] = useState(false);
+  const [targetPhotoMode, setTargetPhotoMode] = useState<'add' | 'edit'>('add');
+  const foodFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFoodFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropFoodImageSrc(url);
+    setIsCropFoodOpen(true);
+    e.target.value = '';
+  };
+
+  const handleFoodCropComplete = (croppedBlob: Blob) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      if (targetPhotoMode === 'add') {
+        setAddPhotoPath(dataUrl);
+      } else {
+        setEditPhotoPath(dataUrl);
+      }
+      setIsCropFoodOpen(false);
+      if (cropFoodImageSrc) {
+        URL.revokeObjectURL(cropFoodImageSrc);
+        setCropFoodImageSrc(null);
+      }
+    };
+    reader.readAsDataURL(croppedBlob);
+  };
 
   // Daftar kategori chip
   const categories = useMemo(() => {
@@ -44,20 +239,25 @@ export const PhoneMenuScreen: React.FC = () => {
   // Filter items sesuai kategori dan pencarian
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      // Filter kategori
+      // 1. Filter kategori
       if (selectedCategory !== 'Semua') {
-        const itemCat = (item as any).category?.toLowerCase();
-        const selCat = selectedCategory.toLowerCase();
-        if (itemCat && itemCat !== selCat) {
-          // Cek via group
-          const grp = groups.find((g) => g.id === item.group_id);
-          if (grp && grp.category.toLowerCase() !== selCat) {
-            return false;
-          }
-        }
+        const catLower = selectedCategory.toLowerCase();
+        const grp = groups.find((g) => g.id === item.group_id);
+        const groupCat = grp ? grp.category.toLowerCase() : '';
+        const itemCat = ((item as any).category || '').toLowerCase();
+
+        const matches =
+          groupCat === catLower ||
+          itemCat === catLower ||
+          (catLower === 'makanan' && item.group_id.includes('makanan')) ||
+          (catLower === 'mie' && item.group_id.includes('mie')) ||
+          (catLower === 'snack' && (item.group_id.includes('snack') || item.group_id.includes('roti'))) ||
+          (catLower === 'minuman' && (item.group_id.includes('minuman') || item.group_id.includes('coffee')));
+
+        if (!matches) return false;
       }
 
-      // Filter pencarian
+      // 2. Filter pencarian
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         return item.name.toLowerCase().includes(q);
@@ -74,6 +274,7 @@ export const PhoneMenuScreen: React.FC = () => {
     setEditPriceStr(formatThousands(item.price_idr));
     setEditAvailable(item.available);
     setEditGroupId(item.group_id);
+    setEditPhotoPath(item.photo_path || null);
   };
 
   const handleSaveEdit = async () => {
@@ -87,6 +288,7 @@ export const PhoneMenuScreen: React.FC = () => {
       price_idr: Number(editPrice) || 0,
       available: editAvailable,
       group_id: editGroupId,
+      photo_path: editPhotoPath,
     });
     setEditingItem(null);
   };
@@ -103,7 +305,7 @@ export const PhoneMenuScreen: React.FC = () => {
       available: addAvailable,
       group_id: addGroupId,
       category: selectedGroup ? selectedGroup.category : 'makanan',
-      photo_path: null,
+      photo_path: addPhotoPath,
       sort: items.length + 1,
     } as any);
 
@@ -111,18 +313,29 @@ export const PhoneMenuScreen: React.FC = () => {
     setAddPrice(15000);
     setAddPriceStr('15.000');
     setAddAvailable(true);
+    setAddPhotoPath(null);
     setIsAddOpen(false);
   };
 
   return (
     <div className="tk-phone-screen" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* 1. Header Judul & Tombol Tambah Menu */}
+      {/* Input File Tersembunyi untuk Upload Foto Makanan */}
+      <input
+        ref={foodFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFoodFileChange}
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
+
+      {/* 1. Header Judul & Tombol Tambah Menu (Posisi sejajar dengan Beranda HP: margin 8px 4px 16px) */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          margin: '0 4px 12px',
+          margin: '8px 4px 16px',
           flexShrink: 0,
         }}
       >
@@ -418,18 +631,154 @@ export const PhoneMenuScreen: React.FC = () => {
             onPointerDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            <b
-              style={{
-                fontSize: 'var(--t-lg)',
-                lineHeight: 'var(--l-lg)',
-                fontWeight: 800,
-                color: 'var(--ink)',
-              }}
-            >
-              Ubah Detail Menu
-            </b>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <b
+                style={{
+                  fontSize: 'var(--t-lg)',
+                  lineHeight: 'var(--l-lg)',
+                  fontWeight: 800,
+                  color: 'var(--ink)',
+                }}
+              >
+                Ubah Detail Menu
+              </b>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: editAvailable ? 'var(--accent)' : 'var(--ink-3)' }}>
+                  {editAvailable ? 'Tersedia' : 'Habis'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditAvailable(!editAvailable)}
+                  aria-label={editAvailable ? 'Tersedia' : 'Habis'}
+                  title={editAvailable ? 'Tersedia' : 'Habis'}
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: 'var(--r-pill)',
+                    background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+                    border: 'none',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                    transition: 'background 0.2s ease',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: 'var(--r-pill)',
+                      background: '#ffffff',
+                      transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
+                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+              {/* Foto Makanan */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: 'var(--ink-3)',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Foto Makanan (1:1)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
+                      border: '1px solid var(--ctl-line)',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {editPhotoPath ? (
+                      <img
+                        src={editPhotoPath}
+                        alt="Foto makanan"
+                        draggable={false}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--ink-3)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetPhotoMode('edit');
+                        foodFileInputRef.current?.click();
+                      }}
+                      style={{
+                        flex: 1,
+                        height: '38px',
+                        borderRadius: 'var(--r-md)',
+                        background: 'var(--ctl)',
+                        border: '1px solid var(--ctl-line)',
+                        color: 'var(--ink)',
+                        fontSize: 'var(--t-xs)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {editPhotoPath ? 'Ganti Foto' : 'Pilih Foto (1:1)'}
+                    </button>
+                    {editPhotoPath && (
+                      <button
+                        type="button"
+                        onClick={() => setEditPhotoPath(null)}
+                        style={{
+                          height: '38px',
+                          padding: '0 12px',
+                          borderRadius: 'var(--r-md)',
+                          background: 'transparent',
+                          border: '1px solid var(--ctl-line)',
+                          color: 'var(--danger)',
+                          fontSize: 'var(--t-xs)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label
                   style={{
@@ -478,25 +827,18 @@ export const PhoneMenuScreen: React.FC = () => {
                 >
                   Harga Jual
                 </label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '42px',
-                    padding: '0 12px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    boxSizing: 'border-box',
-                    gap: '6px',
-                  }}
-                >
+                <div className="tk-price-field">
                   <span
                     style={{
                       fontSize: 'var(--t-sm)',
                       fontWeight: 800,
                       color: 'var(--ink-2)',
                       userSelect: 'none',
+                      lineHeight: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      marginRight: '6px',
+                      flexShrink: 0,
                     }}
                   >
                     Rp
@@ -504,6 +846,7 @@ export const PhoneMenuScreen: React.FC = () => {
                   <input
                     type="text"
                     inputMode="numeric"
+                    className="tk-no-focus-outline"
                     value={editPriceStr}
                     placeholder="0"
                     onChange={(e) => {
@@ -521,98 +864,20 @@ export const PhoneMenuScreen: React.FC = () => {
                       fontWeight: 700,
                       outline: 'none',
                       padding: 0,
+                      margin: 0,
+                      lineHeight: 1,
                       boxSizing: 'border-box',
                     }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Kategori
-                </label>
-                <select
-                  value={editGroupId}
-                  onChange={(e) => setEditGroupId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    padding: '0 12px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id} style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 12px',
-                  borderRadius: 'var(--r-md)',
-                  background: 'var(--ctl)',
-                  border: '1px solid var(--ctl-line)',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 'var(--t-sm)', fontWeight: 800, color: 'var(--ink)' }}>
-                    Status Ketersediaan
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--ink-3)', fontWeight: 600 }}>
-                    {editAvailable ? 'Tersedia untuk dipesan' : 'Habis (Stok Kosong)'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditAvailable(!editAvailable)}
-                  style={{
-                    width: '46px',
-                    height: '26px',
-                    borderRadius: 'var(--r-pill)',
-                    background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-                    }}
-                  />
-                </button>
-              </div>
+              <CategoryDropdown
+                label="Kategori"
+                selectedGroupId={editGroupId}
+                groups={groups}
+                onSelectGroup={(id) => setEditGroupId(id)}
+              />
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                 <button
@@ -653,18 +918,154 @@ export const PhoneMenuScreen: React.FC = () => {
             onPointerDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            <b
-              style={{
-                fontSize: 'var(--t-lg)',
-                lineHeight: 'var(--l-lg)',
-                fontWeight: 800,
-                color: 'var(--ink)',
-              }}
-            >
-              Tambah Menu Baru
-            </b>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <b
+                style={{
+                  fontSize: 'var(--t-lg)',
+                  lineHeight: 'var(--l-lg)',
+                  fontWeight: 800,
+                  color: 'var(--ink)',
+                }}
+              >
+                Tambah Menu Baru
+              </b>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: addAvailable ? 'var(--accent)' : 'var(--ink-3)' }}>
+                  {addAvailable ? 'Tersedia' : 'Habis'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAddAvailable(!addAvailable)}
+                  aria-label={addAvailable ? 'Tersedia' : 'Habis'}
+                  title={addAvailable ? 'Tersedia' : 'Habis'}
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: 'var(--r-pill)',
+                    background: addAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+                    border: 'none',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                    transition: 'background 0.2s ease',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: 'var(--r-pill)',
+                      background: '#ffffff',
+                      transform: addAvailable ? 'translateX(20px)' : 'translateX(0px)',
+                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+              {/* Foto Makanan */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: 'var(--ink-3)',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Foto Makanan (1:1)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--ctl)',
+                      border: '1px solid var(--ctl-line)',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {addPhotoPath ? (
+                      <img
+                        src={addPhotoPath}
+                        alt="Foto makanan baru"
+                        draggable={false}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--ink-3)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetPhotoMode('add');
+                        foodFileInputRef.current?.click();
+                      }}
+                      style={{
+                        flex: 1,
+                        height: '38px',
+                        borderRadius: 'var(--r-md)',
+                        background: 'var(--ctl)',
+                        border: '1px solid var(--ctl-line)',
+                        color: 'var(--ink)',
+                        fontSize: 'var(--t-xs)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {addPhotoPath ? 'Ganti Foto' : 'Pilih Foto (1:1)'}
+                    </button>
+                    {addPhotoPath && (
+                      <button
+                        type="button"
+                        onClick={() => setAddPhotoPath(null)}
+                        style={{
+                          height: '38px',
+                          padding: '0 12px',
+                          borderRadius: 'var(--r-md)',
+                          background: 'transparent',
+                          border: '1px solid var(--ctl-line)',
+                          color: 'var(--danger)',
+                          fontSize: 'var(--t-xs)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label
                   style={{
@@ -714,25 +1115,18 @@ export const PhoneMenuScreen: React.FC = () => {
                 >
                   Harga Jual
                 </label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '42px',
-                    padding: '0 12px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    boxSizing: 'border-box',
-                    gap: '6px',
-                  }}
-                >
+                <div className="tk-price-field">
                   <span
                     style={{
                       fontSize: 'var(--t-sm)',
                       fontWeight: 800,
                       color: 'var(--ink-2)',
                       userSelect: 'none',
+                      lineHeight: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      marginRight: '6px',
+                      flexShrink: 0,
                     }}
                   >
                     Rp
@@ -740,6 +1134,7 @@ export const PhoneMenuScreen: React.FC = () => {
                   <input
                     type="text"
                     inputMode="numeric"
+                    className="tk-no-focus-outline"
                     value={addPriceStr}
                     placeholder="0"
                     onChange={(e) => {
@@ -757,98 +1152,20 @@ export const PhoneMenuScreen: React.FC = () => {
                       fontWeight: 700,
                       outline: 'none',
                       padding: 0,
+                      margin: 0,
+                      lineHeight: 1,
                       boxSizing: 'border-box',
                     }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Kategori Menu
-                </label>
-                <select
-                  value={addGroupId}
-                  onChange={(e) => setAddGroupId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    padding: '0 12px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'var(--ctl)',
-                    border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id} style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 12px',
-                  borderRadius: 'var(--r-md)',
-                  background: 'var(--ctl)',
-                  border: '1px solid var(--ctl-line)',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 'var(--t-sm)', fontWeight: 800, color: 'var(--ink)' }}>
-                    Status Ketersediaan
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--ink-3)', fontWeight: 600 }}>
-                    {addAvailable ? 'Tersedia untuk dipesan' : 'Habis (Stok Kosong)'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAddAvailable(!addAvailable)}
-                  style={{
-                    width: '46px',
-                    height: '26px',
-                    borderRadius: 'var(--r-pill)',
-                    background: addAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: addAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-                    }}
-                  />
-                </button>
-              </div>
+              <CategoryDropdown
+                label="Kategori Menu"
+                selectedGroupId={addGroupId}
+                groups={groups}
+                onSelectGroup={(id) => setAddGroupId(id)}
+              />
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                 <button
@@ -872,6 +1189,21 @@ export const PhoneMenuScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 7. Dialog Crop Foto Makanan (1:1 Resolusi Tetap Bersih Sesuai Profil) */}
+      <CropProfileDialog
+        isOpen={isCropFoodOpen}
+        title="Sesuaikan Foto Makanan"
+        imageSrc={cropFoodImageSrc}
+        onClose={() => {
+          setIsCropFoodOpen(false);
+          if (cropFoodImageSrc) {
+            URL.revokeObjectURL(cropFoodImageSrc);
+            setCropFoodImageSrc(null);
+          }
+        }}
+        onCropComplete={handleFoodCropComplete}
+      />
     </div>
   );
 };

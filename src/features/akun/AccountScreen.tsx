@@ -25,6 +25,8 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
   const [canConfirmDeletePhoto, setCanConfirmDeletePhoto] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didTriggerHoldRef = useRef(false);
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
   const cashierId = activeCashier?.id || '1d83083c-9d75-4dec-9c1a-75be69bc1050';
@@ -47,7 +49,26 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const handlePointerDownAvatar = () => {
+    didTriggerHoldRef.current = false;
+    holdTimerRef.current = setTimeout(() => {
+      didTriggerHoldRef.current = true;
+      setIsPreviewOpen(true);
+    }, 450);
+  };
+
+  const handlePointerUpAvatar = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
   const handleAvatarClick = () => {
+    if (didTriggerHoldRef.current) {
+      didTriggerHoldRef.current = false;
+      return;
+    }
     if (avatarUrl) {
       setIsPhotoMenuOpen(true);
     } else {
@@ -129,10 +150,14 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
           <div
             className="g-liquid"
             onClick={handleAvatarClick}
+            onPointerDown={handlePointerDownAvatar}
+            onPointerUp={handlePointerUpAvatar}
+            onPointerLeave={handlePointerUpAvatar}
+            onPointerCancel={handlePointerUpAvatar}
             role="button"
             tabIndex={0}
-            aria-label="Pilihan foto profil kasir"
-            title={avatarUrl ? "Klik untuk melihat atau mengubah foto profil" : "Klik untuk memilih foto profil baru"}
+            aria-label="Pilihan foto profil kasir (Tahan untuk melihat)"
+            title={avatarUrl ? "Klik untuk pilihan foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto profil baru"}
             style={{
               width: '112px',
               height: '112px',
@@ -420,17 +445,65 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
         title="Foto Profil Kasir"
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
-          {avatarUrl && (
+          <div
+            style={{
+              width: '260px',
+              height: '260px',
+              borderRadius: 'var(--r-xl)',
+              overflow: 'hidden',
+              background: 'var(--ctl)',
+              border: '1px solid var(--ctl-line)',
+              boxShadow: 'var(--sh-md)',
+              position: 'relative',
+              display: 'grid',
+              placeItems: 'center',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                fontSize: '64px',
+                fontWeight: 800,
+                color: 'var(--ink-2)',
+                zIndex: 0,
+                userSelect: 'none',
+              }}
+            >
+              {getInitials(cashierName)}
+            </span>
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt={cashierName}
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                  zIndex: 1,
+                  animation: 'tk-photo-zoom-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                }}
+              />
+            )}
+            {/* Pelindung transparan lightbox agar tidak bisa disalin/diambil dengan hold */}
             <div
               style={{
-                width: '260px',
-                height: '260px',
-                borderRadius: 'var(--r-xl)',
-                overflow: 'hidden',
-                background: 'var(--ctl)',
-                border: '1px solid var(--ctl-line)',
-                boxShadow: 'var(--sh-md)',
-                position: 'relative',
+                position: 'absolute',
+                inset: 0,
+                zIndex: 2,
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
                 WebkitTouchCallout: 'none',
@@ -439,38 +512,54 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
                 e.preventDefault();
                 e.stopPropagation();
               }}
+            />
+
+            {/* Icon sunting (liquid glass) di ujung bawah kanan di dalam border foto profil */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsPreviewOpen(false);
+                fileInputRef.current?.click();
+              }}
+              aria-label="Sunting foto profil"
+              title="Sunting foto profil"
+              className="g-liquid"
+              style={{
+                position: 'absolute',
+                bottom: '12px',
+                right: '12px',
+                width: '38px',
+                height: '38px',
+                borderRadius: 'var(--r-pill)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 5,
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                color: 'var(--ink)',
+                background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                transition: 'transform 0.1s ease',
+              }}
             >
-              <img
-                src={avatarUrl}
-                alt={cashierName}
-                draggable={false}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  WebkitTouchCallout: 'none',
-                }}
-              />
-              {/* Pelindung transparan lightbox agar tidak bisa disalin/diambil dengan hold */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 2,
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  WebkitTouchCallout: 'none',
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              />
-            </div>
-          )}
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          </div>
           <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)' }}>{cashierName}</b>
           <Button
             variant="lime"
