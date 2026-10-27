@@ -10,8 +10,12 @@
         }
         localStorage.setItem("tk-theme-v2", "1");
       }
+      if (localStorage.getItem("tk-palette-v4") !== "1") {
+        localStorage.setItem("tk-pal", "hijau");
+        localStorage.setItem("tk-palette-v4", "1");
+      }
       var q = localStorage.getItem("tk-pal");
-      document.documentElement.dataset.palette = /^(netflix|mono|hijau|samudra|senja|blush)$/.test(q) ? q : "netflix";
+      document.documentElement.dataset.palette = /^(hijau|mono|netflix|samudra|senja|blush)$/.test(q) ? q : "hijau";
       var m = localStorage.getItem("tk-theme") || "system";
       var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
       var eff = m === "system" ? (isDark ? "dark" : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) : m;
@@ -19,7 +23,7 @@
       document.documentElement.style.colorScheme = eff;
     } catch(e) {
       document.documentElement.dataset.theme = "dark";
-      document.documentElement.dataset.palette = "netflix";
+      document.documentElement.dataset.palette = "hijau";
     }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

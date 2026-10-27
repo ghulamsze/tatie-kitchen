@@ -128,6 +128,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Nasi Goreng Tradisional Komplit', defaultPrice: 40000 },
       { name: 'Soto Ayam', defaultPrice: 25000 },
       { name: 'Coto Makassar', defaultPrice: 30000 },
+      { name: 'Pizza Big', defaultPrice: 100000 },
     ],
   },
 
@@ -183,8 +184,19 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Kebab', defaultPrice: 30000 },
     ],
   },
+  {
+    title: 'Kue, donat & cake ultah',
+    category: 'snack',
+    iconType: 'snack',
+    items: [
+      { name: 'Donat', defaultPrice: 18000 },
+      { name: 'Brownies', defaultPrice: 50000 },
+      { name: 'Bolu', defaultPrice: 50000 },
+      { name: 'Cake Ultah', defaultPrice: 100000 },
+    ],
+  },
 
-  // --- ROTI & KUE (KELOMPOK BARU) ---
+  // --- ROTI (KHUSUS PRODUK ROTI) ---
   {
     title: 'Roti & pastry manis',
     category: 'roti',
@@ -200,7 +212,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
   {
-    title: 'Roti spesial & pizza',
+    title: 'Roti gurih & spesial',
     category: 'roti',
     iconType: 'bread',
     items: [
@@ -210,19 +222,6 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Roti Pisang Coklat', defaultPrice: 10000 },
       { name: 'Roti Pintal Sosis', defaultPrice: 15000 },
       { name: 'Roti Sobek', defaultPrice: 30000 },
-      { name: 'Pizza Big', defaultPrice: 100000 },
-    ],
-  },
-  {
-    title: 'Kue, donat & cake ultah',
-    category: 'roti',
-    iconType: 'bread',
-    items: [
-      { name: 'Donat', defaultPrice: 18000 },
-      { name: 'Brownies', defaultPrice: 50000 },
-      { name: 'Bolu Vanila', defaultPrice: 50000 },
-      { name: 'Bolu Pandan', defaultPrice: 50000 },
-      { name: 'Cake Ultah', defaultPrice: 100000 },
     ],
   },
 ];

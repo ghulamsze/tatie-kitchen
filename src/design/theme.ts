@@ -9,9 +9,9 @@ export interface PaletteInfo {
 }
 
 export const PALETTES: PaletteInfo[] = [
-  { id: 'netflix', name: 'Netflix', darkBg: '#171314', accent: '#d92b33' },
-  { id: 'mono', name: 'Minimal hitam putih', darkBg: '#0f0f10', accent: '#f5f5f5' },
   { id: 'hijau', name: 'Hijau', darkBg: '#04201f', accent: '#c6f36a' },
+  { id: 'mono', name: 'Minimal hitam putih', darkBg: '#0f0f10', accent: '#f5f5f5' },
+  { id: 'netflix', name: 'Netflix', darkBg: '#171314', accent: '#d92b33' },
   { id: 'samudra', name: 'Samudra', darkBg: '#061a33', accent: '#ffd166' },
   { id: 'senja', name: 'Senja', darkBg: '#2a0f12', accent: '#8af0cf' },
   { id: 'blush', name: 'Blush', darkBg: '#24121a', accent: '#f4a3b7' },
@@ -49,14 +49,19 @@ export function getStoredTheme(): ThemeMode {
 }
 
 export function getStoredPalette(): Palette {
-  if (typeof window === 'undefined') return 'netflix';
+  if (typeof window === 'undefined') return 'hijau';
   try {
+    if (localStorage.getItem('tk-palette-v4') !== '1') {
+      localStorage.setItem(PALETTE_STORAGE_KEY, 'hijau');
+      localStorage.setItem('tk-palette-v4', '1');
+      return 'hijau';
+    }
     const val = localStorage.getItem(PALETTE_STORAGE_KEY) as Palette;
     if (PALETTES.some((p) => p.id === val)) return val;
   } catch {
     // fallback
   }
-  return 'netflix';
+  return 'hijau';
 }
 
 export function applyTheme(mode: ThemeMode): void {

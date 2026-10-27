@@ -387,35 +387,42 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         </button>
       </div>
 
-      {/* 2. Judul Layar Bersih Tanpa Sub-deskripsi */}
-      <h1 className="tk-phone-title">Laporan Penjualan</h1>
-
-      {/* 3. Tombol Pill Trigger Rentang Waktu (Tinggi 52px Nyaman dan Diperlebar) */}
+      {/* 2. Judul Layar & Tombol Pill Rentang Waktu Kompak Seukuran Tab */}
       <div
-        className="tk-phone-range-trigger rg g"
-        onClick={() => setIsRangeSheetOpen(true)}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-label="Pilih rentang waktu laporan"
         style={{
-          height: '52px',
-          minHeight: '52px',
-          padding: '0 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
           margin: '0 4px 16px',
-          boxSizing: 'border-box',
           flexShrink: 0,
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            setIsRangeSheetOpen(true);
-          }
-        }}
       >
-        <span style={{ fontSize: 'var(--t-sm)', fontWeight: 700, color: 'var(--ink)' }}>
-          {triggerLabel}
-        </span>
-        <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>▾</span>
+        <h1 className="tk-phone-title" style={{ margin: 0 }}>
+          Laporan Penjualan
+        </h1>
+
+        {/* 3. Tombol Pill Trigger Rentang Waktu (Kompak Seukuran Tab) */}
+        <div
+          className="tk-phone-range-trigger rg g"
+          onClick={() => setIsRangeSheetOpen(true)}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-label="Pilih rentang waktu laporan"
+          style={{
+            margin: 0,
+            flexShrink: 0,
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              setIsRangeSheetOpen(true);
+            }
+          }}
+        >
+          <span>{triggerLabel}</span>
+          <span style={{ color: 'var(--ink-3)' }}>▾</span>
+        </div>
       </div>
 
       {/* 4. Hero Card Ringkasan Omzet & Transaksi (Bersih tanpa bagian merah shoulder) */}
