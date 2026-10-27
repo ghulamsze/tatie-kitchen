@@ -158,6 +158,7 @@ export const PhoneDateRangeSheet: React.FC<PhoneDateRangeSheetProps> = ({
                       fontWeight: 700,
                       outline: 'none',
                       cursor: 'pointer',
+                      colorScheme: 'dark',
                     }}
                   />
                 </div>

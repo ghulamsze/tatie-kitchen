@@ -479,7 +479,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           Laporan Penjualan
         </h1>
 
-        {/* 3. Tombol Trigger Rentang Waktu Kompak Seukuran Tab */}
+        {/* 3. Tombol Trigger Rentang Waktu Memanjang Dari Kiri Ke Kanan */}
         <div
           className="tk-phone-range-trigger rg g"
           onClick={() => setIsRangeSheetOpen(true)}
@@ -489,10 +489,14 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           aria-label="Pilih rentang waktu laporan"
           style={{
             margin: 0,
-            height: '36px',
-            display: 'inline-flex',
+            height: '40px',
+            width: '100%',
+            display: 'flex',
             alignItems: 'center',
-            alignSelf: 'flex-start',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+            padding: '0 16px',
+            borderRadius: 'var(--r-md)',
             flexShrink: 0,
           }}
           onKeyDown={(e) => {
@@ -501,7 +505,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
             }
           }}
         >
-          <span>{triggerLabel}</span>
+          <span style={{ fontWeight: 800 }}>{triggerLabel}</span>
           <span style={{ color: 'var(--ink-3)', fontSize: '10px' }}>▼</span>
         </div>
       </div>

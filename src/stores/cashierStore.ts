@@ -3,7 +3,30 @@ import { Cashier } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured, getSupabaseSecretKey } from '../lib/supabase/client.ts';
 import { formatTime } from '../lib/format/formatters.ts';
 import { logError } from '../lib/logger/logger.ts';
-import { broadcastCashierChanged } from '../lib/supabase/realtime.ts';
+import { broadcastCashierChanged, broadcastCashierAvatarChanged } from '../lib/supabase/realtime.ts';
+
+const SUPABASE_BASE_URL = 'https://fiaetjtqhvdewqffliai.supabase.co';
+const CASHIER_AVATARS_KEY = 'tk_cashier_avatars_v2';
+
+export function getLocalCashierAvatars(): Record<string, string> {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(CASHIER_AVATARS_KEY);
+      if (raw) return JSON.parse(raw);
+    }
+  } catch {}
+  return {};
+}
+
+export function saveLocalCashierAvatar(cashierId: string, avatarUrl: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const map = getLocalCashierAvatars();
+      map[cashierId] = avatarUrl;
+      localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(map));
+    }
+  } catch {}
+}
 
 // Data kasir awal acuan dari seed / HTML
 export const DEFAULT_CASHIERS: Cashier[] = [
@@ -54,23 +77,29 @@ export const deduplicateCashiers = (list: Cashier[]): Cashier[] => {
 const CASHIER_RESET_KEY = 'tk_cashiers_reset_20261023_v6';
 
 const loadSavedCashiers = (): Cashier[] => {
+  const avatars = getLocalCashierAvatars();
   try {
     if (typeof localStorage !== 'undefined') {
       if (!localStorage.getItem(CASHIER_RESET_KEY)) {
         localStorage.setItem('tk_cashiers', JSON.stringify(DEFAULT_CASHIERS));
         localStorage.setItem(CASHIER_RESET_KEY, 'true');
-        return DEFAULT_CASHIERS;
+        return DEFAULT_CASHIERS.map((c) => ({ ...c, avatar_url: avatars[c.id] || c.avatar_url }));
       }
       const raw = localStorage.getItem('tk_cashiers');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return deduplicateCashiers(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateCashiers(parsed).map((c) => ({
+            ...c,
+            avatar_url: avatars[c.id] || c.avatar_url,
+          }));
+        }
       }
     }
   } catch (err) {
     logError('cashierStore:loadSavedCashiers', err);
   }
-  return DEFAULT_CASHIERS;
+  return DEFAULT_CASHIERS.map((c) => ({ ...c, avatar_url: avatars[c.id] || c.avatar_url }));
 };
 
 interface CashierState {
@@ -83,6 +112,8 @@ interface CashierState {
   addNewCashier: (name: string, shopId?: string) => Promise<Cashier>;
   removeCashier: (id: string) => Promise<void>;
   resetToDefaultCashiers: () => void;
+  setCashierAvatarLocally: (cashierId: string, avatarUrl: string) => void;
+  updateCashierAvatar: (cashierId: string, fileOrDataUrl: Blob | File | string) => Promise<string>;
 }
 
 
@@ -148,7 +179,41 @@ export const useCashierStore = create<CashierState>((set) => ({
         const saved = loadSavedCashiers();
         // Gabungkan data Supabase dengan kasir tersimpan lokal, tanpa kasir yang sudah dihapus
         const combined = [...(data as Cashier[]), ...saved].filter((c) => !removedIds.has(c.id));
-        const unique = deduplicateCashiers(combined);
+        let unique = deduplicateCashiers(combined);
+
+        // Ambil mapping avatar terbaru dari Supabase Storage jika terhubung
+        try {
+          const secretKey = getSupabaseSecretKey();
+          const listRes = await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/list/avatars`, {
+            method: 'POST',
+            headers: {
+              apikey: secretKey,
+              Authorization: `Bearer ${secretKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prefix: '', limit: 100 }),
+          });
+          if (listRes.ok) {
+            const files = await listRes.json();
+            if (Array.isArray(files)) {
+              const avatarMap = getLocalCashierAvatars();
+              files.forEach((f: { name: string; updated_at?: string }) => {
+                const id = f.name.replace(/\.[^/.]+$/, '');
+                avatarMap[id] = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${f.name}?t=${new Date(f.updated_at || Date.now()).getTime()}`;
+              });
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(avatarMap));
+              }
+            }
+          }
+        } catch {}
+
+        const latestAvatars = getLocalCashierAvatars();
+        unique = unique.map((c) => ({
+          ...c,
+          avatar_url: latestAvatars[c.id] || c.avatar_url,
+        }));
+
         set({ cashiers: unique });
         try {
           if (typeof localStorage !== 'undefined') {
@@ -349,6 +414,64 @@ export const useCashierStore = create<CashierState>((set) => ({
         logError('cashierStore:removeCashier_rest_exception', err);
       }
     }
+  },
+
+  setCashierAvatarLocally: (cashierId, avatarUrl) => {
+    saveLocalCashierAvatar(cashierId, avatarUrl);
+    set((state) => {
+      const updated = state.cashiers.map((c) =>
+        c.id === cashierId ? { ...c, avatar_url: avatarUrl } : c
+      );
+      const newActive = state.activeCashier?.id === cashierId
+        ? { ...state.activeCashier, avatar_url: avatarUrl }
+        : state.activeCashier;
+      return { cashiers: updated, activeCashier: newActive };
+    });
+  },
+
+  updateCashierAvatar: async (cashierId, fileOrDataUrl) => {
+    let blob: Blob;
+    if (typeof fileOrDataUrl === 'string') {
+      const res = await fetch(fileOrDataUrl);
+      blob = await res.blob();
+    } else {
+      blob = fileOrDataUrl;
+    }
+
+    const publicUrl = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${cashierId}.jpg?t=${Date.now()}`;
+
+    // Simpan di local cache langsung agar instan di layar
+    saveLocalCashierAvatar(cashierId, publicUrl);
+    set((state) => {
+      const updated = state.cashiers.map((c) =>
+        c.id === cashierId ? { ...c, avatar_url: publicUrl } : c
+      );
+      const newActive = state.activeCashier?.id === cashierId
+        ? { ...state.activeCashier, avatar_url: publicUrl }
+        : state.activeCashier;
+      return { cashiers: updated, activeCashier: newActive };
+    });
+
+    // Upload ke Supabase Storage (Database)
+    try {
+      const secretKey = getSupabaseSecretKey();
+      await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars/${cashierId}.jpg`, {
+        method: 'POST',
+        headers: {
+          apikey: secretKey,
+          Authorization: `Bearer ${secretKey}`,
+          'x-upsert': 'true',
+          'Content-Type': blob.type || 'image/jpeg',
+        },
+        body: blob,
+      });
+      // Broadcast perubahan ke seluruh device yang sedang aktif (Tablet & HP)
+      await broadcastCashierAvatarChanged(cashierId, publicUrl);
+    } catch (err) {
+      logError('cashierStore:updateCashierAvatar_upload', err);
+    }
+
+    return publicUrl;
   },
 
   resetToDefaultCashiers: () => {

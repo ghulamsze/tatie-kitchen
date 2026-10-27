@@ -225,34 +225,75 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
           paddingRight: '4px',
         }}
       >
-        {displayCashiers.map((cashier) => (
-          <div
-            key={cashier.id}
-            className="tk-phone-row rw"
-            onPointerDown={(e) => startHold(cashier, e)}
-            onPointerUp={() => cancelHold()}
-            onPointerCancel={() => cancelHold()}
-            onPointerMove={(e) => cancelHold(e)}
-            style={{
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              touchAction: 'pan-y',
-            }}
-          >
-            <span
-              className={rejectingCashierId === cashier.id ? 'tk-text-rejecting' : ''}
+        {displayCashiers.map((cashier) => {
+          const initials = (() => {
+            const parts = (cashier.name || '').trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+          })();
+
+          return (
+            <div
+              key={cashier.id}
+              className="tk-phone-row rw"
+              onPointerDown={(e) => startHold(cashier, e)}
+              onPointerUp={() => cancelHold()}
+              onPointerCancel={() => cancelHold()}
+              onPointerMove={(e) => cancelHold(e)}
               style={{
-                fontSize: 'var(--t-md)',
-                lineHeight: 'var(--l-md)',
-                fontWeight: 400,
-                color: 'var(--ink)',
-                display: 'inline-block',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                touchAction: 'pan-y',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
               }}
             >
-              {cashier.name}
-            </span>
-          </div>
-        ))}
+              {/* Profile kecil di sebelah kiri sebelum nama kasir */}
+              <div
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: 'var(--r-pill)',
+                  background: 'var(--ctl)',
+                  border: '1px solid var(--ctl-line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: 'var(--ink-2)',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {cashier.avatar_url ? (
+                  <img
+                    src={cashier.avatar_url}
+                    alt={cashier.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
+
+              <span
+                className={rejectingCashierId === cashier.id ? 'tk-text-rejecting' : ''}
+                style={{
+                  fontSize: 'var(--t-md)',
+                  lineHeight: 'var(--l-md)',
+                  fontWeight: 400,
+                  color: 'var(--ink)',
+                  display: 'inline-block',
+                  flex: 1,
+                }}
+              >
+                {cashier.name}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* 4. Tombol Pengaturan Tampilan Tema & Cetak Menu Fisik (Kiri: Tampilan Lebih Lebar, Kanan: Icon Cetak Menu Fisik A4) */}

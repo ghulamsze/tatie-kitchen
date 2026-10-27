@@ -7,6 +7,16 @@ export interface UseSwipeNavOptions {
   onTabChange: (tab: NavItem) => void;
 }
 
+const isModalActive = (): boolean => {
+  if (typeof document === 'undefined') return false;
+  return (
+    document.body.classList.contains('tk-modal-open') ||
+    document.body.classList.contains('has-modal') ||
+    document.body.classList.contains('tk-has-modal') ||
+    Boolean(document.querySelector('.tk-overlay, .tk-sheet, .tk-dialog, .tk-phone-overlay'))
+  );
+};
+
 export function useSwipeNav({
   tabs,
   activeTab,
@@ -207,6 +217,7 @@ export function useSwipeNav({
     let wheelCooldown = false;
 
     const handleWheel = (e: WheelEvent) => {
+      if (isModalActive()) return;
       const absDx = Math.abs(e.deltaX);
       const absDy = Math.abs(e.deltaY);
 
@@ -249,6 +260,7 @@ export function useSwipeNav({
     let isHorizontal = false;
 
     const onTouchStart = (e: TouchEvent) => {
+      if (isModalActive()) return;
       if (e.touches.length !== 1) return;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
@@ -257,6 +269,7 @@ export function useSwipeNav({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (isModalActive()) return;
       if (e.touches.length !== 1) return;
       const dx = Math.abs(e.touches[0].clientX - touchStartX);
       const dy = Math.abs(e.touches[0].clientY - touchStartY);
@@ -307,6 +320,7 @@ export function useSwipeNav({
 
   // Interaksi pada navbar (tap langsung & hold/scrub)
   const handleNavbarPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    if (isModalActive()) return;
     cancelOngoingAnimation();
 
     try {
@@ -414,6 +428,7 @@ export function useSwipeNav({
 
   // Pointer events untuk swipe halaman layar horizontal (Pager)
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (isModalActive()) return;
     const target = e.target as HTMLElement;
 
     if (target.closest('input, textarea, select, [contenteditable="true"]')) {

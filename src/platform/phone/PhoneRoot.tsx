@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavItem, NavbarPill } from '../../design/components/NavbarPill.tsx';
 import { IntroScreen } from '../../features/intro/IntroScreen.tsx';
 import { PhoneHomeScreen } from './screens/PhoneHomeScreen.tsx';
+import { PhoneMenuScreen } from './screens/PhoneMenuScreen.tsx';
 import { PhoneHistoryScreen } from './screens/PhoneHistoryScreen.tsx';
 import { PhoneOrderDetailScreen } from './screens/PhoneOrderDetailScreen.tsx';
 import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
@@ -10,6 +11,8 @@ import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
+
+const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Menu', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(true);
@@ -65,8 +68,8 @@ export const PhoneRoot: React.FC = () => {
     }, 10);
   }, [selectedOrderId, isPrintMenuOpen, isAllHistoryOpen, isSalesReportOpen, activeTab]);
 
-  // Nilai posisi gradasi latar dinamis: 0 (Beranda), 0.5 (Riwayat), 1 (Akun)
-  const bgT = activeTab === 'Beranda' ? 0 : activeTab === 'Riwayat' ? 0.5 : 1;
+  // Nilai posisi gradasi latar dinamis: 0 (Beranda), 0.5 (Menu), 1 (Akun)
+  const bgT = activeTab === 'Beranda' ? 0 : (activeTab === 'Menu' || activeTab === 'Riwayat') ? 0.5 : 1;
 
   // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
   if (showIntro) {
@@ -135,9 +138,9 @@ export const PhoneRoot: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'Riwayat' && (
+        {(activeTab === 'Menu' || activeTab === 'Riwayat') && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            <PhoneHistoryScreen onSelectOrder={(id) => setSelectedOrderId(id)} />
+            <PhoneMenuScreen />
           </div>
         )}
 
@@ -226,7 +229,8 @@ export const PhoneRoot: React.FC = () => {
       {!isModalOrOverlayActive && (
         <div className="tk-phone-navbar-wrap">
           <NavbarPill
-            activeItem={activeTab}
+            items={PHONE_NAV_TABS}
+            activeItem={activeTab === 'Riwayat' ? 'Menu' : activeTab}
             onSelect={(item) => setActiveTab(item)}
           />
         </div>

@@ -1,9 +1,10 @@
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 
-export type NavItem = 'Beranda' | 'Riwayat' | 'Akun';
+export type NavItem = 'Beranda' | 'Menu' | 'Akun' | 'Riwayat';
 
 export interface NavbarPillProps {
   activeItem: NavItem;
+  items?: NavItem[];
   onSelect: (item: NavItem) => void;
   scrollProgress?: number;
   progress?: number;
@@ -49,6 +50,7 @@ const renderNavIcon = (item: NavItem, isActive: boolean) => {
           <path d="M3 10.5L12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-4.5a1 1 0 0 1-1-1v-4a2 2 0 0 0-4 0v4a1 1 0 0 1-1 1H4.5A1.5 1.5 0 0 1 3 20v-9.5z" />
         </svg>
       );
+    case 'Menu':
     case 'Riwayat':
       // Icon Menu (3 lines): active = fill, inactive = outline
       return isActive ? (
@@ -128,8 +130,8 @@ export const NavbarPill: React.FC<NavbarPillProps> = ({
   onPointerCancel: externalOnPointerCancel,
   onDragProgress,
   isBlocked = false,
+  items = ['Beranda', 'Riwayat', 'Akun'],
 }) => {
-  const items: NavItem[] = ['Beranda', 'Riwayat', 'Akun'];
   const activeIndex = Math.max(0, items.indexOf(activeItem));
 
   const internalNavRef = useRef<HTMLElement | null>(null);

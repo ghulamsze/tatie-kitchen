@@ -32,11 +32,42 @@ export interface CashierChangedPayload {
   senderDeviceId?: string;
 }
 
+export interface CashierAvatarChangedPayload {
+  cashierId: string;
+  avatarUrl: string;
+  senderDeviceId?: string;
+}
+
 // Generate device session ID unik untuk menandai asal perubahan
 const DEVICE_SESSION_ID =
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `dev-${Math.random().toString(36).substring(2, 9)}`;
+
+/**
+ * Broadcast perubahan foto profil kasir ke seluruh device secara instan (< 100ms)
+ */
+export async function broadcastCashierAvatarChanged(
+  cashierId: string,
+  avatarUrl: string
+): Promise<void> {
+  if (!isSupabaseConfigured() || !syncChannel) return;
+
+  try {
+    await syncChannel.send({
+      type: 'broadcast',
+      event: 'CASHIER_AVATAR_CHANGED',
+      payload: {
+        cashierId,
+        avatarUrl,
+        senderDeviceId: DEVICE_SESSION_ID,
+      } as CashierAvatarChangedPayload,
+    });
+    logInfo('realtimeSync:broadcast', `Cashier avatar changed broadcast sent: ${cashierId}`);
+  } catch (err) {
+    logError('realtimeSync:broadcast_cashier_avatar_err', err);
+  }
+}
 
 /**
  * Broadcast perubahan daftar kasir ke seluruh device secara instan (< 100ms)
@@ -224,6 +255,17 @@ export function initPosRealtimeSync(): () => void {
         if (!payload || payload.senderDeviceId === DEVICE_SESSION_ID) return;
         logInfo('realtimeSync:receive', `Menerima perubahan kasir dari device lain: ${payload.action} - ${payload.cashierId}`);
         useCashierStore.getState().fetchCashiers().catch(() => {});
+      }
+    );
+
+    // 3b. Dengar pembaruan foto avatar kasir dari perangkat lain
+    syncChannel.on(
+      'broadcast',
+      { event: 'CASHIER_AVATAR_CHANGED' },
+      ({ payload }: { payload: CashierAvatarChangedPayload }) => {
+        if (!payload || payload.senderDeviceId === DEVICE_SESSION_ID) return;
+        logInfo('realtimeSync:receive', `Menerima pembaruan avatar kasir dari device lain: ${payload.cashierId}`);
+        useCashierStore.getState().setCashierAvatarLocally(payload.cashierId, payload.avatarUrl);
       }
     );
 

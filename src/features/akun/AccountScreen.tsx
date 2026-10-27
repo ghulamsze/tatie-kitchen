@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
@@ -9,15 +9,44 @@ export interface AccountScreenProps {
 }
 
 export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChangeCashier }) => {
-  const { activeCashier, shiftStartTime } = useCashierStore();
+  const { activeCashier, shiftStartTime, updateCashierAvatar } = useCashierStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isPrinterOpen, setIsPrinterOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
+  const cashierId = activeCashier?.id || '1d83083c-9d75-4dec-9c1a-75be69bc1050';
+  const avatarUrl = activeCashier?.avatar_url;
+
   const getInitials = (name: string): string => {
     const parts = name.trim().split(/\s+/);
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      // Baca file gambar
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          await updateCashierAvatar(cashierId, dataUrl);
+        } catch {
+          // ignore
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -34,6 +63,15 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
         boxSizing: 'border-box',
       }}
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
+
       <div
         className="g-acrylic"
         style={{
@@ -46,21 +84,80 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
           textAlign: 'center',
         }}
       >
-        {/* Avatar Kasir Aktif */}
-        <div
-          className="g-liquid"
-          style={{
-            width: '112px',
-            height: '112px',
-            borderRadius: 'var(--r-xl)',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 'var(--t-xl)',
-            lineHeight: 'var(--l-xl)',
-            fontWeight: 800,
-          }}
-        >
-          {getInitials(cashierName)}
+        {/* Avatar Kasir Aktif dengan Tombol Ubah Foto */}
+        <div style={{ position: 'relative', width: '112px', height: '112px' }}>
+          <div
+            className="g-liquid"
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            aria-label="Ubah foto profil kasir"
+            title="Klik untuk memilih foto profil baru"
+            style={{
+              width: '112px',
+              height: '112px',
+              borderRadius: 'var(--r-xl)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 'var(--t-xl)',
+              lineHeight: 'var(--l-xl)',
+              fontWeight: 800,
+              cursor: 'pointer',
+              overflow: 'hidden',
+              opacity: isUploading ? 0.6 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={cashierName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              getInitials(cashierName)
+            )}
+          </div>
+
+          {/* Tombol Kamera Badge Kecil */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            aria-label="Pilih foto"
+            style={{
+              position: 'absolute',
+              bottom: '-4px',
+              right: '-4px',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--r-pill)',
+              background: 'var(--accent)',
+              border: '2px solid var(--bg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: 'var(--sh-sm)',
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
         </div>
 
         {/* Nama dan Jam Tugas */}

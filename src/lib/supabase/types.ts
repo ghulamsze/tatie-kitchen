@@ -30,6 +30,7 @@ export interface Cashier {
   name: string;
   active: boolean;
   created_at: string;
+  avatar_url?: string;
 }
 
 export interface MenuGroup {

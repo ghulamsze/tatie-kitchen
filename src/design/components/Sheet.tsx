@@ -44,13 +44,22 @@ export const Sheet: React.FC<SheetProps> = ({
   if (!isOpen) return null;
 
   const content = (
-    <div className="tk-overlay" onClick={onClose} style={{ pointerEvents: 'auto' }}>
+    <div
+      className="tk-overlay"
+      onClick={onClose}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      style={{ pointerEvents: 'auto', touchAction: 'none' }}
+    >
       <div
         className="g-liquid tk-sheet"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        style={{ pointerEvents: 'auto' }}
       >
         {title && (
           <div style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800 }}>

@@ -1311,16 +1311,31 @@ interface MenuState {
   setHeldItem: (item: MenuItem | null) => void;
   setToastMessage: (msg: string | null) => void;
   toggleItemAvailability: (itemId: string, available: boolean) => Promise<void>;
+  updateMenuItem: (updated: Partial<MenuItem> & { id: string }) => Promise<void>;
+  addMenuItem: (newItem: Omit<MenuItem, 'id' | 'shop_id' | 'active' | 'created_at'>) => Promise<MenuItem>;
   fetchMenu: (shopId?: string) => Promise<void>;
   subscribeToMenuChanges: () => () => void;
 }
 
 const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => {
+  let result = [...initialItems];
   try {
+    const customRaw = localStorage.getItem('tk_custom_menu_items');
+    if (customRaw) {
+      const customMap = JSON.parse(customRaw);
+      result = result.map((it) => (customMap[it.id] ? { ...it, ...customMap[it.id] } : it));
+    }
+    const addedRaw = localStorage.getItem('tk_added_menu_items');
+    if (addedRaw) {
+      const addedList = JSON.parse(addedRaw);
+      if (Array.isArray(addedList)) {
+        result = [...addedList, ...result];
+      }
+    }
     const raw = localStorage.getItem('tk_item_availability');
     if (raw) {
       const map: Record<string, boolean | { available: boolean }> = JSON.parse(raw);
-      return initialItems.map((it) => {
+      return result.map((it) => {
         const normName = it.name.trim().toLowerCase();
         const alias = MENU_NAME_ALIASES[normName];
         let val: boolean | undefined;
@@ -1340,7 +1355,7 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
   } catch (err) {
     logError('menuStore:loadSavedAvailability', err);
   }
-  return initialItems;
+  return result;
 };
 
 export const useMenuStore = create<MenuState>((set, get) => ({
@@ -1355,6 +1370,82 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setHeldItem: (item) => set({ heldItem: item }),
   setToastMessage: (msg) => set({ toastMessage: msg }),
+
+  updateMenuItem: async (updated) => {
+    set((state) => {
+      const newItems = state.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it));
+      try {
+        const raw = localStorage.getItem('tk_custom_menu_items');
+        const customMap: Record<string, Partial<MenuItem>> = raw ? JSON.parse(raw) : {};
+        customMap[updated.id] = { ...(customMap[updated.id] || {}), ...updated };
+        localStorage.setItem('tk_custom_menu_items', JSON.stringify(customMap));
+      } catch {}
+      return { items: newItems };
+    });
+    set({ toastMessage: `Menu ${updated.name || ''} berhasil diperbarui` });
+    setTimeout(() => set({ toastMessage: null }), 2500);
+
+    if (isSupabaseConfigured()) {
+      try {
+        await (supabase.from('menu_items') as any).update({
+          name: updated.name,
+          price_idr: updated.price_idr,
+          group_id: updated.group_id,
+          available: updated.available,
+        }).eq('id', updated.id);
+      } catch (err) {
+        logError('menuStore:updateMenuItem', err);
+      }
+    }
+  },
+
+  addMenuItem: async (newItem) => {
+    const newId = `m-${Date.now().toString(36)}`;
+    const created: MenuItem & { hue: number } = {
+      id: newId,
+      shop_id: 'shop-001',
+      group_id: newItem.group_id || 'g-snack',
+      name: newItem.name,
+      price_idr: newItem.price_idr || 0,
+      available: newItem.available ?? true,
+      photo_path: newItem.photo_path || null,
+      sort: 99,
+      active: true,
+      created_at: new Date().toISOString(),
+      hue: Math.floor(Math.random() * 360),
+    };
+    set((state) => {
+      const newItems = [created, ...state.items];
+      try {
+        const raw = localStorage.getItem('tk_added_menu_items');
+        const addedList: any[] = raw ? JSON.parse(raw) : [];
+        addedList.unshift(created);
+        localStorage.setItem('tk_added_menu_items', JSON.stringify(addedList));
+      } catch {}
+      return { items: newItems };
+    });
+    set({ toastMessage: `Menu ${created.name} berhasil ditambahkan` });
+    setTimeout(() => set({ toastMessage: null }), 2500);
+
+    if (isSupabaseConfigured()) {
+      try {
+        await (supabase.from('menu_items') as any).insert({
+          id: created.id,
+          shop_id: created.shop_id,
+          group_id: created.group_id,
+          name: created.name,
+          price_idr: created.price_idr,
+          available: created.available,
+          photo_path: created.photo_path,
+          active: true,
+          sort: created.sort,
+        });
+      } catch (err) {
+        logError('menuStore:addMenuItem', err);
+      }
+    }
+    return created;
+  },
 
   toggleItemAvailability: async (itemId, available) => {
     const targetItem = get().items.find((i) => i.id === itemId);

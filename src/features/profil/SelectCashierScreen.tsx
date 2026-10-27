@@ -106,8 +106,16 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
               aria-label={`Pilih kasir ${c.name} (Tahan untuk menghapus)`}
               title="Klik untuk memilih, tahan 0.5 detik untuk menghapus"
             >
-              <div className="g-liquid tk-avatar-box">
-                {getInitials(c.name)}
+              <div className="g-liquid tk-avatar-box" style={{ overflow: 'hidden' }}>
+                {c.avatar_url ? (
+                  <img
+                    src={c.avatar_url}
+                    alt={c.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  getInitials(c.name)
+                )}
               </div>
               <span>{c.name}</span>
             </button>
