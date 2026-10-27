@@ -493,7 +493,10 @@ export const PhoneMenuScreen: React.FC = () => {
           itemCat === catLower ||
           (catLower === 'makanan' && item.group_id.includes('makanan')) ||
           (catLower === 'mie' && item.group_id.includes('mie')) ||
-          (catLower === 'snack' && (item.group_id.includes('snack') || item.group_id.includes('roti'))) ||
+          (catLower === 'pizza' && item.group_id.includes('pizza')) ||
+          (catLower === 'roti' && item.group_id.includes('roti')) ||
+          (catLower === 'kue' && item.group_id.includes('kue')) ||
+          (catLower === 'snack' && item.group_id.includes('snack')) ||
           (catLower === 'minuman' && (item.group_id.includes('minuman') || item.group_id.includes('coffee')));
 
         if (!matches) return false;

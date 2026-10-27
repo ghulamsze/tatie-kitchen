@@ -156,7 +156,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
     { key: 'Minuman', label: 'Minuman' },
+    { key: 'Pizza', label: 'Pizza' },
     { key: 'Roti', label: 'Roti' },
+    { key: 'Kue', label: 'Kue' },
     { key: 'Snack', label: 'Snack' },
   ];
 
@@ -170,7 +172,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
         if (catLower === 'makanan' && !item.group_id.includes('makanan') && itemCat !== 'makanan') return false;
         if (catLower === 'mie' && !item.group_id.includes('mie') && itemCat !== 'mie') return false;
         if (catLower === 'minuman' && !item.group_id.includes('minuman') && !item.group_id.includes('coffee') && itemCat !== 'minuman') return false;
+        if (catLower === 'pizza' && !item.group_id.includes('pizza') && itemCat !== 'pizza') return false;
         if (catLower === 'roti' && !item.group_id.includes('roti') && itemCat !== 'roti') return false;
+        if (catLower === 'kue' && !item.group_id.includes('kue') && itemCat !== 'kue') return false;
         if (catLower === 'snack' && !item.group_id.includes('snack') && itemCat !== 'snack') return false;
       }
       // 2. Query pencarian

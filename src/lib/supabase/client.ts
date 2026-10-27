@@ -111,6 +111,8 @@ export const MENU_NAME_ALIASES: Record<string, string> = {
   'cadbury': 'Cadburry',
   'extra joss susu': 'Extrajoss Susu',
   'vanilla': 'Vanila',
+  'pizza': 'Pizza Big',
+  'pizza big': 'Pizza',
 };
 
 /**

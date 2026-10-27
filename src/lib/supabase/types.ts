@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export type MemberRole = 'owner' | 'device';
-export type MenuCategory = 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman';
+export type MenuCategory = 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman' | 'pizza' | 'kue';
 
 export interface Shop {
   id: string;

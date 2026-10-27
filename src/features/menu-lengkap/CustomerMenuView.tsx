@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useMenuStore, TOP_SELLERS_DEFAULT } from '../../stores/menuStore.ts';
+import { useMenuStore } from '../../stores/menuStore.ts';
+import { useHistoryStore } from '../../stores/historyStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 
@@ -9,13 +10,13 @@ export interface CustomerMenuViewProps {
 
 interface MenuGroupDefinition {
   title: string;
-  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman';
-  iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread';
+  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman' | 'pizza' | 'kue';
+  iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread' | 'pizza' | 'cake';
   items: { name: string; defaultPrice: number }[];
 }
 
 const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
-  // --- MINUMAN (Dipecah maksimal 7 item per kelompok sesuai acuan gambar 2d) ---
+  // --- MINUMAN ---
   {
     title: 'Kopi panas',
     category: 'minuman',
@@ -126,7 +127,6 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     items: [
       { name: 'Soto Ayam', defaultPrice: 25000 },
       { name: 'Coto Makassar', defaultPrice: 30000 },
-      { name: 'Pizza Big', defaultPrice: 100000 },
     ],
   },
 
@@ -143,6 +143,61 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Mie Goreng Mercon Telur', defaultPrice: 25000 },
       { name: 'Mie Goreng Mercon Ayam', defaultPrice: 35000 },
       { name: 'Mie Goreng Mercon Komplit', defaultPrice: 40000 },
+    ],
+  },
+
+  // --- PIZZA ---
+  {
+    title: 'Pizza Spesial',
+    category: 'pizza',
+    iconType: 'pizza',
+    items: [
+      { name: 'Pizza', defaultPrice: 10000 },
+    ],
+  },
+
+  // --- ROTI ---
+  {
+    title: 'Roti manis & isi',
+    category: 'roti',
+    iconType: 'bread',
+    items: [
+      { name: 'Roti Coklat', defaultPrice: 8000 },
+      { name: 'Roti Keju', defaultPrice: 8000 },
+      { name: 'Roti Meses', defaultPrice: 8000 },
+      { name: 'Roti Cream Keju', defaultPrice: 10000 },
+      { name: 'Roti Cream Meses', defaultPrice: 10000 },
+      { name: 'Roti Bund Isi Coklat', defaultPrice: 10000 },
+    ],
+  },
+  {
+    title: 'Roti gurih, bakar & spesial',
+    category: 'roti',
+    iconType: 'bread',
+    items: [
+      { name: 'Roti Abon', defaultPrice: 10000 },
+      { name: "Roti'O", defaultPrice: 10000 },
+      { name: 'Roti Sosis', defaultPrice: 10000 },
+      { name: 'Roti Pisang Coklat', defaultPrice: 10000 },
+      { name: 'Roti Pintal Sosis', defaultPrice: 15000 },
+      { name: 'Roti Sobek', defaultPrice: 30000 },
+      { name: 'Roti Bakar', defaultPrice: 25000 },
+      { name: 'Roti John', defaultPrice: 30000 },
+    ],
+  },
+
+  // --- KUE ---
+  {
+    title: 'Kue, donat & brownies',
+    category: 'kue',
+    iconType: 'cake',
+    items: [
+      { name: 'Donat', defaultPrice: 18000 },
+      { name: 'Brownies', defaultPrice: 50000 },
+      { name: 'Bolu', defaultPrice: 50000 },
+      { name: 'Pie Susu', defaultPrice: 10000 },
+      { name: 'Pie Brownies', defaultPrice: 5000 },
+      { name: 'Kue Ulang Tahun', defaultPrice: 100000 },
     ],
   },
 
@@ -171,48 +226,6 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Burger Daging', defaultPrice: 20000 },
       { name: 'Burger Komplit', defaultPrice: 25000 },
       { name: 'Kebab', defaultPrice: 30000 },
-    ],
-  },
-  {
-    title: 'Kue, donat & kue ulang tahun',
-    category: 'snack',
-    iconType: 'snack',
-    items: [
-      { name: 'Pie Susu', defaultPrice: 10000 },
-      { name: 'Pie Brownies', defaultPrice: 5000 },
-      { name: 'Donat', defaultPrice: 18000 },
-      { name: 'Brownies', defaultPrice: 50000 },
-      { name: 'Bolu', defaultPrice: 50000 },
-      { name: 'Kue Ulang Tahun', defaultPrice: 100000 },
-    ],
-  },
-
-  // --- ROTI (KHUSUS PRODUK ROTI) ---
-  {
-    title: 'Roti & pastry manis',
-    category: 'roti',
-    iconType: 'bread',
-    items: [
-      { name: 'Roti Bakar', defaultPrice: 25000 },
-      { name: 'Roti John', defaultPrice: 30000 },
-      { name: 'Roti Coklat', defaultPrice: 8000 },
-      { name: 'Roti Keju', defaultPrice: 8000 },
-      { name: 'Roti Meses', defaultPrice: 8000 },
-      { name: 'Roti Cream Keju', defaultPrice: 10000 },
-      { name: 'Roti Cream Meses', defaultPrice: 10000 },
-    ],
-  },
-  {
-    title: 'Roti gurih & spesial',
-    category: 'roti',
-    iconType: 'bread',
-    items: [
-      { name: 'Roti Abon', defaultPrice: 10000 },
-      { name: "Roti'O", defaultPrice: 10000 },
-      { name: 'Roti Sosis', defaultPrice: 10000 },
-      { name: 'Roti Pisang Coklat', defaultPrice: 10000 },
-      { name: 'Roti Pintal Sosis', defaultPrice: 15000 },
-      { name: 'Roti Sobek', defaultPrice: 30000 },
     ],
   },
 ];
@@ -257,6 +270,31 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
           <path d="M17 4l-2 3" />
         </svg>
       );
+    case 'bread':
+      return (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 11c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6v4c0 3.3-2.7 6-6 6H9c-3.3 0-6-2.7-6-6v-4z" />
+          <path d="M7 11c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2" />
+        </svg>
+      );
+    case 'pizza':
+      return (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 11h.01M11 15h.01M16 16h.01" />
+          <path d="m2 16 17.5 5.5a1 1 0 0 0 1.2-1.2L15.2 2.8a1 1 0 0 0-1.6-.2L2 14.5a1 1 0 0 0 0 1.5Z" />
+        </svg>
+      );
+    case 'cake':
+      return (
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
+          <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
+          <path d="M2 21h20" />
+          <path d="M7 8v3" />
+          <path d="M12 8v3" />
+          <path d="M17 8v3" />
+        </svg>
+      );
     case 'snack':
     default:
       return (
@@ -272,8 +310,9 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti' | 'snack'>('semua');
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'pizza' | 'roti' | 'kue' | 'snack'>('semua');
   const { items } = useMenuStore();
+  const { orders } = useHistoryStore();
 
   // Tangani tombol ESC pada Windows dan Back button pada Android
   useEffect(() => {
@@ -283,22 +322,67 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     }, 25);
   }, [onClose]);
 
-  // Urutan kategori alfabetis A-Z setelah 'Semua' sesuai instruksi
+  // Urutan kategori yang rapi dan terstruktur logis
   const categories = [
     { key: 'semua', label: 'Semua' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'mie', label: 'Mie' },
     { key: 'minuman', label: 'Minuman' },
+    { key: 'pizza', label: 'Pizza' },
     { key: 'roti', label: 'Roti' },
+    { key: 'kue', label: 'Kue' },
     { key: 'snack', label: 'Snack' },
   ] as const;
+
+  // Hitung menu terlaris secara dinamis berdasarkan data pesanan riil
+  // Jika database 0, maka array terlaris kosong ([]), tidak menampilkan data palsu
+  const topSellers = useMemo(() => {
+    const soldCounts = new Map<string, { name: string; qty: number; price: number; photo_path: string | null; available: boolean }>();
+
+    orders.forEach((h) => {
+      if (h.order.status === 'cancelled') return;
+      h.items.forEach((it) => {
+        const key = it.name_snapshot.trim();
+        const existing = soldCounts.get(key);
+        if (existing) {
+          existing.qty += it.qty;
+        } else {
+          const menuItem = items.find((m) => m.name.toLowerCase() === key.toLowerCase());
+          soldCounts.set(key, {
+            name: key,
+            qty: it.qty,
+            price: menuItem ? menuItem.price_idr : it.price_snapshot_idr,
+            photo_path: menuItem?.photo_path || null,
+            available: menuItem ? menuItem.available : true,
+          });
+        }
+      });
+    });
+
+    return Array.from(soldCounts.values())
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 9);
+  }, [orders, items]);
 
   const getItemInfo = (name: string, fallbackPrice: number) => {
     const found = items.find((i) => i.name.toLowerCase() === name.toLowerCase());
     return {
       price: found ? found.price_idr : fallbackPrice,
       available: found ? found.available : true,
+      variants: found?.variants,
     };
+  };
+
+  const renderItemPrice = (item: { name: string; defaultPrice: number }) => {
+    const info = getItemInfo(item.name, item.defaultPrice);
+    if (info.variants && info.variants.length > 0) {
+      const minPrice = Math.min(...info.variants.map((v) => v.price_idr));
+      const maxPrice = Math.max(...info.variants.map((v) => v.price_idr));
+      if (minPrice !== maxPrice) {
+        return `${formatRupiah(minPrice)} - ${formatRupiah(maxPrice)}`;
+      }
+    }
+    return formatRupiah(info.price);
   };
 
   // Selalu sesuaikan dengan tambahan menu baru yang diinput di toko
@@ -319,14 +403,16 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     );
 
     extraItems.forEach((it) => {
-      let cat: 'makanan' | 'mie' | 'minuman' | 'roti' | 'snack' = 'makanan';
+      let cat: 'makanan' | 'mie' | 'minuman' | 'pizza' | 'roti' | 'kue' | 'snack' = 'makanan';
       const gid = (it.group_id || '').toLowerCase();
       const itemCat = ((it as any).category || '').toLowerCase();
 
       if (gid.includes('makanan') || itemCat === 'makanan') cat = 'makanan';
       else if (gid.includes('mie') || itemCat === 'mie') cat = 'mie';
       else if (gid.includes('minuman') || gid.includes('coffee') || itemCat === 'minuman') cat = 'minuman';
+      else if (gid.includes('pizza') || itemCat === 'pizza') cat = 'pizza';
       else if (gid.includes('roti') || itemCat === 'roti') cat = 'roti';
+      else if (gid.includes('kue') || itemCat === 'kue') cat = 'kue';
       else if (gid.includes('snack') || itemCat === 'snack') cat = 'snack';
 
       const title = `Menu Tambahan ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
@@ -334,7 +420,20 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
         groupsMap.set(title, {
           title,
           category: cat,
-          iconType: cat === 'minuman' ? 'iced-coffee' : cat === 'mie' ? 'noodle' : cat === 'roti' ? 'bread' : cat === 'snack' ? 'snack' : 'rice',
+          iconType:
+            cat === 'minuman'
+              ? 'iced-coffee'
+              : cat === 'mie'
+              ? 'noodle'
+              : cat === 'pizza'
+              ? 'pizza'
+              : cat === 'roti'
+              ? 'bread'
+              : cat === 'kue'
+              ? 'cake'
+              : cat === 'snack'
+              ? 'snack'
+              : 'rice',
           items: [],
         });
       }
@@ -348,7 +447,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
   }, [items]);
 
   const displayedGroups = useMemo(() => {
-    if (selectedCategory === 'semua') return [];
+    if (selectedCategory === 'semua') return allGroups;
     return allGroups.filter((group) => group.category === selectedCategory);
   }, [allGroups, selectedCategory]);
 
@@ -396,7 +495,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
       </div>
 
       {/* Chip Kategori Filter */}
-      <div style={{ display: 'flex', gap: '8px', flex: 'none' }}>
+      <div style={{ display: 'flex', gap: '8px', flex: 'none', overflowX: 'auto', paddingBottom: '4px' }}>
         {categories.map((c) => (
           <button
             key={c.key}
@@ -410,63 +509,103 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
         ))}
       </div>
 
-      {/* Konten Menu Bergulir Sesuai Gambar 2d */}
+      {/* Konten Menu Bergulir */}
       <div className="tk-customer-menu-grid">
-        {/* Golden Triangle: Kotak Sorot Terlaris (Hanya jika kategori 'semua') */}
+        {/* Kotak Sorot Terlaris (Hanya jika kategori 'semua') */}
         {selectedCategory === 'semua' && (
           <div className="g-acrylic hi tk-highlight-box" style={{ borderRadius: 'var(--r-lg)' }}>
-            <div
-              className="tk-menu-card"
-              style={{
-                flex: '0 0 200px',
-                minHeight: '168px',
-                borderRadius: 'var(--r-md)',
-              }}
-            >
-              <div
-                className="photo-layer"
-                style={{
-                  background: `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('/assets/images/makanan_berat/nasgor_telur.webp') center/cover no-repeat`,
-                }}
-              />
-              <div className="blur-layer" />
-              <b style={{ color: '#ffffff' }}>Nasi Goreng Telur</b>
-            </div>
+            {topSellers.length > 0 ? (
+              <>
+                <div
+                  className="tk-menu-card"
+                  style={{
+                    flex: '0 0 200px',
+                    minHeight: '168px',
+                    borderRadius: 'var(--r-md)',
+                  }}
+                >
+                  <div
+                    className="photo-layer"
+                    style={{
+                      background: topSellers[0].photo_path
+                        ? `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('${topSellers[0].photo_path}') center/cover no-repeat`
+                        : `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), var(--acrylic)`,
+                    }}
+                  />
+                  <div className="blur-layer" />
+                  <b style={{ color: '#ffffff' }}>{topSellers[0].name}</b>
+                  <span style={{ fontSize: 'var(--t-xs)', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>
+                    {topSellers[0].qty} terjual
+                  </span>
+                </div>
 
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span className="tk-menu-icon-box" style={{ width: '44px', height: '44px' }}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '24px', height: '24px' }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className="tk-menu-icon-box" style={{ width: '44px', height: '44px' }}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '24px', height: '24px' }}>
+                        <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+                      </svg>
+                    </span>
+                    <h3 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                      Terlaris
+                    </h3>
+                  </div>
+
+                  <div className="tk-highlight-items-grid">
+                    {topSellers.map((item) => (
+                      <div
+                        key={item.name}
+                        className="tk-customer-menu-item"
+                        style={{ opacity: item.available ? 1 : 0.55 }}
+                      >
+                        <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)', color: 'var(--ink)' }}>{item.name}</b>
+                        <span style={{ fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', fontWeight: 700, color: item.available ? 'var(--accent-ink)' : 'var(--ink-3)' }}>
+                          {formatRupiah(item.price)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  padding: '28px 24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '20px',
+                }}
+              >
+                <span
+                  className="tk-menu-icon-box"
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: 'var(--r-md)',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: 'var(--ink-3)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
                   </svg>
                 </span>
-                <h3 style={{ fontSize: 'var(--t-xl)', lineHeight: 'var(--l-xl)', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                  Terlaris
-                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h3 style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                    Terlaris
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', color: 'var(--ink-3)' }}>
+                    Belum ada data pesanan yang tercatat. Menu terlaris akan otomatis terdeteksi saat transaksi berlangsung.
+                  </p>
+                </div>
               </div>
-
-              <div className="tk-highlight-items-grid">
-                {TOP_SELLERS_DEFAULT.map(([name, price]) => {
-                  const info = getItemInfo(name, price);
-                  return (
-                    <div
-                      key={name}
-                      className="tk-customer-menu-item"
-                      style={{ opacity: info.available ? 1 : 0.55 }}
-                    >
-                      <b style={{ fontSize: 'var(--t-md)', lineHeight: 'var(--l-md)', color: 'var(--ink)' }}>{name}</b>
-                      <span style={{ fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', fontWeight: 700, color: info.available ? 'var(--accent-ink)' : 'var(--ink-3)' }}>
-                        {formatRupiah(info.price)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Kolom-Kolom Kartu Kelompok Menu (Hanya dirender jika ada kategori yang dipilih, bukan 'semua') */}
+        {/* Kolom-Kolom Kartu Kelompok Menu */}
         {displayedGroups.length > 0 && (
           <div className="tk-menu-groups-container">
             {displayedGroups.map((group) => (
@@ -481,7 +620,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
                   </h3>
                 </div>
 
-                {/* List Menu di dalam Grup (Maksimal 7 item per grup) */}
+                {/* List Menu di dalam Grup */}
                 <div className="tk-menu-group-list">
                   {group.items.map((item) => {
                     const info = getItemInfo(item.name, item.defaultPrice);
@@ -496,7 +635,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
                           <span className="tk-menu-group-item-name">{item.name}</span>
                         </div>
                         <span className="tk-menu-group-item-price">
-                          {formatRupiah(info.price)}
+                          {renderItemPrice(item)}
                         </span>
                       </div>
                     );
@@ -510,3 +649,5 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     </div>
   );
 };
+
+export default CustomerMenuView;
