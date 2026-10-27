@@ -371,7 +371,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
       {/* 3. Bagian Transaksi Riwayat dengan Tombol Semua Riwayat di Sebelah Kanan */}
       <div
         style={{
-          margin: '18px 4px 6px',
+          margin: '16px 4px 8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -400,20 +400,20 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
             style={{
               background: 'transparent',
               border: 'none',
-              padding: '6px 0',
+              padding: '8px 0',
               fontSize: 'var(--t-xs)',
               fontWeight: 700,
               color: 'var(--ink-2)',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '3px',
+              gap: '4px',
               cursor: 'pointer',
               transition: 'color 0.15s ease',
             }}
             aria-label="Buka semua riwayat"
           >
             <span>Semua riwayat</span>
-            <span style={{ fontSize: '15px', lineHeight: 1, color: 'var(--ink-3)' }}>›</span>
+            <span style={{ fontSize: 'var(--t-sm)', lineHeight: 1, color: 'var(--ink-3)' }}>›</span>
           </button>
         )}
       </div>
@@ -422,7 +422,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
       <div
         className={`tk-phone-list-card ${recentOrders.length > 3 ? 'tk-custom-slider' : ''}`}
         style={{
-          maxHeight: recentOrders.length > 3 ? '210px' : undefined,
+          maxHeight: recentOrders.length > 3 ? '216px' : undefined,
           overflowY: recentOrders.length > 3 ? 'auto' : undefined,
           WebkitOverflowScrolling: 'touch',
           paddingRight: recentOrders.length > 3 ? '4px' : undefined,

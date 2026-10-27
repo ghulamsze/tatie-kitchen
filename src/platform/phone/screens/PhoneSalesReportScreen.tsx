@@ -508,7 +508,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
       </div>
 
       {/* 4. Hero Card Ringkasan Omzet & Transaksi (Bersih tanpa bagian merah shoulder) */}
-      <div className="g-acrylic tk-phone-hero" style={{ margin: '0 4px 14px', flexShrink: 0 }}>
+      <div className="g-acrylic tk-phone-hero" style={{ margin: '0 4px 16px', flexShrink: 0 }}>
         <span
           style={{
             fontSize: 'var(--t-sm)',
@@ -563,7 +563,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         style={{
           borderRadius: 'var(--r-xl)',
           padding: '16px',
-          margin: '0 4px 14px',
+          margin: '0 4px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
@@ -574,7 +574,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <span
             style={{
-              fontSize: '11px',
+              fontSize: 'var(--t-xs)',
               color: 'var(--ink-3)',
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -797,11 +797,11 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
       </div>
 
       {/* 6. Card Rincian Metode Pembayaran (Format Bubble Persis seperti Gambar 2) */}
-      <div style={{ margin: '0 4px 14px', flexShrink: 0 }}>
+      <div style={{ margin: '0 4px 16px', flexShrink: 0 }}>
         <div style={{ margin: '0 0 8px 4px' }}>
           <span
             style={{
-              fontSize: '11px',
+              fontSize: 'var(--t-xs)',
               color: 'var(--ink-3)',
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -983,18 +983,18 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           className="g-acrylic"
           style={{
             borderRadius: 'var(--r-xl)',
-            padding: '18px 16px',
-            margin: '0 4px',
+            padding: '16px',
+            margin: '0 4px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '12px',
             flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: 'var(--t-xs)',
                 color: 'var(--ink-3)',
                 fontWeight: 700,
                 textTransform: 'uppercase',
@@ -1005,7 +1005,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {topItems.sorted.map((item, idx) => {
               // Gaya Medali Peringkat
               const badgeStyle =
@@ -1038,11 +1038,11 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '12px 14px',
+                    padding: '12px 16px',
                     borderRadius: 'var(--r-lg)',
                     background: 'var(--card-sub)',
                     border: '1px solid var(--border)',
-                    gap: '10px',
+                    gap: '12px',
                     transition: 'transform 0.1s ease',
                   }}
                 >
@@ -1062,7 +1062,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                           width: '24px',
                           height: '24px',
                           borderRadius: '50%',
-                          fontSize: '11px',
+                          fontSize: 'var(--t-xs)',
                           fontWeight: 900,
                           display: 'grid',
                           placeItems: 'center',
@@ -1076,8 +1076,8 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                       {/* Foto Menu */}
                       <div
                         style={{
-                          width: '46px',
-                          height: '46px',
+                          width: '48px',
+                          height: '48px',
                           borderRadius: 'var(--r-md)',
                           overflow: 'hidden',
                           background: 'var(--ctl)',
@@ -1123,7 +1123,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                         <span
                           style={{
                             display: 'block',
-                            fontSize: '11px',
+                            fontSize: 'var(--t-xs)',
                             color: 'var(--ink-3)',
                             fontWeight: 600,
                             marginTop: '2px',

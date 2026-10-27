@@ -38,12 +38,12 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
     >
       {isBolu ? (
         /* Alur Khusus Bolu: Pilih Rasa (Vanilla/Pandan) kemudian Ukuran (M/L) */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '14px 0 18px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '16px 0 20px' }}>
           {/* 1. Opsi Pilihan Rasa: Vanilla / Pandan */}
           <div>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: 'var(--t-xs)',
                 fontWeight: 800,
                 color: 'var(--ink-3)',
                 display: 'block',
@@ -54,7 +54,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
             >
               1. Pilih Rasa Bolu
             </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
               {(['Vanilla', 'Pandan'] as const).map((flavor) => {
                 const isSelected = boluFlavor === flavor;
                 return (
@@ -67,7 +67,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      height: '46px',
+                      height: '48px',
                       borderRadius: 'var(--r-pill)',
                       background: isSelected
                         ? 'var(--accent)'
@@ -94,7 +94,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
           <div>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: 'var(--t-xs)',
                 fontWeight: 800,
                 color: 'var(--ink-3)',
                 display: 'block',
@@ -105,7 +105,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
             >
               2. Pilih Ukuran
             </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
               {[
                 { size: 'M', price: 50000 },
                 { size: 'L', price: 90000 },
@@ -124,7 +124,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '14px 12px',
+                    padding: '16px 12px',
                     borderRadius: 'var(--r-lg)',
                     background: 'color-mix(in srgb, var(--acrylic) 85%, transparent)',
                     border: '1.5px solid var(--ctl-line)',
@@ -142,7 +142,7 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  <span style={{ fontSize: 'var(--t-sm)', fontWeight: 800, color: 'var(--ink)', marginBottom: '6px' }}>
+                  <span style={{ fontSize: 'var(--t-sm)', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px' }}>
                     Ukuran {size}
                   </span>
                   <span
@@ -169,8 +169,8 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '10px',
-            margin: '14px 0 18px',
+            gap: '12px',
+            margin: '16px 0 20px',
             maxHeight: '340px',
             overflowY: 'auto',
             paddingRight: '4px',
@@ -185,7 +185,8 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '14px 16px',
+                padding: '12px 16px',
+                height: '48px',
                 borderRadius: 'var(--r-pill)',
                 background: 'color-mix(in srgb, var(--acrylic) 85%, transparent)',
                 border: '1.5px solid var(--ctl-line)',
@@ -226,8 +227,8 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
           style={{
             display: 'grid',
             gridTemplateColumns: item.variants.length > 3 ? 'repeat(2, 1fr)' : '1fr',
-            gap: '10px',
-            margin: '14px 0 18px',
+            gap: '12px',
+            margin: '16px 0 20px',
             maxHeight: '340px',
             overflowY: 'auto',
             paddingRight: '4px',
@@ -248,7 +249,8 @@ export const MenuVariantDialog: React.FC<MenuVariantDialogProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: isNamePriceLike ? 'center' : 'space-between',
-                  padding: '13px 18px',
+                  padding: '12px 16px',
+                  height: '48px',
                   borderRadius: 'var(--r-pill)',
                   background: 'color-mix(in srgb, var(--acrylic) 85%, transparent)',
                   border: '1.5px solid var(--ctl-line)',

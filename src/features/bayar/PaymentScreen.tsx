@@ -380,7 +380,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
         <div
           className={`tk-table-display ${isRejecting ? 'rejecting' : ''}`}
           style={{
-            fontSize: tableInput === 'Bungkus' ? '28px' : 'var(--t-3xl)',
+            fontSize: tableInput === 'Bungkus' ? 'var(--t-xl)' : 'var(--t-3xl)',
             letterSpacing: tableInput === 'Bungkus' ? '-0.02em' : 'normal',
             color: isRejecting
               ? 'var(--danger)'
@@ -444,7 +444,9 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '2px',
+              gap: '4px',
+              height: '52px',
+              boxSizing: 'border-box',
               background: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
               color: tableInput === 'Bungkus' ? 'var(--on-accent)' : undefined,
               borderColor: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
@@ -585,7 +587,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
                   maxHeight: '148px',
                   width: 'auto',
                   objectFit: 'contain',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   display: 'block',
                 }}
               />
@@ -594,7 +596,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', display: 'block', fontWeight: 800 }}>
                 {shop.name || 'TATIS CAFE DAN RESTO'}
               </b>
-              <span style={{ fontSize: '11px', color: 'var(--ink-2)', fontWeight: 600 }}>
+              <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-2)', fontWeight: 600 }}>
                 Ketuk gambar untuk memperbesar QRIS
               </span>
             </div>

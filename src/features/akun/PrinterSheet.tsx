@@ -187,7 +187,7 @@ export const PrinterSheet: React.FC<PrinterSheetProps> = ({ isOpen, onClose }) =
                   >
                     <div>
                       <b style={{ fontSize: 'var(--t-sm)', display: 'block' }}>{dev.name}</b>
-                      <span style={{ fontSize: '11px', color: 'var(--ink-3)' }}>{dev.address}</span>
+                      <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>{dev.address}</span>
                     </div>
                     {selectedDevice?.address === dev.address && isConnected ? (
                       <span style={{ fontSize: 'var(--t-xs)', color: 'var(--accent-ink)', fontWeight: 800 }}>Aktif</span>

@@ -170,7 +170,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         >
           <span
             style={{
-              fontSize: '11px',
+              fontSize: 'var(--t-xs)',
               fontWeight: 800,
               letterSpacing: '0.08em',
               color: 'var(--ink-2)',
@@ -181,8 +181,8 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           </span>
           <b
             style={{
-              fontSize: '32px',
-              lineHeight: 1.1,
+              fontSize: 'var(--t-xl)',
+              lineHeight: 'var(--l-xl)',
               fontWeight: 900,
               color: 'var(--accent)',
             }}
@@ -192,7 +192,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         </div>
 
         {/* Total Nominal Besar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
           <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', fontWeight: 600 }}>
             Total Pembayaran
           </span>
@@ -216,7 +216,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             color: 'var(--ink-3)',
             fontWeight: 500,
             borderTop: '1px solid var(--ctl-line)',
-            paddingTop: '10px',
+            paddingTop: '12px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -226,10 +226,10 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: 'var(--t-xs)',
                 fontWeight: 700,
                 padding: '2px 8px',
-                borderRadius: 'var(--r-full)',
+                borderRadius: 'var(--r-pill)',
                 background: 'var(--surface-active)',
                 color: 'var(--ink-2)',
                 border: '1px solid var(--ctl-line)',
@@ -286,7 +286,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
                 {it.qty}x {it.name_snapshot}
               </span>
               {it.qty > 1 && (
-                <span style={{ fontSize: '11px', color: 'var(--ink-3)' }}>
+                <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>
                   @ {formatRupiah(it.price_snapshot_idr)}
                 </span>
               )}

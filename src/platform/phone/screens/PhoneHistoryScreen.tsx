@@ -264,14 +264,14 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                     }
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span>{dateTitle}</span>
                     {isToday && (
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: 'var(--t-xs)',
                           fontWeight: 700,
-                          padding: '1px 6px',
+                          padding: '2px 8px',
                           borderRadius: 'var(--r-pill)',
                           background: 'color-mix(in srgb, var(--accent) 20%, transparent)',
                           color: 'var(--accent)',
@@ -287,7 +287,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
 
                   <span
                     style={{
-                      fontSize: '11px',
+                      fontSize: 'var(--t-xs)',
                       color: 'var(--ink-3)',
                       transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
