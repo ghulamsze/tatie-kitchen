@@ -425,6 +425,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               border: 'none',
               fontWeight: 700,
               fontSize: 'var(--t-sm)',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.45)',
               cursor: canConfirmDeletePhoto ? 'pointer' : 'not-allowed',
               opacity: canConfirmDeletePhoto ? 1 : 0.6,
               pointerEvents: canConfirmDeletePhoto ? 'auto' : 'none',

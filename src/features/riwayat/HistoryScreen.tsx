@@ -5,7 +5,8 @@ import { Button } from '../../design/components/Button.tsx';
 import { Sheet } from '../../design/components/Sheet.tsx';
 
 export const HistoryScreen: React.FC = React.memo(() => {
-  const { orders, selectedRange, setRange, selectedOrder, setSelectedOrder } = useHistoryStore();
+  const { orders, selectedRange, setRange } = useHistoryStore();
+  const [selectedOrder, setSelectedOrder] = useState<HistoryOrderWithItems | null>(null);
   const [isRangeSheetOpen, setIsRangeSheetOpen] = useState(false);
   const [tempRange, setTempRange] = useState<DateRangePreset>(selectedRange);
 

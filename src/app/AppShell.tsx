@@ -6,6 +6,7 @@ import { PhoneDevFrame } from './PhoneDevFrame.tsx';
 import { PhoneRoot } from '../platform/phone/PhoneRoot.tsx';
 import { ComponentGallery } from '../dev/ComponentGallery.tsx';
 import { TabletRoot } from '../platform/tablet/TabletRoot.tsx';
+import { useHistoryStore } from '../stores/historyStore.ts';
 
 export const AppShell: React.FC = () => {
   const device = useDevice();
@@ -13,6 +14,8 @@ export const AppShell: React.FC = () => {
   useEffect(() => {
     // Daftarkan perangkat saat pertama dibuka dan perbarui aktivitas
     registerDevice(device);
+    // Bersihkan selectedOrder dari riwayat saat berganti device agar tidak bocor antar tampilan
+    useHistoryStore.getState().setSelectedOrder(null);
   }, [device]);
 
   // Masuk fullscreen otomatis saat pertama dibuka, keluar dengan Esc (browser handle sendiri)

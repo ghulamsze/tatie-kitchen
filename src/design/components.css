@@ -80,10 +80,21 @@
   height: var(--c-md);
 }
 
-/* Tombol Bahaya (Tanpa fill, border danger) */
+/* Tombol Bahaya Solid Tegas (Menggambarkan Hapus / Destructive Action) */
 .tk-btn-danger {
-  color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  background: var(--danger) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+}
+
+.tk-btn-danger:hover {
+  background: #b91c1c !important;
+}
+
+.tk-btn-danger:active {
+  transform: scale(0.98);
+  background: #991b1b !important;
 }
 
 /* ===== 2. CHIP ===== */

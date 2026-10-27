@@ -11,6 +11,7 @@ import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
+import { useHistoryStore } from '../../stores/historyStore.ts';
 
 const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Menu', 'Akun'];
 
@@ -41,6 +42,7 @@ export const PhoneRoot: React.FC = () => {
       // 1. Jika ada overlay rincian pesanan terbuka, tutup rincian dan kembali ke layar sebelumnya
       if (selectedOrderId) {
         setSelectedOrderId(null);
+        useHistoryStore.getState().setSelectedOrder(null);
         return true;
       }
       // 2. Jika ada preview cetak menu terbuka, tutup pratinjau
@@ -200,7 +202,12 @@ export const PhoneRoot: React.FC = () => {
               animation: 'tk-fade-in 0.2s ease-out',
             }}
           >
-            <PhoneOrderDetailScreen onBack={() => setSelectedOrderId(null)} />
+            <PhoneOrderDetailScreen
+              onBack={() => {
+                setSelectedOrderId(null);
+                useHistoryStore.getState().setSelectedOrder(null);
+              }}
+            />
           </div>
         )}
 
