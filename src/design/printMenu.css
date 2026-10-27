@@ -435,11 +435,18 @@
    Menyembunyikan UI layar dan mencetak dokumen menu A4 atau struk kasir
    ========================================================================== */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
   }
 
   /* 1. Cetak Dokumen Menu Fisik A4 */
@@ -502,6 +509,7 @@
     width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
   }
 
   #mps-print-portal #mp {
@@ -509,6 +517,7 @@
     width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
   }
 
   #mps-print-portal #mp .pgw {
@@ -521,25 +530,30 @@
     overflow: hidden !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  #mps-print-portal #mp .pgw:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 
   #mps-print-portal #mp .pg {
     width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
+    max-width: 210mm !important;
+    /* iOS WebKit Fix: Membatasi tinggi ke 295mm mencegah WebKit memicu halaman limpahan kosong (blank spillover page) */
+    height: 295mm !important;
+    max-height: 295mm !important;
+    min-height: 295mm !important;
     margin: 0 !important;
     box-sizing: border-box !important;
-    page-break-after: always !important;
-    break-after: page !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-
-  #mps-print-portal #mp .pgw:last-child .pg {
-    page-break-after: auto !important;
-    break-after: auto !important;
   }
 }

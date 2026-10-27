@@ -88,8 +88,8 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
       setIsDownloading(true);
       await downloadReceiptPngCrossPlatform({
         element: hiddenReceiptRef.current,
-        filename: `struk-antrean-${formatQueueNo(order.queue_no || 1)}-meja-${order.table_no || '0'}.png`,
-        title: `Struk Meja ${order.table_no || '-'} #${formatQueueNo(order.queue_no || 1)}`,
+        filename: `struk-antrean-${formatQueueNo(order.queue_no || 1)}-${order.table_no === 'Bungkus' ? 'bungkus' : `meja-${order.table_no || '0'}`}.png`,
+        title: `Struk ${order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${order.table_no || '-'}`} #${formatQueueNo(order.queue_no || 1)}`,
         onShowToast: showToast,
       });
     } finally {
@@ -151,7 +151,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         {/* Baris Meja (Tanpa Badge Waktu / Selesai) */}
         <div>
           <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)', fontWeight: 700 }}>
-            Meja {order.table_no || '-'}
+            {order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${order.table_no || '-'}`}
           </b>
         </div>
 
@@ -530,7 +530,7 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
             <span>{cashierName}</span>
           </div>
           <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-            <span>Meja:</span>
+            <span>{order.table_no === 'Bungkus' ? 'Pesanan:' : 'Meja:'}</span>
             <span>{order.table_no || '-'}</span>
           </div>
           <div className="row-between" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>

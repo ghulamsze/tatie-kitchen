@@ -288,7 +288,7 @@ export function getCurrentDevice(): DeviceInfo {
 }
 
 /**
- * Mengubah override perangkat dan reload atau update
+ * Mengubah override perangkat secara instan tanpa reload halaman yang berisiko 404
  */
 export function setDeviceOverride(override: FormFactor | 'auto'): void {
   if (typeof window === 'undefined') return;
@@ -302,10 +302,36 @@ export function setDeviceOverride(override: FormFactor | 'auto'): void {
     // ignore
   }
 
-  // Update query string
-  if (override === 'auto') {
-    window.location.href = '/device?auto=true';
-  } else {
-    window.location.href = `/device?${override}=true`;
+  try {
+    const currentUrl = new URL(window.location.href);
+    const params = currentUrl.searchParams;
+    params.delete('phone');
+    params.delete('tablet');
+    params.delete('laptop');
+    params.delete('device');
+    params.delete('auto');
+
+    if (override === 'auto') {
+      params.set('auto', 'true');
+    } else {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      for (let i = 0; i < 11; i++) token += chars[Math.floor(Math.random() * chars.length)];
+      params.set(override, token);
+    }
+
+    const currentPath = window.location.pathname.startsWith('/device') ? '/device' : window.location.pathname;
+    const newRelativeUrl = `${currentPath}?${params.toString()}`;
+
+    window.history.replaceState(null, '', newRelativeUrl);
+    window.dispatchEvent(new Event('popstate'));
+    window.dispatchEvent(new CustomEvent('tk-device-change', { detail: override }));
+  } catch {
+    // Fallback aman tanpa merubah path dasar
+    if (override === 'auto') {
+      window.location.search = '?auto=true';
+    } else {
+      window.location.search = `?${override}=true`;
+    }
   }
 }

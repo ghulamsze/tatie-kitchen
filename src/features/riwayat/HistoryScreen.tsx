@@ -175,7 +175,7 @@ export const HistoryScreen: React.FC = React.memo(() => {
                             color: 'var(--ink-1)',
                           }}
                         >
-                          Meja {order.table_no || '-'}
+                          {order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${order.table_no || '-'}`}
                         </span>
                         <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>
                           #{order.id.substring(0, 10)}
@@ -305,7 +305,7 @@ export const HistoryScreen: React.FC = React.memo(() => {
               </div>
               <div className="row-between" style={{ fontSize: '12px', marginTop: '6px' }}>
                 <span>No: #{selectedOrder.order.id.substring(0, 10)}</span>
-                <span>Meja {selectedOrder.order.table_no}</span>
+                <span>{selectedOrder.order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${selectedOrder.order.table_no}`}</span>
               </div>
               <div className="row-between" style={{ fontSize: '12px' }}>
                 <span>Waktu:</span>

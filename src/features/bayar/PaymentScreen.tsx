@@ -73,7 +73,18 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
 
   // Auto-confirm nomor meja saat digit diketik, maksimal 2 digit dan maksimal meja 30
   const handleKeypadPress = (val: string | number) => {
+    if (val === 'Bungkus') {
+      setTableInput('Bungkus');
+      setTableNo('Bungkus');
+      return;
+    }
+
     if (val === 'Hapus') {
+      if (tableInput === 'Bungkus') {
+        setTableInput('..');
+        setTableNo('..');
+        return;
+      }
       if (tableInput.length > 1 && tableInput !== '..' && tableInput !== '...' && tableInput !== 'x') {
         const next = tableInput.slice(0, -1);
         setTableInput(next);
@@ -86,19 +97,24 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
     }
 
     const digit = String(val);
-    const isPlaceholder = tableInput === '..' || tableInput === '...' || tableInput === 'x';
+    const isPlaceholder = tableInput === '..' || tableInput === '...' || tableInput === 'x' || tableInput === 'Bungkus';
     const candidateStr = isPlaceholder ? digit : `${tableInput}${digit}`;
 
     // Nomor meja maksimal 2 digit
     if (candidateStr.length > 2) {
       triggerReject();
+      setTableInput('..');
+      setTableNo('..');
       return;
     }
 
     const candidateNum = parseInt(candidateStr, 10);
-    // Maksimal nomor meja adalah 30: blokir angka 0 tunggal atau nilai 31+ dengan animasi menolak merah (tanpa notif)
+    // Maksimal nomor meja adalah 30: blokir angka 0 tunggal atau nilai 31+ dengan animasi menolak merah
+    // Jika nomor tidak valid (misal 5 dilanjut 1 menjadi 51), angka sebelumnya terhapus (ke-cancel) sesuai permintaan
     if (isNaN(candidateNum) || candidateNum < 1 || candidateNum > 30) {
       triggerReject();
+      setTableInput('..');
+      setTableNo('..');
       return;
     }
 
@@ -360,17 +376,19 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           </h3>
         </div>
 
-        {/* Default meja selalu '..' dengan warna abu-abu, animasi menolak merah jika > 30 */}
+        {/* Default meja selalu '..' dengan warna abu-abu, teks 'Bungkus' saat tombol bungkus ditekan, animasi menolak merah jika > 30 */}
         <div
           className={`tk-table-display ${isRejecting ? 'rejecting' : ''}`}
           style={{
+            fontSize: tableInput === 'Bungkus' ? '28px' : 'var(--t-3xl)',
+            letterSpacing: tableInput === 'Bungkus' ? '-0.02em' : 'normal',
             color: isRejecting
               ? 'var(--danger)'
               : (tableInput === '..' || tableInput === '...' || tableInput === 'x')
                 ? 'var(--ink-3)'
                 : 'var(--ink)',
             userSelect: 'none',
-            transition: 'color 0.15s ease',
+            transition: 'color 0.15s ease, font-size 0.15s ease',
           }}
         >
           {tableInput}
@@ -386,7 +404,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
               {key}
             </button>
           ))}
-          {/* Baris Bawah: Tombol Hapus (Ikon Saja di Kiri), Angka 0 (Tengah), Placeholder Kosong (Kanan) */}
+          {/* Baris Bawah: Tombol Hapus (Ikon Saja di Kiri), Angka 0 (Tengah), Tombol Bungkus (Kanan) */}
           <button
             type="button"
             onClick={() => handleKeypadPress('Hapus')}
@@ -416,7 +434,39 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({ onSuccess, onCance
           >
             0
           </button>
-          <div style={{ height: '52px' }} aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => handleKeypadPress('Bungkus')}
+            aria-label="Bungkus"
+            title="Pesanan Bungkus"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              background: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
+              color: tableInput === 'Bungkus' ? 'var(--on-accent)' : undefined,
+              borderColor: tableInput === 'Bungkus' ? 'var(--accent)' : undefined,
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em' }}>Bungkus</span>
+          </button>
         </div>
       </div>
 

@@ -341,7 +341,7 @@ export const PhoneHistoryScreen: React.FC<PhoneHistoryScreenProps> = ({ onSelect
                               color: 'var(--ink)',
                             }}
                           >
-                            Meja {order.table_no || '-'}
+                            {order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${order.table_no || '-'}`}
                           </b>
                           <span
                             style={{

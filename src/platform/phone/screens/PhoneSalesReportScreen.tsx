@@ -13,16 +13,44 @@ export interface PhoneSalesReportScreenProps {
   onBack: () => void;
 }
 
+const SALES_REPORT_RANGE_KEY = 'tk_sales_report_selected_range';
+const SALES_REPORT_CUSTOM_DATE_KEY = 'tk_sales_report_custom_date';
+
+const loadSavedReportRange = (): DateRangePreset => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(SALES_REPORT_RANGE_KEY) as DateRangePreset | null;
+      if (saved && ['hari-ini', 'kemarin', '7-hari', '30-hari', 'semua'].includes(saved)) {
+        return saved;
+      }
+    }
+  } catch {}
+  return 'hari-ini';
+};
+
+const loadSavedCustomDate = (): string | undefined => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(SALES_REPORT_CUSTOM_DATE_KEY);
+      if (saved && saved.trim().length > 0) return saved;
+    }
+  } catch {}
+  return undefined;
+};
+
 export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ onBack }) => {
   const { orders, fetchOrders } = useHistoryStore();
   const { items: allMenuItems, fetchMenu } = useMenuStore();
 
-  const [selectedRange, setSelectedRange] = useState<DateRangePreset>('hari-ini');
-  const [customDate, setCustomDate] = useState<string | undefined>(undefined);
+  const [selectedRange, setSelectedRange] = useState<DateRangePreset>(loadSavedReportRange);
+  const [customDate, setCustomDate] = useState<string | undefined>(loadSavedCustomDate);
   const [isRangeSheetOpen, setIsRangeSheetOpen] = useState(false);
   const [selectedBarIdx, setSelectedBarIdx] = useState<number | null>(null);
 
   const chartScrollRef = useRef<HTMLDivElement>(null);
+  const isDraggingChartRef = useRef(false);
+  const chartDragStartXRef = useRef(0);
+  const chartDragStartScrollRef = useRef(0);
 
   useEffect(() => {
     fetchOrders().catch(() => {});
@@ -345,6 +373,58 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
     setSelectedRange(newRange);
     setCustomDate(newCustomDate);
     setSelectedBarIdx(null);
+    try {
+      localStorage.setItem(SALES_REPORT_RANGE_KEY, newRange);
+      if (newCustomDate) {
+        localStorage.setItem(SALES_REPORT_CUSTOM_DATE_KEY, newCustomDate);
+      } else {
+        localStorage.removeItem(SALES_REPORT_CUSTOM_DATE_KEY);
+      }
+    } catch {}
+  };
+
+  const handleChartScrub = (clientX: number) => {
+    if (!chartScrollRef.current) return;
+    const rect = chartScrollRef.current.getBoundingClientRect();
+    const relativeX = clientX - rect.left + chartScrollRef.current.scrollLeft;
+    const isScrollable = chartData.items.length > 8;
+    const n = chartData.items.length;
+    if (n === 0) return;
+
+    let targetIdx = 0;
+    if (isScrollable) {
+      targetIdx = Math.max(0, Math.min(n - 1, Math.floor(relativeX / 50)));
+    } else {
+      const trackW = rect.width;
+      targetIdx = Math.max(0, Math.min(n - 1, Math.floor((relativeX / trackW) * n)));
+    }
+    setSelectedBarIdx(targetIdx);
+  };
+
+  const handleChartPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingChartRef.current = true;
+    chartDragStartXRef.current = e.clientX;
+    chartDragStartScrollRef.current = chartScrollRef.current ? chartScrollRef.current.scrollLeft : 0;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    } catch {}
+    handleChartScrub(e.clientX);
+  };
+
+  const handleChartPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingChartRef.current) return;
+    const dx = e.clientX - chartDragStartXRef.current;
+    if (chartScrollRef.current) {
+      chartScrollRef.current.scrollLeft = chartDragStartScrollRef.current - dx;
+    }
+    handleChartScrub(e.clientX);
+  };
+
+  const handleChartPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingChartRef.current = false;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    } catch {}
   };
 
   // Otomatis scroll grafik ke tanggal terbaru di sisi kanan saat rentang berubah
@@ -387,22 +467,22 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
         </button>
       </div>
 
-      {/* 2. Judul Layar & Tombol Pill Rentang Waktu Kompak Seukuran Tab */}
+      {/* 2. Judul Layar & Tombol Pill Rentang Waktu di Bawahnya (Mencegah Judul Menjadi 2 Baris) */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '10px',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '8px',
           margin: '0 4px 16px',
           flexShrink: 0,
         }}
       >
-        <h1 className="tk-phone-title" style={{ margin: 0 }}>
+        <h1 className="tk-phone-title" style={{ margin: 0, whiteSpace: 'nowrap' }}>
           Laporan Penjualan
         </h1>
 
-        {/* 3. Tombol Pill Trigger Rentang Waktu (Kompak Seukuran Tab) */}
+        {/* 3. Tombol Pill Trigger Rentang Waktu Kompak Seukuran Tab */}
         <div
           className="tk-phone-range-trigger rg g"
           onClick={() => setIsRangeSheetOpen(true)}
@@ -412,6 +492,8 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
           aria-label="Pilih rentang waktu laporan"
           style={{
             margin: 0,
+            display: 'inline-flex',
+            alignSelf: 'flex-start',
             flexShrink: 0,
           }}
           onKeyDown={(e) => {
@@ -538,6 +620,10 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
             <div
               ref={chartScrollRef}
               className="tk-custom-slider"
+              onPointerDown={handleChartPointerDown}
+              onPointerMove={handleChartPointerMove}
+              onPointerUp={handleChartPointerUp}
+              onPointerCancel={handleChartPointerUp}
               style={{
                 height: '148px',
                 minHeight: '148px',
@@ -548,6 +634,9 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                 paddingTop: '6px',
                 paddingBottom: '4px',
                 boxSizing: 'border-box',
+                touchAction: 'pan-y',
+                userSelect: 'none',
+                cursor: isScrollable ? 'grab' : 'default',
               }}
             >
               <div
@@ -561,7 +650,83 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                   gap: '8px',
                 }}
               >
-                {/* Overlay Garis Spline & Gradasi Area yang Menghubungkan Antar Batang */}
+                {/* 1. Batang-batang Bar Chart Interaktif (Selalu Aktif & Berwarna) */}
+                {chartData.items.map((bar, idx) => {
+                  const heightPercent = bar.total > 0
+                    ? Math.max(14, Math.round((bar.total / maxChartValue) * 100))
+                    : 6;
+                  const isSelected = activeBar?.fullLabel === bar.fullLabel;
+
+                  return (
+                    <div
+                      key={bar.fullLabel + idx}
+                      onClick={() => setSelectedBarIdx(idx)}
+                      style={{
+                        flex: isScrollable ? '0 0 42px' : 1,
+                        minWidth: isScrollable ? '42px' : 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        zIndex: 2,
+                      }}
+                    >
+                      {/* Area Track Batang Bar */}
+                      <div
+                        style={{
+                          flex: 1,
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          justifyContent: 'center',
+                          paddingBottom: '4px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '100%',
+                            maxWidth: isScrollable ? '26px' : '30px',
+                            height: `${heightPercent}%`,
+                            borderRadius: 'var(--r-sm)',
+                            background: isSelected
+                              ? 'var(--accent)'
+                              : bar.total > 0
+                              ? 'linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 65%, transparent) 100%)'
+                              : 'color-mix(in srgb, var(--card-sub) 90%, var(--border))',
+                            boxShadow: isSelected
+                              ? '0 0 14px color-mix(in srgb, var(--accent) 65%, transparent)'
+                              : bar.total > 0
+                              ? '0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent)'
+                              : 'none',
+                            transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease',
+                            minHeight: '6px',
+                          }}
+                        />
+                      </div>
+
+                      {/* Label Jam/Tanggal */}
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: isSelected ? 800 : 600,
+                          color: isSelected ? 'var(--ink)' : 'var(--ink-3)',
+                          marginTop: '2px',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '100%',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {bar.label}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* 2. Overlay Garis Spline & Titik Dots (Berada di Atas Seluruh Batang Bar) */}
                 <svg
                   style={{
                     position: 'absolute',
@@ -570,7 +735,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                     width: isScrollable ? `${totalTrackWidth}px` : '100%',
                     height: '112px',
                     pointerEvents: 'none',
-                    zIndex: 3,
+                    zIndex: 10,
                     overflow: 'visible',
                   }}
                   viewBox={isScrollable ? `0 0 ${totalTrackWidth} 100` : '0 0 1000 100'}
@@ -610,7 +775,7 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                             cx={pt.x}
                             cy={pt.y}
                             r={isScrollable ? 6 : 7}
-                            fill="color-mix(in srgb, var(--accent) 35%, transparent)"
+                            fill="color-mix(in srgb, var(--accent) 45%, transparent)"
                           />
                         )}
                         <circle
@@ -625,80 +790,6 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                     );
                   })}
                 </svg>
-
-                {/* Batang-batang Bar Chart Interaktif */}
-                {chartData.items.map((bar, idx) => {
-                  const heightPercent = bar.total > 0
-                    ? Math.max(12, Math.round((bar.total / maxChartValue) * 100))
-                    : 6;
-                  const isSelected = activeBar?.fullLabel === bar.fullLabel;
-
-                  return (
-                    <div
-                      key={bar.fullLabel + idx}
-                      onClick={() => setSelectedBarIdx(idx)}
-                      style={{
-                        flex: isScrollable ? '0 0 42px' : 1,
-                        minWidth: isScrollable ? '42px' : 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        zIndex: 2,
-                      }}
-                    >
-                      {/* Area Track Batang Bar */}
-                      <div
-                        style={{
-                          flex: 1,
-                          width: '100%',
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          justifyContent: 'center',
-                          paddingBottom: '4px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '100%',
-                            maxWidth: isScrollable ? '26px' : '30px',
-                            height: `${heightPercent}%`,
-                            borderRadius: 'var(--r-sm)',
-                            background: isSelected
-                              ? 'color-mix(in srgb, var(--accent) 85%, transparent)'
-                              : bar.total > 0
-                              ? 'color-mix(in srgb, var(--accent) 35%, var(--card-sub))'
-                              : 'var(--card-sub)',
-                            boxShadow: isSelected
-                              ? '0 0 10px color-mix(in srgb, var(--accent) 40%, transparent)'
-                              : 'none',
-                            transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease',
-                            minHeight: '6px',
-                          }}
-                        />
-                      </div>
-
-                      {/* Label Jam/Tanggal */}
-                      <span
-                        style={{
-                          fontSize: '9px',
-                          fontWeight: isSelected ? 800 : 600,
-                          color: isSelected ? 'var(--ink)' : 'var(--ink-3)',
-                          marginTop: '2px',
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '100%',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {bar.label}
-                      </span>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           );

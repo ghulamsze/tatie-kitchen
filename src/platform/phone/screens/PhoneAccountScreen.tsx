@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useCashierStore, DEFAULT_CASHIERS, isImmutableCashier } from '../../../stores/cashierStore.ts';
 import { useShopStore } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
-import { Toast } from '../../../design/components/Toast.tsx';
 import { Cashier } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
@@ -23,7 +22,6 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   const [newCashierName, setNewCashierName] = useState('');
   const [selectedCashierToRemove, setSelectedCashierToRemove] = useState<Cashier | null>(null);
   const [rejectingCashierId, setRejectingCashierId] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const holdTimerRef = useRef<number | null>(null);
   const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -63,11 +61,6 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
       return false;
     }, 85);
   }, [isAddCashierOpen, selectedCashierToRemove]);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   // Pastikan minimal ada kasir bawaan sesuai preview.pdf
   const displayCashiers = cashiers.length > 0
@@ -121,23 +114,20 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
       await addNewCashier(trimmed);
       setNewCashierName('');
       setIsAddCashierOpen(false);
-      showToast(`Kasir ${trimmed} berhasil ditambahkan`);
     } catch {
-      showToast('Gagal menambahkan kasir baru');
+      // Tanpa notifikasi toast sesuai instruksi
     }
   };
 
   const handleRemoveCashierConfirm = async () => {
     if (!selectedCashierToRemove) return;
-    const name = selectedCashierToRemove.name;
     const id = selectedCashierToRemove.id;
     setSelectedCashierToRemove(null);
 
     try {
       await removeCashier(id);
-      showToast(`Kasir ${name} berhasil dihapus`);
     } catch {
-      showToast('Gagal menghapus kasir');
+      // Tanpa notifikasi toast sesuai instruksi
     }
   };
 
@@ -478,9 +468,6 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
         </div>,
         portalTarget
       )}
-
-      {/* Notifikasi Toast */}
-      {toastMessage && <Toast message={toastMessage} visible={true} />}
     </div>
   );
 };

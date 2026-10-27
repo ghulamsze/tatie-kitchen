@@ -492,7 +492,7 @@ export const PhoneHomeScreen: React.FC<PhoneHomeScreenProps> = ({
                       color: 'var(--ink)',
                     }}
                   >
-                    Meja {order.table_no || '-'}
+                    {order.table_no === 'Bungkus' ? 'Bungkus' : `Meja ${order.table_no || '-'}`}
                   </b>
                   <span
                     style={{

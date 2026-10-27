@@ -162,7 +162,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({ onNewOrder }) => {
           <span>{cashierName}</span>
         </div>
         <div className="row-between" style={{ fontSize: '12px' }}>
-          <span>Meja:</span>
+          <span>{tableNo === 'Bungkus' ? 'Pesanan:' : 'Meja:'}</span>
           <span>{tableNo}</span>
         </div>
         <div className="row-between" style={{ fontSize: '12px' }}>

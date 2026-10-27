@@ -6,7 +6,32 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'spa-device-fallback',
+        configureServer(server) {
+          server.middlewares.use((req, _res, next) => {
+            if (req.url && (req.url.startsWith('/device') || req.url === '/device')) {
+              const queryIndex = req.url.indexOf('?');
+              const query = queryIndex !== -1 ? req.url.slice(queryIndex) : '';
+              req.url = '/index.html' + query;
+            }
+            next();
+          });
+        },
+        configurePreviewServer(server) {
+          server.middlewares.use((req, _res, next) => {
+            if (req.url && (req.url.startsWith('/device') || req.url === '/device')) {
+              const queryIndex = req.url.indexOf('?');
+              const query = queryIndex !== -1 ? req.url.slice(queryIndex) : '';
+              req.url = '/index.html' + query;
+            }
+            next();
+          });
+        },
+      },
+    ],
     // Mengizinkan prefix NEXT_PUBLIC_, SUPABASE_, dan VITE_
     envPrefix: ['VITE_', 'SUPABASE_', 'NEXT_PUBLIC_'],
     define: {

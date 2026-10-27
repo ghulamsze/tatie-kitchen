@@ -63,7 +63,7 @@ export const ReceiptPrintPortal: React.FC<ReceiptPrintPortalProps> = ({
         <span>{cashierName}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-        <span>Meja:</span>
+        <span>{tableNo === 'Bungkus' ? 'Pesanan:' : 'Meja:'}</span>
         <span>{tableNo}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>

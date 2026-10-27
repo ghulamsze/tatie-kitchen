@@ -11,10 +11,12 @@ export function useDevice(): DeviceInfo {
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('popstate', handleResize);
+    window.addEventListener('tk-device-change', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('popstate', handleResize);
+      window.removeEventListener('tk-device-change', handleResize);
     };
   }, []);
 
