@@ -247,6 +247,8 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
+                padding: '12px 20px 12px 16px',
+                overflow: 'visible',
               }}
             >
               {/* Profile kecil di sebelah kiri sebelum nama kasir */}
@@ -265,16 +267,28 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   color: 'var(--ink-2)',
                   flexShrink: 0,
                   overflow: 'hidden',
+                  position: 'relative',
                 }}
               >
-                {cashier.avatar_url ? (
+                <span style={{ position: 'absolute', zIndex: 0, userSelect: 'none' }}>
+                  {initials}
+                </span>
+                {cashier.avatar_url && (
                   <img
                     src={cashier.avatar_url}
                     alt={cashier.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      zIndex: 1,
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
-                ) : (
-                  initials
                 )}
               </div>
 
@@ -286,7 +300,9 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   fontWeight: 400,
                   color: 'var(--ink)',
                   display: 'inline-block',
-                  flex: 1,
+                  marginRight: 'auto',
+                  overflow: 'visible',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {cashier.name}

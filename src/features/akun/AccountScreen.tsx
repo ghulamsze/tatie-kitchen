@@ -3,15 +3,18 @@ import { useCashierStore } from '../../stores/cashierStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
 import { Button } from '../../design/components/Button.tsx';
+import { Dialog } from '../../design/components/Dialog.tsx';
 
 export interface AccountScreenProps {
   onChangeCashier: () => void;
 }
 
 export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChangeCashier }) => {
-  const { activeCashier, shiftStartTime, updateCashierAvatar } = useCashierStore();
+  const { activeCashier, shiftStartTime, updateCashierAvatar, deleteCashierAvatar } = useCashierStore();
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isPrinterOpen, setIsPrinterOpen] = useState(false);
+  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,28 +28,33 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const handleAvatarClick = () => {
+    if (avatarUrl) {
+      setIsPhotoMenuOpen(true);
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setIsUploading(true);
-      // Baca file gambar
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const dataUrl = reader.result as string;
-          await updateCashierAvatar(cashierId, dataUrl);
-        } catch {
-          // ignore
-        } finally {
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      await updateCashierAvatar(cashierId, file);
     } catch {
+      // ignore
+    } finally {
       setIsUploading(false);
     }
+    // Reset file input agar bisa pilih file yang sama jika diinginkan
+    e.target.value = '';
+  };
+
+  const handleDeletePhoto = async () => {
+    setIsPhotoMenuOpen(false);
+    await deleteCashierAvatar(cashierId);
   };
 
   return (
@@ -88,11 +96,11 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
         <div style={{ position: 'relative', width: '112px', height: '112px' }}>
           <div
             className="g-liquid"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleAvatarClick}
             role="button"
             tabIndex={0}
-            aria-label="Ubah foto profil kasir"
-            title="Klik untuk memilih foto profil baru"
+            aria-label="Pilihan foto profil kasir"
+            title={avatarUrl ? "Klik untuk melihat atau mengubah foto profil" : "Klik untuk memilih foto profil baru"}
             style={{
               width: '112px',
               height: '112px',
@@ -104,18 +112,30 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               fontWeight: 800,
               cursor: 'pointer',
               overflow: 'hidden',
+              position: 'relative',
               opacity: isUploading ? 0.6 : 1,
               transition: 'opacity 0.2s ease',
             }}
           >
-            {avatarUrl ? (
+            <span style={{ position: 'absolute', zIndex: 0, userSelect: 'none' }}>
+              {getInitials(cashierName)}
+            </span>
+            {avatarUrl && (
               <img
                 src={avatarUrl}
                 alt={cashierName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 1,
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
               />
-            ) : (
-              getInitials(cashierName)
             )}
           </div>
 
@@ -124,9 +144,9 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              fileInputRef.current?.click();
+              handleAvatarClick();
             }}
-            aria-label="Pilih foto"
+            aria-label="Kelola foto profil"
             style={{
               position: 'absolute',
               bottom: '-4px',
@@ -148,7 +168,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               height="16"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#ffffff"
+              stroke="var(--on-accent)"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -244,6 +264,101 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
         isOpen={isPrinterOpen}
         onClose={() => setIsPrinterOpen(false)}
       />
+
+      {/* Dialog Pilihan Foto Profil (Lihat, Ubah, Hapus) */}
+      <Dialog
+        isOpen={isPhotoMenuOpen}
+        onClose={() => setIsPhotoMenuOpen(false)}
+        title="Foto Profil"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+          <Button
+            variant="flat"
+            size="md"
+            onClick={() => {
+              setIsPhotoMenuOpen(false);
+              setIsPreviewOpen(true);
+            }}
+            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
+          >
+            Lihat Profil
+          </Button>
+
+          <Button
+            variant="flat"
+            size="md"
+            onClick={() => {
+              setIsPhotoMenuOpen(false);
+              fileInputRef.current?.click();
+            }}
+            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
+          >
+            Pilih Foto Baru
+          </Button>
+
+          <button
+            type="button"
+            className="tk-btn-flat"
+            onClick={handleDeletePhoto}
+            style={{
+              width: '100%',
+              height: '48px',
+              justifyContent: 'center',
+              color: 'var(--danger)',
+              borderColor: 'color-mix(in srgb, var(--danger) 35%, transparent)',
+            }}
+          >
+            Hapus Profil
+          </button>
+
+          <Button
+            variant="flat"
+            size="md"
+            onClick={() => setIsPhotoMenuOpen(false)}
+            style={{ width: '100%', height: '44px', marginTop: '4px', opacity: 0.7 }}
+          >
+            Batal
+          </Button>
+        </div>
+      </Dialog>
+
+      {/* Lightbox Modal Lihat Foto Profil */}
+      <Dialog
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title="Foto Profil Kasir"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+          {avatarUrl && (
+            <div
+              style={{
+                width: '260px',
+                height: '260px',
+                borderRadius: 'var(--r-xl)',
+                overflow: 'hidden',
+                background: 'var(--ctl)',
+                border: '1px solid var(--ctl-line)',
+                boxShadow: 'var(--sh-md)',
+              }}
+            >
+              <img
+                src={avatarUrl}
+                alt={cashierName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+          <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)' }}>{cashierName}</b>
+          <Button
+            variant="lime"
+            size="md"
+            onClick={() => setIsPreviewOpen(false)}
+            style={{ width: '100%', height: '44px' }}
+          >
+            Tutup
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 });

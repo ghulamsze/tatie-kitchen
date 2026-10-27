@@ -171,6 +171,8 @@
   color: var(--danger) !important;
   animation: tk-shake-reject 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
   text-shadow: 0 0 10px color-mix(in srgb, var(--danger) 50%, transparent);
+  will-change: transform;
+  overflow: visible !important;
 }
 
 .tk-phone-dot {

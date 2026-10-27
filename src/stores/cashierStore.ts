@@ -114,6 +114,7 @@ interface CashierState {
   resetToDefaultCashiers: () => void;
   setCashierAvatarLocally: (cashierId: string, avatarUrl: string) => void;
   updateCashierAvatar: (cashierId: string, fileOrDataUrl: Blob | File | string) => Promise<string>;
+  deleteCashierAvatar: (cashierId: string) => Promise<void>;
 }
 
 
@@ -417,6 +418,24 @@ export const useCashierStore = create<CashierState>((set) => ({
   },
 
   setCashierAvatarLocally: (cashierId, avatarUrl) => {
+    if (!avatarUrl) {
+      const map = getLocalCashierAvatars();
+      delete map[cashierId];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(map));
+      }
+      set((state) => {
+        const updated = state.cashiers.map((c) =>
+          c.id === cashierId ? { ...c, avatar_url: undefined } : c
+        );
+        const newActive = state.activeCashier?.id === cashierId
+          ? { ...state.activeCashier, avatar_url: undefined }
+          : state.activeCashier;
+        return { cashiers: updated, activeCashier: newActive };
+      });
+      return;
+    }
+
     saveLocalCashierAvatar(cashierId, avatarUrl);
     set((state) => {
       const updated = state.cashiers.map((c) =>
@@ -431,28 +450,31 @@ export const useCashierStore = create<CashierState>((set) => ({
 
   updateCashierAvatar: async (cashierId, fileOrDataUrl) => {
     let blob: Blob;
+    let instantPreview = '';
+
     if (typeof fileOrDataUrl === 'string') {
+      instantPreview = fileOrDataUrl;
       const res = await fetch(fileOrDataUrl);
       blob = await res.blob();
     } else {
       blob = fileOrDataUrl;
+      instantPreview = URL.createObjectURL(blob);
     }
 
-    const publicUrl = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${cashierId}.jpg?t=${Date.now()}`;
-
-    // Simpan di local cache langsung agar instan di layar
-    saveLocalCashierAvatar(cashierId, publicUrl);
+    // 1. Tampilkan foto langsung secara instan (0 ms) agar tidak ada jeda / bug broken image
     set((state) => {
       const updated = state.cashiers.map((c) =>
-        c.id === cashierId ? { ...c, avatar_url: publicUrl } : c
+        c.id === cashierId ? { ...c, avatar_url: instantPreview } : c
       );
       const newActive = state.activeCashier?.id === cashierId
-        ? { ...state.activeCashier, avatar_url: publicUrl }
+        ? { ...state.activeCashier, avatar_url: instantPreview }
         : state.activeCashier;
       return { cashiers: updated, activeCashier: newActive };
     });
 
-    // Upload ke Supabase Storage (Database)
+    const publicUrl = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${cashierId}.jpg?t=${Date.now()}`;
+
+    // 2. Upload ke Supabase Storage (Database)
     try {
       const secretKey = getSupabaseSecretKey();
       await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars/${cashierId}.jpg`, {
@@ -465,6 +487,21 @@ export const useCashierStore = create<CashierState>((set) => ({
         },
         body: blob,
       });
+
+      // Simpan di local cache
+      saveLocalCashierAvatar(cashierId, publicUrl);
+
+      // Perbarui dengan public URL setelah upload sukses
+      set((state) => {
+        const updated = state.cashiers.map((c) =>
+          c.id === cashierId ? { ...c, avatar_url: publicUrl } : c
+        );
+        const newActive = state.activeCashier?.id === cashierId
+          ? { ...state.activeCashier, avatar_url: publicUrl }
+          : state.activeCashier;
+        return { cashiers: updated, activeCashier: newActive };
+      });
+
       // Broadcast perubahan ke seluruh device yang sedang aktif (Tablet & HP)
       await broadcastCashierAvatarChanged(cashierId, publicUrl);
     } catch (err) {
@@ -472,6 +509,43 @@ export const useCashierStore = create<CashierState>((set) => ({
     }
 
     return publicUrl;
+  },
+
+  deleteCashierAvatar: async (cashierId) => {
+    // 1. Hapus dari state lokal seketika
+    const map = getLocalCashierAvatars();
+    delete map[cashierId];
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(map));
+    }
+
+    set((state) => {
+      const updated = state.cashiers.map((c) =>
+        c.id === cashierId ? { ...c, avatar_url: undefined } : c
+      );
+      const newActive = state.activeCashier?.id === cashierId
+        ? { ...state.activeCashier, avatar_url: undefined }
+        : state.activeCashier;
+      return { cashiers: updated, activeCashier: newActive };
+    });
+
+    // 2. Hapus dari database Supabase Storage
+    try {
+      const secretKey = getSupabaseSecretKey();
+      await fetch(`${SUPABASE_BASE_URL}/storage/v1/object/avatars`, {
+        method: 'DELETE',
+        headers: {
+          apikey: secretKey,
+          Authorization: `Bearer ${secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prefixes: [`${cashierId}.jpg`] }),
+      });
+      // Broadcast hapus avatar ke semua device
+      await broadcastCashierAvatarChanged(cashierId, '');
+    } catch (err) {
+      logError('cashierStore:deleteCashierAvatar_err', err);
+    }
   },
 
   resetToDefaultCashiers: () => {

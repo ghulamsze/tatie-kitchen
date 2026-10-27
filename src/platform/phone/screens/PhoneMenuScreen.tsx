@@ -4,6 +4,17 @@ import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
 
+function formatThousands(value: number | string): string {
+  const digits = String(value).replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseThousands(value: string): number {
+  const digits = value.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+
 export const PhoneMenuScreen: React.FC = () => {
   const { items, groups, selectedCategory, setCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
 
@@ -14,12 +25,14 @@ export const PhoneMenuScreen: React.FC = () => {
   // Form edit
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState(0);
+  const [editPriceStr, setEditPriceStr] = useState('0');
   const [editAvailable, setEditAvailable] = useState(true);
   const [editGroupId, setEditGroupId] = useState('');
 
   // Form tambah
   const [addName, setAddName] = useState('');
   const [addPrice, setAddPrice] = useState(15000);
+  const [addPriceStr, setAddPriceStr] = useState('15.000');
   const [addAvailable, setAddAvailable] = useState(true);
   const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
 
@@ -58,6 +71,7 @@ export const PhoneMenuScreen: React.FC = () => {
     setEditingItem(item);
     setEditName(item.name);
     setEditPrice(item.price_idr);
+    setEditPriceStr(formatThousands(item.price_idr));
     setEditAvailable(item.available);
     setEditGroupId(item.group_id);
   };
@@ -95,6 +109,7 @@ export const PhoneMenuScreen: React.FC = () => {
 
     setAddName('');
     setAddPrice(15000);
+    setAddPriceStr('15.000');
     setAddAvailable(true);
     setIsAddOpen(false);
   };
@@ -117,104 +132,87 @@ export const PhoneMenuScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsAddOpen(true)}
+          aria-label="Tambah menu baru"
+          title="Tambah menu baru"
           style={{
-            background: 'var(--accent)',
-            color: '#ffffff',
-            border: 'none',
+            width: '36px',
+            height: '36px',
             borderRadius: 'var(--r-pill)',
-            fontSize: 'var(--t-xs)',
-            lineHeight: 'var(--l-xs)',
+            background: 'var(--accent)',
+            color: 'var(--on-accent)',
+            border: 'none',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '22px',
+            lineHeight: 1,
             fontWeight: 800,
             cursor: 'pointer',
-            padding: '8px 16px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
             boxShadow: 'var(--sh-sm)',
+            transition: 'transform 0.1s ease',
           }}
         >
-          <span>+</span>
-          <span>Tambah</span>
+          +
         </button>
       </div>
 
-      {/* 2. Pencarian Menu */}
-      <div style={{ margin: '0 4px 12px', flexShrink: 0 }}>
-        <div
+      {/* 2. Pencarian Menu Sama Persis dengan Tablet */}
+      <div style={{ margin: '0 4px 12px', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input
+          type="text"
+          className="tk-input"
+          placeholder="Cari menu"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
+            width: '100%',
+            height: '44px',
+            padding: search ? '0 44px 0 16px' : '0 16px',
+            fontSize: 'var(--t-sm)',
             borderRadius: 'var(--r-md)',
-            background: 'var(--ctl)',
-            border: '1px solid var(--ctl-line)',
-            padding: '0 12px',
-            height: '40px',
             boxSizing: 'border-box',
           }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--ink-3)"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            style={{ marginRight: '8px', flexShrink: 0 }}
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Cari nama menu..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          aria-label="Cari menu"
+        />
+        {search.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            aria-label="Hapus teks pencarian"
+            title="Hapus pencarian"
             style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
+              position: 'absolute',
+              right: '4px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.16)',
               color: 'var(--ink)',
-              fontSize: 'var(--t-sm)',
-              outline: 'none',
-              fontWeight: 600,
+              border: 'none',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: '14px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'background 0.15s ease',
             }}
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--ink-3)',
-                fontSize: '14px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      {/* 3. Slider Chip Kategori */}
+      {/* 3. Bar Chip Kategori (Sama dengan Tablet, Semua Kategori Tampil Rapi Tanpa Terpotong) */}
       <div
-        className="tk-category-nav tk-custom-slider"
+        className="tk-category-nav tk-chips-bar"
         style={{
           display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
+          gap: '6px',
+          width: '100%',
           padding: '0 4px 12px',
           margin: 0,
           flexShrink: 0,
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
+          boxSizing: 'border-box',
         }}
       >
         {categories.map((cat) => {
@@ -223,19 +221,19 @@ export const PhoneMenuScreen: React.FC = () => {
             <button
               key={cat}
               type="button"
+              className={`tk-chip ${isSelected ? 'active lime' : ''}`}
               onClick={() => setCategory(cat)}
+              aria-pressed={isSelected}
               style={{
-                padding: '6px 14px',
-                borderRadius: 'var(--r-pill)',
-                background: isSelected ? 'var(--accent)' : 'var(--ctl)',
-                border: isSelected ? '1px solid var(--accent)' : '1px solid var(--ctl-line)',
-                color: isSelected ? '#ffffff' : 'var(--ink)',
-                fontSize: 'var(--t-xs)',
-                lineHeight: 'var(--l-xs)',
-                fontWeight: isSelected ? 800 : 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.15s ease',
+                flex: 1,
+                minWidth: 0,
+                height: '36px',
+                padding: '0 4px',
+                fontSize: '12px',
+                lineHeight: '36px',
+                fontWeight: isSelected ? 800 : 700,
+                textAlign: 'center',
+                boxSizing: 'border-box',
               }}
             >
               {cat}
@@ -336,7 +334,7 @@ export const PhoneMenuScreen: React.FC = () => {
                 </div>
 
                 {/* Deskripsi Nama & Harga */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   <span
                     style={{
                       fontSize: 'var(--t-sm)',
@@ -359,17 +357,6 @@ export const PhoneMenuScreen: React.FC = () => {
                     }}
                   >
                     {formatRupiah(item.price_idr)}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: isAvailable ? 'var(--ink-3)' : 'var(--danger, #ff4d4f)',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    {isAvailable ? 'Tersedia' : 'Habis (Kosong)'}
                   </span>
                 </div>
 
@@ -489,26 +476,55 @@ export const PhoneMenuScreen: React.FC = () => {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  Harga Jual (Rp)
+                  Harga Jual
                 </label>
-                <input
-                  type="number"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(Number(e.target.value))}
+                <div
                   style={{
-                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
                     height: '42px',
                     padding: '0 12px',
                     borderRadius: 'var(--r-md)',
                     background: 'var(--ctl)',
                     border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
                     boxSizing: 'border-box',
+                    gap: '6px',
                   }}
-                />
+                >
+                  <span
+                    style={{
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 800,
+                      color: 'var(--ink-2)',
+                      userSelect: 'none',
+                    }}
+                  >
+                    Rp
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={editPriceStr}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const formatted = formatThousands(e.target.value);
+                      setEditPriceStr(formatted);
+                      setEditPrice(parseThousands(formatted));
+                    }}
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--ink)',
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 700,
+                      outline: 'none',
+                      padding: 0,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
@@ -696,27 +712,55 @@ export const PhoneMenuScreen: React.FC = () => {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  Harga Jual (Rp)
+                  Harga Jual
                 </label>
-                <input
-                  type="number"
-                  placeholder="15000"
-                  value={addPrice}
-                  onChange={(e) => setAddPrice(Number(e.target.value))}
+                <div
                   style={{
-                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
                     height: '42px',
                     padding: '0 12px',
                     borderRadius: 'var(--r-md)',
                     background: 'var(--ctl)',
                     border: '1px solid var(--ctl-line)',
-                    color: 'var(--ink)',
-                    fontSize: 'var(--t-sm)',
-                    fontWeight: 700,
-                    outline: 'none',
                     boxSizing: 'border-box',
+                    gap: '6px',
                   }}
-                />
+                >
+                  <span
+                    style={{
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 800,
+                      color: 'var(--ink-2)',
+                      userSelect: 'none',
+                    }}
+                  >
+                    Rp
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={addPriceStr}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const formatted = formatThousands(e.target.value);
+                      setAddPriceStr(formatted);
+                      setAddPrice(parseThousands(formatted));
+                    }}
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--ink)',
+                      fontSize: 'var(--t-sm)',
+                      fontWeight: 700,
+                      outline: 'none',
+                      padding: 0,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
