@@ -94,6 +94,9 @@ export const PrintMenuDocument: React.FC<PrintMenuDocumentProps> = ({
     {
       title: 'Camilan',
       items: [
+        { name: 'Risol', price: 4000 },
+        { name: 'Pie Susu', price: 10000 },
+        { name: 'Pie Brownies', price: 5000 },
         { name: 'Nugget', price: 15000 },
         { name: 'Lekor', price: 15000 },
         { name: 'Sosis Goreng', price: 15000 },

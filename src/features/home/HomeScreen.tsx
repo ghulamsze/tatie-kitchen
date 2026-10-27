@@ -75,17 +75,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 
   const cartContainerRef = useRef<HTMLDivElement>(null);
 
-  const isItemFarBelow = (itemId: string, el: HTMLElement): boolean => {
-    // 1. Jika pesanan banyak (> 4 item) dan posisi item di urutan bawah (index >= 3)
-    if (lines.length > 4) {
-      const idx = lines.findIndex((l) => l.item.id === itemId);
-      if (idx >= 3) return true;
-    }
-    // 2. Jika elemen berada di luar atau di dekat batas bawah area scroll keranjang
+  const isItemOutOfView = (el: HTMLElement): boolean => {
+    // Lewati animasi hanya jika elemen berada sepenuhnya di luar batas vertikal kontainer scroll
     if (cartContainerRef.current) {
       const elRect = el.getBoundingClientRect();
       const containerRect = cartContainerRef.current.getBoundingClientRect();
-      if (elRect.bottom > containerRect.bottom - 16 || elRect.top < containerRect.top) {
+      if (elRect.top >= containerRect.bottom || elRect.bottom <= containerRect.top) {
         return true;
       }
     }
@@ -94,19 +89,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 
   const handleClearCart = async () => {
     if (lines.length === 0) return;
-    // Jika pesanan banyak (> 4 item), hindari animasi snapdust berat dan bersihkan langsung
-    if (lines.length > 4) {
+    // Jika pesanan sangat banyak (> 8 item), hindari beban frame berlebih dan bersihkan langsung
+    if (lines.length > 8) {
       clearCart();
       return;
     }
     setIsClearing(true);
+
+    const containerRect = cartContainerRef.current?.getBoundingClientRect();
+    const clipRect = containerRect
+      ? {
+          top: containerRect.top,
+          bottom: containerRect.bottom,
+          left: containerRect.left,
+          right: containerRect.right,
+        }
+      : undefined;
+
     const promises = lines.map((line) => {
       const el = rowRefs.current.get(line.item.id);
-      if (el && !isItemFarBelow(line.item.id, el)) {
+      if (el && !isItemOutOfView(el)) {
         return SnapDust.disintegrate(el, {
           duration: 480,
           direction: 'ltr',
           wind: { x: 1.4, y: -0.5 },
+          clipRect,
         });
       }
       return Promise.resolve();
@@ -119,12 +126,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   const handleMinusQty = async (itemId: string, currentQty: number) => {
     if (currentQty <= 1) {
       const el = rowRefs.current.get(itemId);
-      // Hindari snapdust jika pesanan di bawah banget atau pesanan banyak
-      if (el && !isItemFarBelow(itemId, el)) {
+      if (el && !isItemOutOfView(el)) {
+        const containerRect = cartContainerRef.current?.getBoundingClientRect();
+        const clipRect = containerRect
+          ? {
+              top: containerRect.top,
+              bottom: containerRect.bottom,
+              left: containerRect.left,
+              right: containerRect.right,
+            }
+          : undefined;
+
         await SnapDust.disintegrate(el, {
           duration: 480,
           direction: 'ltr',
           wind: { x: 1.4, y: -0.5 },
+          clipRect,
         });
       }
       updateQty(itemId, -1);

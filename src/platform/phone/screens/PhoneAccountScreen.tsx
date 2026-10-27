@@ -227,13 +227,12 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
       </div>
 
       <div
-        className="tk-phone-list-card tk-custom-slider"
+        className={`tk-phone-list-card ${displayCashiers.length > 3 ? 'tk-custom-slider' : ''}`}
         style={{
           marginBottom: '16px',
-          maxHeight: '184px',
-          overflowY: 'auto',
+          maxHeight: displayCashiers.length > 3 ? '184px' : 'none',
+          overflowY: displayCashiers.length > 3 ? 'auto' : 'hidden',
           WebkitOverflowScrolling: 'touch',
-          paddingRight: '4px',
         }}
       >
         {displayCashiers.map((cashier) => {
@@ -258,8 +257,10 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '12px 20px 12px 16px',
-                overflow: 'visible',
+                padding: '12px 16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
               {/* Profile kecil di sebelah kiri sebelum nama kasir */}
@@ -547,7 +548,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   border: 'none',
                   borderRadius: 'var(--r-md)',
                   cursor: canConfirmRemove ? 'pointer' : 'not-allowed',
-                  opacity: canConfirmRemove ? 1 : 0.6,
+                  opacity: 1,
                   pointerEvents: canConfirmRemove ? 'auto' : 'none',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',

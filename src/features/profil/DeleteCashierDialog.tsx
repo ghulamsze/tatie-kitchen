@@ -73,7 +73,7 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
             fontWeight: 700,
             fontSize: 'var(--t-sm)',
             cursor: isDeleting || !canConfirm ? 'not-allowed' : 'pointer',
-            opacity: isDeleting || !canConfirm ? 0.6 : 1,
+            opacity: 1,
             pointerEvents: canConfirm ? 'auto' : 'none',
             userSelect: 'none',
             WebkitUserSelect: 'none',

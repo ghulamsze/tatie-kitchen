@@ -151,6 +151,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     category: 'snack',
     iconType: 'snack',
     items: [
+      { name: 'Risol', defaultPrice: 4000 },
       { name: 'Nugget', defaultPrice: 15000 },
       { name: 'Lekor', defaultPrice: 15000 },
       { name: 'Sosis Goreng', defaultPrice: 15000 },
@@ -176,6 +177,8 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     category: 'snack',
     iconType: 'snack',
     items: [
+      { name: 'Pie Susu', defaultPrice: 10000 },
+      { name: 'Pie Brownies', defaultPrice: 5000 },
       { name: 'Donat', defaultPrice: 18000 },
       { name: 'Brownies', defaultPrice: 50000 },
       { name: 'Bolu', defaultPrice: 50000 },

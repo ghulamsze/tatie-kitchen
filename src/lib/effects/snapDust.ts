@@ -17,6 +17,7 @@ export interface SnapDustOptions {
   duration?: number;
   direction?: 'ltr' | 'rtl';
   wind?: { x: number; y: number };
+  clipRect?: { top?: number; bottom?: number; left?: number; right?: number };
 }
 
 interface AshParticle {
@@ -36,7 +37,7 @@ interface ParticleState {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   rect: DOMRect;
-  opts: Required<SnapDustOptions>;
+  opts: SnapDustOptions;
   animFrameId?: number;
 }
 
@@ -174,7 +175,7 @@ export class SnapDust {
       canvas: overlayCanvas,
       ctx: oCtx,
       rect,
-      opts: { particleSize: opts?.particleSize ?? 1.6, duration, direction, wind },
+      opts: { particleSize: opts?.particleSize ?? 1.6, duration, direction, wind, clipRect: opts?.clipRect },
     };
     elementStates.set(el, state);
 
@@ -186,43 +187,71 @@ export class SnapDust {
         const p = Math.min(1, elapsed / duration);
 
         // 1. Kikis elemen asli dengan clipPath dinamis (teks tetap vektor murni & tajam)
-        const cutPercent = Math.min(100, Math.max(0, p * 112));
-        if (direction === 'ltr') {
-          // Menyusut dari kiri ke kanan
-          el.style.clipPath = `polygon(${cutPercent}% 0%, 100% 0%, 100% 100%, ${Math.max(0, cutPercent - 5)}% 100%)`;
+        const wave = p * 118;
+        const topCut = Math.min(100, Math.max(0, wave));
+        const bottomCut = Math.min(100, Math.max(0, wave - 8));
+
+        if (bottomCut >= 100 || p >= 0.88) {
+          // Elemen selesai terkikis penuh tanpa menyisakan serpihan kanan (mencegah bug stuck)
+          el.style.visibility = 'hidden';
+          el.style.clipPath = direction === 'ltr'
+            ? 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)'
+            : 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)';
+        } else if (direction === 'ltr') {
+          // Menyusut dari kiri ke kanan dengan gelombang miring
+          el.style.clipPath = `polygon(${topCut}% 0%, 100% 0%, 100% 100%, ${bottomCut}% 100%)`;
         } else {
           // Menyusut dari kanan ke kiri
-          el.style.clipPath = `polygon(0% 0%, ${100 - cutPercent}% 0%, ${Math.min(100, 100 - cutPercent + 5)}% 100%, 0% 100%)`;
+          el.style.clipPath = `polygon(0% 0%, ${100 - topCut}% 0%, ${100 - bottomCut}% 100%, 0% 100%)`;
         }
 
         // 2. Lahirkan partikel debu baru di ujung garis pengikisan
-        if (p < 0.94) {
+        if (p < 0.90 && bottomCut < 100) {
           const edgeX = direction === 'ltr'
-            ? (rect.width * (cutPercent / 100))
-            : (rect.width * (1 - cutPercent / 100));
+            ? (rect.width * (topCut / 100))
+            : (rect.width * (1 - topCut / 100));
 
-          const particlesToSpawn = 18;
-          for (let s = 0; s < particlesToSpawn; s++) {
-            const spawnY = extraTop + Math.random() * rect.height;
-            const spawnX = edgeX + (Math.random() - 0.5) * 8;
-            const colorIdx = Math.floor(Math.random() * ASH_COLORS.length);
+          // Batasi kelahiran partikel hanya dalam area elemen yang terlihat di dalam viewport clipRect
+          const clipTop = opts?.clipRect?.top !== undefined ? Math.max(0, opts.clipRect.top - rect.top) : 0;
+          const clipBottom = opts?.clipRect?.bottom !== undefined ? Math.min(rect.height, Math.max(0, opts.clipRect.bottom - rect.top)) : rect.height;
+          const visibleHeight = Math.max(0, clipBottom - clipTop);
 
-            particles.push({
-              x: spawnX,
-              y: spawnY,
-              vx: (wind.x * (0.9 + Math.random() * 1.5)),
-              vy: (wind.y * (0.8 + Math.random() * 1.4)) + (Math.random() - 0.5) * 0.8,
-              radius: 0.75 + Math.random() * 1.35,
-              alpha: 0.95,
-              decay: 0.024 + Math.random() * 0.02,
-              color: ASH_COLORS[colorIdx],
-              wobbleOffset: Math.random() * 100,
-            });
+          if (visibleHeight > 0) {
+            const particlesToSpawn = 18;
+            for (let s = 0; s < particlesToSpawn; s++) {
+              const spawnY = extraTop + clipTop + Math.random() * visibleHeight;
+              const spawnX = edgeX + (Math.random() - 0.5) * 8;
+              const colorIdx = Math.floor(Math.random() * ASH_COLORS.length);
+
+              particles.push({
+                x: spawnX,
+                y: spawnY,
+                vx: (wind.x * (0.9 + Math.random() * 1.5)),
+                vy: (wind.y * (0.8 + Math.random() * 1.4)) + (Math.random() - 0.5) * 0.8,
+                radius: 0.75 + Math.random() * 1.35,
+                alpha: 0.95,
+                decay: 0.024 + Math.random() * 0.02,
+                color: ASH_COLORS[colorIdx],
+                wobbleOffset: Math.random() * 100,
+              });
+            }
           }
         }
 
         // 3. Gambar dan perbarui partikel di canvas overlay
         oCtx.clearRect(0, 0, cWidth, cHeight);
+
+        // Jika clipRect ditentukan (misal batas bawah kontainer scroll pesanan), terapkan clipping pada canvas
+        // agar partikel debu tidak menindih kolom catatan atau tombol checkout di bawah kontainer
+        const hasClip = Boolean(opts?.clipRect);
+        if (hasClip && opts?.clipRect) {
+          oCtx.save();
+          const minClipY = opts.clipRect.top !== undefined ? Math.max(0, extraTop + (opts.clipRect.top - rect.top)) : 0;
+          const maxClipY = opts.clipRect.bottom !== undefined ? Math.max(0, extraTop + (opts.clipRect.bottom - rect.top)) : cHeight;
+          oCtx.beginPath();
+          oCtx.rect(0, minClipY, cWidth, Math.max(0, maxClipY - minClipY));
+          oCtx.clip();
+        }
 
         for (let i = particles.length - 1; i >= 0; i--) {
           const pt = particles[i];
@@ -240,6 +269,10 @@ export class SnapDust {
           oCtx.beginPath();
           oCtx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
           oCtx.fill();
+        }
+
+        if (hasClip) {
+          oCtx.restore();
         }
 
         if (p < 1 || particles.length > 0) {
