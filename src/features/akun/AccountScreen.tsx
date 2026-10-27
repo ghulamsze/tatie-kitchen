@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
+import { CropProfileDialog } from './CropProfileDialog.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Dialog } from '../../design/components/Dialog.tsx';
 
@@ -16,11 +17,29 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // State untuk Crop Foto 1:1 dan Konfirmasi Hapus Foto
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [isConfirmDeletePhotoOpen, setIsConfirmDeletePhotoOpen] = useState(false);
+  const [canConfirmDeletePhoto, setCanConfirmDeletePhoto] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cashierName = activeCashier?.name || 'Robertus Amaresi';
   const cashierId = activeCashier?.id || '1d83083c-9d75-4dec-9c1a-75be69bc1050';
   const avatarUrl = activeCashier?.avatar_url;
+
+  // Guard delay agar tombol konfirmasi hapus tidak langsung ketekan
+  useEffect(() => {
+    if (!isConfirmDeletePhotoOpen) {
+      setCanConfirmDeletePhoto(false);
+      return undefined;
+    }
+    setCanConfirmDeletePhoto(false);
+    const timer = setTimeout(() => setCanConfirmDeletePhoto(true), 320);
+    return () => clearTimeout(timer);
+  }, [isConfirmDeletePhotoOpen]);
 
   const getInitials = (name: string): string => {
     const parts = name.trim().split(/\s+/);
@@ -36,24 +55,37 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Buka dialog Crop 1:1 sebelum disimpan ke database
+    const objectUrl = URL.createObjectURL(file);
+    setCropImageSrc(objectUrl);
+    setIsCropOpen(true);
+
+    // Reset file input agar bisa memilih ulang berkas yang sama
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     try {
       setIsUploading(true);
-      await updateCashierAvatar(cashierId, file);
+      await updateCashierAvatar(cashierId, croppedBlob);
     } catch {
       // ignore
     } finally {
       setIsUploading(false);
+      if (cropImageSrc) {
+        URL.revokeObjectURL(cropImageSrc);
+        setCropImageSrc(null);
+      }
     }
-    // Reset file input agar bisa pilih file yang sama jika diinginkan
-    e.target.value = '';
   };
 
-  const handleDeletePhoto = async () => {
-    setIsPhotoMenuOpen(false);
+  const handleDeletePhotoConfirm = async () => {
+    if (!canConfirmDeletePhoto) return;
+    setIsConfirmDeletePhotoOpen(false);
     await deleteCashierAvatar(cashierId);
   };
 
@@ -124,6 +156,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               <img
                 src={avatarUrl}
                 alt={cashierName}
+                draggable={false}
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -131,12 +164,31 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
                   height: '100%',
                   objectFit: 'cover',
                   zIndex: 1,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
               />
             )}
+            {/* Pelindung transparan agar foto profil tidak bisa disalin atau diambil dengan hold */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 2,
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            />
           </div>
 
           {/* Tombol Kamera Badge Kecil */}
@@ -296,20 +348,17 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
             Pilih Foto Baru
           </Button>
 
-          <button
-            type="button"
-            className="tk-btn-flat"
-            onClick={handleDeletePhoto}
-            style={{
-              width: '100%',
-              height: '48px',
-              justifyContent: 'center',
-              color: 'var(--danger)',
-              borderColor: 'color-mix(in srgb, var(--danger) 35%, transparent)',
+          <Button
+            variant="danger"
+            size="md"
+            onClick={() => {
+              setIsPhotoMenuOpen(false);
+              setIsConfirmDeletePhotoOpen(true);
             }}
+            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
           >
             Hapus Profil
-          </button>
+          </Button>
 
           <Button
             variant="flat"
@@ -319,6 +368,48 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
           >
             Batal
           </Button>
+        </div>
+      </Dialog>
+
+      {/* Dialog Konfirmasi Hapus Foto Profil (Dilengkapi Delay Guard agar Tombol Tidak Seperti Ketekan) */}
+      <Dialog
+        isOpen={isConfirmDeletePhotoOpen}
+        onClose={() => setIsConfirmDeletePhotoOpen(false)}
+        title="Hapus foto profil?"
+        description={`Hapus foto profil kasir "${cashierName}" dan kembali ke inisial nama?`}
+      >
+        <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+          <Button
+            variant="flat"
+            size="md"
+            onClick={() => setIsConfirmDeletePhotoOpen(false)}
+            style={{ flex: 1, height: '44px' }}
+          >
+            Batal
+          </Button>
+          <button
+            type="button"
+            onClick={handleDeletePhotoConfirm}
+            disabled={!canConfirmDeletePhoto}
+            style={{
+              flex: 1,
+              height: '44px',
+              borderRadius: 'var(--r-md)',
+              background: 'var(--danger)',
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: 'var(--t-sm)',
+              cursor: canConfirmDeletePhoto ? 'pointer' : 'not-allowed',
+              opacity: canConfirmDeletePhoto ? 1 : 0.6,
+              pointerEvents: canConfirmDeletePhoto ? 'auto' : 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              transition: 'opacity 0.15s ease, transform 0.1s ease',
+            }}
+          >
+            Hapus Foto
+          </button>
         </div>
       </Dialog>
 
@@ -339,12 +430,44 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
                 background: 'var(--ctl)',
                 border: '1px solid var(--ctl-line)',
                 boxShadow: 'var(--sh-md)',
+                position: 'relative',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
               }}
             >
               <img
                 src={avatarUrl}
                 alt={cashierName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                draggable={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                }}
+              />
+              {/* Pelindung transparan lightbox agar tidak bisa disalin/diambil dengan hold */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               />
             </div>
           )}
@@ -359,6 +482,20 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
           </Button>
         </div>
       </Dialog>
+
+      {/* Dialog Crop Foto 1:1 Resolusi Tetap 512x512 */}
+      <CropProfileDialog
+        isOpen={isCropOpen}
+        imageSrc={cropImageSrc}
+        onClose={() => {
+          setIsCropOpen(false);
+          if (cropImageSrc) {
+            URL.revokeObjectURL(cropImageSrc);
+            setCropImageSrc(null);
+          }
+        }}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 });

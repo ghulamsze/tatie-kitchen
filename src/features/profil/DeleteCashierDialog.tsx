@@ -17,11 +17,22 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
   onConfirm,
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [canConfirm, setCanConfirm] = useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setCanConfirm(false);
+      return undefined;
+    }
+    setCanConfirm(false);
+    const timer = setTimeout(() => setCanConfirm(true), 320);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   if (!cashier || isImmutableCashier(cashier.id, cashier.name)) return null;
 
-
   const handleDelete = async () => {
+    if (!canConfirm || isDeleting) return;
     try {
       setIsDeleting(true);
       await onConfirm(cashier.id);
@@ -51,7 +62,7 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
         <button
           type="button"
           onClick={handleDelete}
-          disabled={isDeleting}
+          disabled={isDeleting || !canConfirm}
           style={{
             flex: 1,
             height: '44px',
@@ -61,9 +72,12 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
             border: 'none',
             fontWeight: 700,
             fontSize: 'var(--t-sm)',
-            cursor: isDeleting ? 'not-allowed' : 'pointer',
-            opacity: isDeleting ? 0.7 : 1,
-            transition: 'transform 0.1s ease',
+            cursor: isDeleting || !canConfirm ? 'not-allowed' : 'pointer',
+            opacity: isDeleting || !canConfirm ? 0.6 : 1,
+            pointerEvents: canConfirm ? 'auto' : 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            transition: 'transform 0.1s ease, opacity 0.15s ease',
           }}
         >
           {isDeleting ? 'Menghapus...' : 'Hapus Kasir'}

@@ -114,6 +114,7 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
                   <img
                     src={c.avatar_url}
                     alt={c.name}
+                    draggable={false}
                     style={{
                       position: 'absolute',
                       inset: 0,
@@ -121,12 +122,31 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
                       height: '100%',
                       objectFit: 'cover',
                       zIndex: 1,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      WebkitTouchCallout: 'none',
                     }}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 )}
+                {/* Shield pelindung anti-copy & anti-hold */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 2,
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                />
               </div>
               <span>{c.name}</span>
             </button>

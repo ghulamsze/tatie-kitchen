@@ -625,6 +625,18 @@ body.tk-modal-open .tk-navbar,
   box-shadow: 0 0 0 3px var(--ring);
 }
 
+/* Proteksi Anti-Copy & Anti-Hold Foto Profil Kasir */
+.tk-avatar-box img,
+.tk-profile-avatar img,
+.tk-phone-row img,
+.tk-lightbox-avatar img {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  pointer-events: none !important;
+}
+
 /* ===== 12. TAMPILAN BUTTON ===== */
 .tk-btn-appearance {
   height: var(--c-md);

@@ -21,10 +21,21 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   const [isAddCashierOpen, setIsAddCashierOpen] = useState(false);
   const [newCashierName, setNewCashierName] = useState('');
   const [selectedCashierToRemove, setSelectedCashierToRemove] = useState<Cashier | null>(null);
+  const [canConfirmRemove, setCanConfirmRemove] = useState(false);
   const [rejectingCashierId, setRejectingCashierId] = useState<string | null>(null);
 
   const holdTimerRef = useRef<number | null>(null);
   const pointerStartPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!selectedCashierToRemove) {
+      setCanConfirmRemove(false);
+      return undefined;
+    }
+    setCanConfirmRemove(false);
+    const timer = setTimeout(() => setCanConfirmRemove(true), 320);
+    return () => clearTimeout(timer);
+  }, [selectedCashierToRemove]);
 
   const portalTarget = typeof document !== 'undefined'
     ? (document.getElementById('tk-portal-root') || document.body)
@@ -277,6 +288,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   <img
                     src={cashier.avatar_url}
                     alt={cashier.name}
+                    draggable={false}
                     style={{
                       position: 'absolute',
                       inset: 0,
@@ -284,12 +296,31 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                       height: '100%',
                       objectFit: 'cover',
                       zIndex: 1,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      WebkitTouchCallout: 'none',
                     }}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 )}
+                {/* Shield pelindung anti-copy & anti-hold */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 2,
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                />
               </div>
 
               <span
@@ -504,7 +535,8 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleRemoveCashierConfirm}
+                onClick={canConfirmRemove ? handleRemoveCashierConfirm : undefined}
+                disabled={!canConfirmRemove}
                 style={{
                   flex: 1,
                   height: '48px',
@@ -514,8 +546,12 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: 'var(--r-md)',
-                  cursor: 'pointer',
-                  transition: 'opacity 0.15s ease',
+                  cursor: canConfirmRemove ? 'pointer' : 'not-allowed',
+                  opacity: canConfirmRemove ? 1 : 0.6,
+                  pointerEvents: canConfirmRemove ? 'auto' : 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  transition: 'opacity 0.15s ease, transform 0.1s ease',
                 }}
               >
                 Hapus
