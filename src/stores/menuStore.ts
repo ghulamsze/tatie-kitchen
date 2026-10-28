@@ -3,6 +3,21 @@ import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase, MENU_NAME_ALIASES } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
 import { broadcastMenuAvailability } from '../lib/supabase/realtime.ts';
+import { TATIE_SHOP_ID } from './shopStore.ts';
+
+const isUuid = (val?: string | null): boolean =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+const generateUuid = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
 export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
