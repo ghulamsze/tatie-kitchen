@@ -10,7 +10,7 @@ export interface CustomerMenuViewProps {
 
 interface MenuGroupDefinition {
   title: string;
-  category: 'makanan' | 'mie' | 'minuman' | 'roti_kue' | 'camilan';
+  category: 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi' | 'camilan';
   iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread' | 'pizza' | 'cake';
   items: { name: string; defaultPrice: number }[];
 }
@@ -141,10 +141,10 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
 
-  // --- MIE ---
+  // --- MIE (GABUNG KE MAKANAN) ---
   {
     title: 'Mie kuah dan goreng',
-    category: 'mie',
+    category: 'makanan',
     iconType: 'noodle',
     items: [
       { name: 'Mie Goreng Komplit', defaultPrice: 40000 },
@@ -157,14 +157,24 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
 
-  // --- PIZZA ---
+  // --- TUNAGIZI (SEGALA BURGER & PIZZA) ---
   {
     title: 'Pizza Spesial',
-    category: 'roti_kue',
+    category: 'tunagizi',
     iconType: 'pizza',
     items: [
       { name: 'Pizza Mini', defaultPrice: 10000 },
       { name: 'Pizza Big', defaultPrice: 100000 },
+    ],
+  },
+  {
+    title: 'Burger Spesial',
+    category: 'tunagizi',
+    iconType: 'snack',
+    items: [
+      { name: 'Burger Telur', defaultPrice: 20000 },
+      { name: 'Burger Daging', defaultPrice: 20000 },
+      { name: 'Burger Komplit', defaultPrice: 25000 },
     ],
   },
 
@@ -225,16 +235,6 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Pisang Nugget Cokelat', defaultPrice: 15000 },
       { name: 'Pisang Nugget Keju', defaultPrice: 15000 },
       { name: 'Pisang Nugget Cokelat Keju', defaultPrice: 18000 },
-    ],
-  },
-  {
-    title: 'Burger & kebab',
-    category: 'camilan',
-    iconType: 'snack',
-    items: [
-      { name: 'Burger Telur', defaultPrice: 20000 },
-      { name: 'Burger Daging', defaultPrice: 20000 },
-      { name: 'Burger Komplit', defaultPrice: 25000 },
       { name: 'Kebab', defaultPrice: 30000 },
     ],
   },
@@ -320,7 +320,7 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti_kue' | 'camilan'>('semua');
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi' | 'camilan'>('semua');
   const { items, groups } = useMenuStore();
   const { orders } = useHistoryStore();
 
@@ -332,13 +332,13 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     }, 25);
   }, [onClose]);
 
-  // Urutan kategori yang rapi dan terstruktur logis (Pizza masuk di roti & kue, snack diubah jadi camilan)
+  // Urutan kategori yang rapi: Makanan, Minuman, Roti & Kue, Tunagizi, Camilan
   const categories = [
     { key: 'semua', label: 'Semua' },
     { key: 'makanan', label: 'Makanan' },
-    { key: 'mie', label: 'Mie' },
     { key: 'minuman', label: 'Minuman' },
     { key: 'roti_kue', label: 'Roti & Kue' },
+    { key: 'tunagizi', label: 'Tunagizi' },
     { key: 'camilan', label: 'Camilan' },
   ] as const;
 
@@ -412,7 +412,14 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
 
     extraItems.forEach((it) => {
       const cat = getItemCategory(it, groups);
-      const catLabel = cat === 'roti_kue' ? 'Roti & Kue' : cat === 'camilan' ? 'Camilan' : cat.charAt(0).toUpperCase() + cat.slice(1);
+      const catLabel =
+        cat === 'roti_kue'
+          ? 'Roti & Kue'
+          : cat === 'tunagizi'
+          ? 'Tunagizi'
+          : cat === 'camilan'
+          ? 'Camilan'
+          : cat.charAt(0).toUpperCase() + cat.slice(1);
 
       const title = `Menu Tambahan ${catLabel}`;
       if (!groupsMap.has(title)) {
@@ -422,8 +429,8 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
           iconType:
             cat === 'minuman'
               ? 'iced-coffee'
-              : cat === 'mie'
-              ? 'noodle'
+              : cat === 'tunagizi'
+              ? 'pizza'
               : cat === 'roti_kue'
               ? 'bread'
               : cat === 'camilan'

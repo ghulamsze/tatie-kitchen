@@ -171,9 +171,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   const categories = [
     { key: 'Semua', label: 'Semua' },
     { key: 'Makanan', label: 'Makanan' },
-    { key: 'Mie', label: 'Mie' },
     { key: 'Minuman', label: 'Minuman' },
     { key: 'Roti & Kue', label: 'Roti & Kue' },
+    { key: 'Tunagizi', label: 'Tunagizi' },
     { key: 'Camilan', label: 'Camilan' },
   ];
 
