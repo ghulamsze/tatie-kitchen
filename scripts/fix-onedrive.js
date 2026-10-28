@@ -24,13 +24,21 @@ const targets = [
   path.resolve('android/app/src/main/res'),
 ];
 
-const buildDir = path.resolve('android/app/build');
-if (fs.existsSync(buildDir)) {
-  try {
-    fs.rmSync(buildDir, { recursive: true, force: true });
-    console.log('Cleaned android/app/build to prevent incremental merge collision.');
-  } catch (e) {
-    // ignore
+const buildDirs = [
+  path.resolve('android/app/build'),
+  path.resolve('node_modules/@capacitor/android/capacitor/build'),
+  path.resolve('node_modules/@capacitor/app/android/build'),
+  path.resolve('node_modules/@capacitor/device/android/build'),
+  path.resolve('node_modules/@capacitor/share/android/build'),
+];
+for (const bDir of buildDirs) {
+  if (fs.existsSync(bDir)) {
+    try {
+      fs.rmSync(bDir, { recursive: true, force: true });
+      console.log(`Cleaned ${bDir} to prevent OneDrive lock.`);
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
