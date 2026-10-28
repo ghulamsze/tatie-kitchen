@@ -51,3 +51,8 @@ keystore.properties
 
 # Root scratch PDFs
 /*.pdf
+
+# Agent skills (only track tatie-kitchen-build)
+.agents/skills/*
+!.agents/skills/tatie-kitchen-build/
+skills-lock.json

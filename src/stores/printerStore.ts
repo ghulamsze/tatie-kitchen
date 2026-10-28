@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Capacitor } from '@capacitor/core';
 import { PrinterDevice, PrinterDriver } from '../lib/printer/types.ts';
-import { MockPreviewDriver } from '../lib/printer/MockPreviewDriver.ts';
+import { WebBluetoothDriver } from '../lib/printer/WebBluetoothDriver.ts';
 import { CapacitorBluetoothDriver } from '../lib/printer/CapacitorBluetoothDriver.ts';
 import { buildReceiptEscPos, buildTestEscPos } from '../lib/printer/escpos.ts';
 import { Order, OrderItem } from '../lib/supabase/types.ts';
@@ -28,10 +28,10 @@ interface PrinterState {
   printTest: () => Promise<boolean>;
 }
 
-// Instansiasi driver sesuai platform (Capacitor Android Native vs Mock Web Browser)
+// Instansiasi driver sesuai platform (Capacitor Android Native vs Web Bluetooth API)
 const defaultDriver: PrinterDriver = Capacitor.isNativePlatform()
   ? new CapacitorBluetoothDriver()
-  : new MockPreviewDriver();
+  : new WebBluetoothDriver();
 
 export const usePrinterStore = create<PrinterState>((set, get) => {
   // Ambil konfigurasi lokal dari localStorage
@@ -52,17 +52,9 @@ export const usePrinterStore = create<PrinterState>((set, get) => {
     initialDevice = null;
   }
 
-  // Jika di mode mock (laptop/browser), berikan default device simulasi VSC MP-58X
-  if (!Capacitor.isNativePlatform() && !initialDevice) {
-    initialDevice = {
-      name: 'VSC MP-58X',
-      address: '00:11:22:33:44:55',
-    };
-  }
-
   return {
     driver: defaultDriver,
-    isConnected: !Capacitor.isNativePlatform(), // Mock driver langsung terhubung
+    isConnected: false,
     selectedDevice: initialDevice,
     bondedDevices: [],
     autoPrint: savedAutoPrint,

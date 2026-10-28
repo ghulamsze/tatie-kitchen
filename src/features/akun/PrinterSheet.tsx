@@ -86,7 +86,7 @@ export const PrinterSheet: React.FC<PrinterSheetProps> = ({ isOpen, onClose }) =
                 Status Koneksi
               </span>
               <b style={{ fontSize: 'var(--t-sm)', color: isConnected ? 'var(--accent-ink)' : 'var(--ink-3)' }}>
-                {isConnected ? `Terhubung: ${selectedDevice?.name || 'VSC MP-58X'}` : 'Belum Terhubung'}
+                {isConnected ? `Terhubung: ${selectedDevice?.name || 'Printer Bluetooth'}` : 'Belum Terhubung'}
               </b>
             </div>
 
