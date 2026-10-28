@@ -13,13 +13,14 @@ import {
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 
 function formatThousands(value: number | string): string {
-  const digits = String(value).replace(/\D/g, '');
+  // Hanya ambil digit angka dan buang leading zeros di awal (hanya menerima 1-9 di posisi awal)
+  const digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
   if (!digits) return '';
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function parseThousands(value: string): number {
-  const digits = value.replace(/\D/g, '');
+  const digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
   return digits ? parseInt(digits, 10) : 0;
 }
 
@@ -577,7 +578,19 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
                     setPriceStr(formatted);
                     setPrice(parseThousands(formatted));
                   }}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={(e) => {
+                    if (e.key === '0') {
+                      const input = e.currentTarget;
+                      const isAtStart = input.selectionStart === 0;
+                      const isAllSelected =
+                        input.selectionStart === 0 && input.selectionEnd === input.value.length;
+                      if (!input.value || isAtStart || isAllSelected) {
+                        e.preventDefault();
+                        return;
+                      }
+                    }
+                    handleKeyDown(e);
+                  }}
                   style={{
                     flex: 1,
                     height: '100%',

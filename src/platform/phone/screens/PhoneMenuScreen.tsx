@@ -9,13 +9,14 @@ import { PhotoActionsDialog } from '../../../design/components/PhotoActionsDialo
 import { MenuDetailModal } from '../../../features/menu/MenuDetailModal.tsx';
 
 function formatThousands(value: number | string): string {
-  const digits = String(value).replace(/\D/g, '');
+  // Hanya ambil digit numerik dan buang leading zeros di awal (hanya menerima 1-9 di posisi awal)
+  const digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
   if (!digits) return '';
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function parseThousands(value: string): number {
-  const digits = value.replace(/\D/g, '');
+  const digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
   return digits ? parseInt(digits, 10) : 0;
 }
 
@@ -398,10 +399,10 @@ export const PhoneMenuScreen: React.FC = () => {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  // Form tambah
+  // Form tambah (Harga dimulai kosong 0, foto bersifat opsional)
   const [addName, setAddName] = useState('');
-  const [addPrice, setAddPrice] = useState(15000);
-  const [addPriceStr, setAddPriceStr] = useState('15.000');
+  const [addPrice, setAddPrice] = useState(0);
+  const [addPriceStr, setAddPriceStr] = useState('');
   const [addAvailable, setAddAvailable] = useState(true);
   const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
   const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
@@ -440,8 +441,8 @@ export const PhoneMenuScreen: React.FC = () => {
     reader.readAsDataURL(croppedBlob);
   };
 
-  // State validasi shake reject red & interaksi foto makanan
-  const [shakeField, setShakeField] = useState<'photo' | 'name' | 'price' | null>(null);
+  // State validasi shake reject red (hanya untuk nama & harga wajib)
+  const [shakeField, setShakeField] = useState<'name' | 'price' | null>(null);
   const [isPreviewFoodOpen, setIsPreviewFoodOpen] = useState(false);
   const [isPhotoActionsOpen, setIsPhotoActionsOpen] = useState(false);
   const foodHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -449,7 +450,7 @@ export const PhoneMenuScreen: React.FC = () => {
   const addNameInputRef = useRef<HTMLInputElement>(null);
   const addPriceInputRef = useRef<HTMLInputElement>(null);
 
-  const triggerShake = (field: 'photo' | 'name' | 'price') => {
+  const triggerShake = (field: 'name' | 'price') => {
     setShakeField(field);
     triggerHapticReject();
     setTimeout(() => {
@@ -606,13 +607,7 @@ export const PhoneMenuScreen: React.FC = () => {
   }, [toggleItemAvailability]);
 
   const handleSaveAdd = async () => {
-    // 1. Wajib ada foto makanan
-    if (!addPhotoPath) {
-      triggerShake('photo');
-      return;
-    }
-
-    // 2. Wajib ada nama menu
+    // 1. Wajib ada nama menu
     const trimmed = addName.trim();
     if (!trimmed) {
       triggerShake('name');
@@ -620,7 +615,7 @@ export const PhoneMenuScreen: React.FC = () => {
       return;
     }
 
-    // 3. Wajib ada harga jual > 0
+    // 2. Wajib ada harga jual > 0
     if (!addPrice || addPrice <= 0) {
       triggerShake('price');
       addPriceInputRef.current?.focus();
@@ -640,8 +635,8 @@ export const PhoneMenuScreen: React.FC = () => {
     } as any);
 
     setAddName('');
-    setAddPrice(15000);
-    setAddPriceStr('15.000');
+    setAddPrice(0);
+    setAddPriceStr('');
     setAddAvailable(true);
     setAddPhotoPath(null);
     setShakeField(null);
@@ -898,9 +893,8 @@ export const PhoneMenuScreen: React.FC = () => {
                   Nama Menu
                 </label>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  {/* Box Foto Makanan (52x52) */}
+                  {/* Box Foto Makanan (52x52, Opsional) */}
                   <div
-                    className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
                     onClick={handlePhotoBoxClick}
                     onPointerDown={handlePointerDownFoodPhoto}
                     onPointerUp={handlePointerUpFoodPhoto}
@@ -908,14 +902,14 @@ export const PhoneMenuScreen: React.FC = () => {
                     onPointerCancel={handlePointerUpFoodPhoto}
                     role="button"
                     tabIndex={0}
-                    aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
-                    title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
+                    aria-label="Foto makanan (Opsional)"
+                    title={addPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan (opsional)"}
                     style={{
                       width: '52px',
                       height: '52px',
                       borderRadius: 'var(--r-md)',
                       background: 'var(--ctl)',
-                      border: shakeField === 'photo' ? '1.5px solid var(--danger)' : '1px solid var(--ctl-line)',
+                      border: '1px solid var(--ctl-line)',
                       overflow: 'hidden',
                       position: 'relative',
                       display: 'grid',
@@ -952,7 +946,7 @@ export const PhoneMenuScreen: React.FC = () => {
                         height="22"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke={shakeField === 'photo' ? 'var(--danger)' : 'var(--ink-3)'}
+                        stroke="var(--ink-3)"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1081,7 +1075,19 @@ export const PhoneMenuScreen: React.FC = () => {
                       setAddPrice(parseThousands(formatted));
                       if (shakeField === 'price') setShakeField(null);
                     }}
-                    onKeyDown={handleAddKeyDown}
+                    onKeyDown={(e) => {
+                      if (e.key === '0') {
+                        const input = e.currentTarget;
+                        const isAtStart = input.selectionStart === 0;
+                        const isAllSelected =
+                          input.selectionStart === 0 && input.selectionEnd === input.value.length;
+                        if (!input.value || isAtStart || isAllSelected) {
+                          e.preventDefault();
+                          return;
+                        }
+                      }
+                      handleAddKeyDown(e);
+                    }}
                     style={{
                       flex: 1,
                       height: '100%',
