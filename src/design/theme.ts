@@ -1,3 +1,5 @@
+import { applyBgMotion, getStoredBgMotion } from './dynamicBg/index.ts';
+
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type Palette = 'netflix' | 'mono' | 'hijau' | 'samudra' | 'senja' | 'blush';
 
@@ -91,6 +93,7 @@ export function initTheme(): { theme: ThemeMode; palette: Palette } {
   const palette = getStoredPalette();
   applyTheme(theme);
   applyPalette(palette);
+  applyBgMotion(getStoredBgMotion());
 
   if (typeof window !== 'undefined') {
     const darkMql = window.matchMedia('(prefers-color-scheme: dark)');

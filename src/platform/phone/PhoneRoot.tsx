@@ -9,6 +9,7 @@ import { PhoneAccountScreen } from './screens/PhoneAccountScreen.tsx';
 import { PhoneSalesReportScreen } from './screens/PhoneSalesReportScreen.tsx';
 import { PhonePrintMenuPreview } from './components/PhonePrintMenuPreview.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
+import { DynamicBackground } from '../../design/dynamicBg/index.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
@@ -127,21 +128,7 @@ export const PhoneRoot: React.FC = () => {
           background: 'var(--scr-bg)',
         }}
       >
-        <div
-          className="tk-global-bg-bubbles"
-          style={{
-            position: 'absolute',
-            inset: '-12%',
-            background: `
-              radial-gradient(circle at calc(14% + var(--bg-t, 0) * 18%) calc(10% + var(--bg-t, 0) * 8%), var(--b1) 0, transparent 26%),
-              radial-gradient(ellipse at calc(55% - var(--bg-t, 0) * 12%) calc(92% - var(--bg-t, 0) * 6%), var(--b2) 0, transparent 55%),
-              radial-gradient(ellipse at calc(95% - var(--bg-t, 0) * 16%) calc(78% - var(--bg-t, 0) * 12%), var(--b3) 0, transparent 42%)
-            `,
-            filter: 'blur(26px)',
-            pointerEvents: 'none',
-            transition: 'background 0.3s ease',
-          }}
-        />
+        <DynamicBackground />
       </div>
 
       {/* Area Layar Utama (Swipeable Horizontal Pager: Beranda, Menu, Akun) */}
