@@ -10,6 +10,8 @@ import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { SnapDust } from '../../lib/effects/snapDust.ts';
+import { triggerHapticDelete, triggerHapticUndo } from '../../lib/device/haptics.ts';
+import { CartLine } from '../../stores/cartStore.ts';
 
 export interface HomeScreenProps {
   onOpenCustomerMenu: () => void;
@@ -74,6 +76,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   } = useCartStore();
 
   const cartContainerRef = useRef<HTMLDivElement>(null);
+  const [undoCart, setUndoCart] = useState<{ lines: CartLine[]; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const isItemOutOfView = (el: HTMLElement): boolean => {
     // Lewati animasi hanya jika elemen berada sepenuhnya di luar batas vertikal kontainer scroll
@@ -91,7 +94,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     if (lines.length === 0) return;
     // Jika pesanan sangat banyak (> 8 item), hindari beban frame berlebih dan bersihkan langsung
     if (lines.length > 8) {
+      const prevLines = [...lines];
+      triggerHapticDelete();
       clearCart();
+      if (undoCart) clearTimeout(undoCart.timer);
+      const undoTimer = setTimeout(() => setUndoCart(null), 4500);
+      setUndoCart({ lines: prevLines, timer: undoTimer });
       return;
     }
     setIsClearing(true);
@@ -119,8 +127,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
       return Promise.resolve();
     });
     await Promise.all(promises);
+    const prevLines = [...lines];
+    triggerHapticDelete();
     clearCart();
     setIsClearing(false);
+    if (undoCart) clearTimeout(undoCart.timer);
+    const undoTimer = setTimeout(() => setUndoCart(null), 4500);
+    setUndoCart({ lines: prevLines, timer: undoTimer });
   };
 
   const handleMinusQty = async (itemId: string, currentQty: number) => {
@@ -144,6 +157,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
           clipRect,
         });
       }
+      triggerHapticDelete();
       updateQty(itemId, -1);
     } else {
       updateQty(itemId, -1);
@@ -589,12 +603,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
         }}
       />
 
-      {/* Toast Notifikasi Feedback Status */}
-      {toastMessage && (
+      {/* Toast Notifikasi Feedback Status & Tombol Urungkan Kasir Tablet */}
+      {undoCart ? (
+        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 120 }}>
+          <Toast
+            message="Pesanan dikosongkan"
+            actionLabel="Urungkan"
+            onAction={() => {
+              triggerHapticUndo();
+              useCartStore.getState().setLines(undoCart.lines);
+              clearTimeout(undoCart.timer);
+              setUndoCart(null);
+            }}
+          />
+        </div>
+      ) : toastMessage ? (
         <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 120 }}>
           <Toast message={toastMessage} />
         </div>
-      )}
+      ) : null}
     </div>
   );
 });

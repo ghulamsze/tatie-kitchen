@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useMenuStore } from '../../../stores/menuStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
-import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
+import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from '../../../lib/device/haptics.ts';
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
 import { PhotoActionsDialog } from '../../../design/components/PhotoActionsDialog.tsx';
@@ -209,6 +209,8 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
         display: 'flex',
         alignItems: 'center',
         padding: '12px 14px',
+        height: '76px',
+        boxSizing: 'border-box',
         borderRadius: 'var(--r-lg)',
         gap: '12px',
         cursor: 'pointer',
@@ -336,11 +338,12 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
 PhoneMenuItemCard.displayName = 'PhoneMenuItemCard';
 
 export const PhoneMenuScreen: React.FC = () => {
-  const { items, groups, selectedCategory, toggleItemAvailability, updateMenuItem, addMenuItem } = useMenuStore();
+  const { items, groups, selectedCategory, toggleItemAvailability, updateMenuItem, addMenuItem, deleteMenuItem } = useMenuStore();
 
   const [search, setSearch] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form edit
   const [editName, setEditName] = useState('');
@@ -402,11 +405,7 @@ export const PhoneMenuScreen: React.FC = () => {
 
   const triggerShake = (field: 'photo' | 'name' | 'price') => {
     setShakeField(field);
-    try {
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([40, 50, 40]);
-      }
-    } catch {}
+    triggerHapticReject();
     setTimeout(() => {
       setShakeField(null);
     }, 600);
@@ -446,7 +445,7 @@ export const PhoneMenuScreen: React.FC = () => {
 
   // Tangani tombol ESC pada keyboard (Windows) & Tombol Back hardware/gestur (Android)
   useEffect(() => {
-    if (!isCropFoodOpen && !isPreviewFoodOpen && !isPhotoActionsOpen && !isAddOpen && !editingItem) {
+    if (!isCropFoodOpen && !isPreviewFoodOpen && !isPhotoActionsOpen && !isDeleteDialogOpen && !isAddOpen && !editingItem) {
       return undefined;
     }
 
@@ -467,17 +466,21 @@ export const PhoneMenuScreen: React.FC = () => {
         setIsPhotoActionsOpen(false);
         return true;
       }
+      if (isDeleteDialogOpen) {
+        setIsDeleteDialogOpen(false);
+        return true;
+      }
       if (isAddOpen) {
         setIsAddOpen(false);
         return true;
       }
       if (editingItem) {
-        setEditingItem(null);
+        handleCloseEditRef.current();
         return true;
       }
       return false;
     }, 70);
-  }, [isCropFoodOpen, isPreviewFoodOpen, isPhotoActionsOpen, isAddOpen, editingItem, cropFoodImageSrc]);
+  }, [isCropFoodOpen, isPreviewFoodOpen, isPhotoActionsOpen, isDeleteDialogOpen, isAddOpen, editingItem, cropFoodImageSrc]);
 
   // Filter items sesuai kategori dan pencarian
   const filteredItems = useMemo(() => {
@@ -513,6 +516,53 @@ export const PhoneMenuScreen: React.FC = () => {
     });
   }, [items, selectedCategory, search, groups]);
 
+  // Virtualisasi Viewport Culling List Menu
+  const ITEM_HEIGHT = 86;
+  const OVERSCAN = 3;
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(600);
+
+  useEffect(() => {
+    const container = listContainerRef.current;
+    if (!container) return;
+    const updateHeight = () => {
+      setViewportHeight(container.clientHeight || 600);
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  const handleListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  useEffect(() => {
+    if (listContainerRef.current) {
+      listContainerRef.current.scrollTop = 0;
+      setScrollTop(0);
+    }
+  }, [selectedCategory, search]);
+
+  const totalItems = filteredItems.length;
+  const totalHeight = totalItems * ITEM_HEIGHT;
+
+  const { startIndex, endIndex, offsetY } = useMemo(() => {
+    if (totalItems === 0) {
+      return { startIndex: 0, endIndex: 0, offsetY: 0 };
+    }
+    const start = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
+    const visibleCount = Math.ceil(viewportHeight / ITEM_HEIGHT) + (2 * OVERSCAN);
+    const end = Math.min(totalItems, start + visibleCount);
+    const top = start * ITEM_HEIGHT;
+    return { startIndex: start, endIndex: end, offsetY: top };
+  }, [scrollTop, viewportHeight, totalItems]);
+
+  const visibleItems = useMemo(() => {
+    return filteredItems.slice(startIndex, endIndex);
+  }, [filteredItems, startIndex, endIndex]);
+
   const handleOpenEdit = useCallback((item: MenuItem) => {
     setEditingItem(item);
     setEditName(item.name);
@@ -529,6 +579,32 @@ export const PhoneMenuScreen: React.FC = () => {
   const handleToggleAvailability = useCallback((id: string, newAvailable: boolean) => {
     toggleItemAvailability(id, newAvailable);
   }, [toggleItemAvailability]);
+
+  const handleCloseEdit = useCallback(() => {
+    if (editingItem && editAvailable !== editingItem.available) {
+      toggleItemAvailability(editingItem.id, editAvailable);
+    }
+    setEditingItem(null);
+  }, [editingItem, editAvailable, toggleItemAvailability]);
+
+  const handleCloseEditRef = useRef(handleCloseEdit);
+  useEffect(() => {
+    handleCloseEditRef.current = handleCloseEdit;
+  }, [handleCloseEdit]);
+
+  const handleDeleteMenuItem = useCallback(() => {
+    if (!editingItem) return;
+    setIsDeleteDialogOpen(true);
+  }, [editingItem]);
+
+  const handleConfirmDeleteMenu = useCallback(async () => {
+    if (!editingItem) return;
+    triggerHapticDelete();
+    const id = editingItem.id;
+    setIsDeleteDialogOpen(false);
+    setEditingItem(null);
+    await deleteMenuItem(id);
+  }, [editingItem, deleteMenuItem]);
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
@@ -687,19 +763,19 @@ export const PhoneMenuScreen: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Daftar Kartu Menu Kafe (Dioptimalkan dengan CSS Culling & Virtualization untuk Low-Device) */}
+      {/* 4. Daftar Kartu Menu Kafe (Dioptimalkan dengan Viewport Culling Virtualization) */}
       <div
+        ref={listContainerRef}
+        onScroll={handleListScroll}
         className="tk-custom-slider"
         style={{
           flex: 1,
           overflowY: 'auto',
           paddingRight: '2px',
           paddingBottom: '88px', // Ruang untuk navbar pill
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorY: 'contain',
+          position: 'relative',
         }}
       >
         {filteredItems.length === 0 ? (
@@ -715,14 +791,35 @@ export const PhoneMenuScreen: React.FC = () => {
             </p>
           </div>
         ) : (
-          filteredItems.map((item) => (
-            <PhoneMenuItemCard
-              key={item.id}
-              item={item}
-              onEdit={handleOpenEdit}
-              onToggle={handleToggleAvailability}
-            />
-          ))
+          <div
+            style={{
+              height: `${totalHeight}px`,
+              position: 'relative',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                transform: `translate3d(0, ${offsetY}px, 0)`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              {visibleItems.map((item) => (
+                <PhoneMenuItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={handleOpenEdit}
+                  onToggle={handleToggleAvailability}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -730,7 +827,7 @@ export const PhoneMenuScreen: React.FC = () => {
       {editingItem && (
         <div
           className="tk-phone-overlay ov"
-          onClick={() => setEditingItem(null)}
+          onClick={handleCloseEdit}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           role="dialog"
@@ -753,37 +850,77 @@ export const PhoneMenuScreen: React.FC = () => {
               >
                 Ubah Detail Menu
               </b>
-              <button
-                type="button"
-                onClick={() => setEditAvailable(!editAvailable)}
-                aria-label={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
-                title={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
-                style={{
-                  width: '44px',
-                  height: '24px',
-                  borderRadius: 'var(--r-pill)',
-                  background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                  border: 'none',
-                  padding: '2px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  boxSizing: 'border-box',
-                  transition: 'background 0.2s ease',
-                  flexShrink: 0,
-                }}
-              >
-                <div
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Tombol Hapus Menu */}
+                <button
+                  type="button"
+                  onClick={handleDeleteMenuItem}
+                  aria-label="Hapus menu"
+                  title="Hapus menu"
                   style={{
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: 'var(--r-pill)',
-                    background: '#ffffff',
-                    transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                    transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: 'var(--r-md)',
+                    background: 'rgba(255, 59, 48, 0.12)',
+                    border: '1px solid rgba(255, 59, 48, 0.25)',
+                    color: '#ff453a',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer',
+                    padding: 0,
+                    boxSizing: 'border-box',
+                    transition: 'transform 0.12s ease, background 0.15s ease',
                   }}
-                />
-              </button>
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                </button>
+
+                {/* Toggle Ketersediaan Menu (Auto-save langsung) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !editAvailable;
+                    setEditAvailable(nextVal);
+                    triggerHapticFeedback();
+                    if (editingItem) {
+                      toggleItemAvailability(editingItem.id, nextVal);
+                    }
+                  }}
+                  aria-label={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                  title={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: 'var(--r-pill)',
+                    background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
+                    border: 'none',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                    transition: 'background 0.2s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: 'var(--r-pill)',
+                      background: '#ffffff',
+                      transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
+                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
@@ -1001,7 +1138,7 @@ export const PhoneMenuScreen: React.FC = () => {
                 <button
                   type="button"
                   className="tk-btn-flat"
-                  onClick={() => setEditingItem(null)}
+                  onClick={handleCloseEdit}
                   style={{ flex: 1, height: '44px' }}
                 >
                   Batal
@@ -1015,6 +1152,81 @@ export const PhoneMenuScreen: React.FC = () => {
                   Simpan
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5b. Modal Konfirmasi Hapus Menu */}
+      {isDeleteDialogOpen && editingItem && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsDeleteDialogOpen(false)}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Konfirmasi Hapus Menu"
+          style={{ zIndex: 130 }}
+        >
+          <div
+            className="g-liquid tk-phone-dialog"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            style={{ gap: '14px' }}
+          >
+            <b
+              style={{
+                fontSize: 'var(--t-lg)',
+                lineHeight: 'var(--l-lg)',
+                fontWeight: 800,
+                color: 'var(--ink)',
+              }}
+            >
+              Hapus Menu?
+            </b>
+
+            <span
+              style={{
+                fontSize: 'var(--t-sm)',
+                lineHeight: 'var(--l-sm)',
+                color: 'var(--ink-2)',
+              }}
+            >
+              Menu <b>{editingItem.name}</b> akan dihapus dari daftar menu kafe. Tindakan ini tidak dapat dibatalkan.
+            </span>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+              <button
+                type="button"
+                className="tk-btn-flat"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteMenu}
+                style={{
+                  flex: 1,
+                  height: '48px',
+                  fontSize: 'var(--t-sm)',
+                  fontWeight: 800,
+                  background: 'var(--danger)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: 'var(--r-md)',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  transition: 'opacity 0.15s ease, transform 0.1s ease',
+                }}
+              >
+                Hapus
+              </button>
             </div>
           </div>
         </div>
@@ -1338,6 +1550,7 @@ export const PhoneMenuScreen: React.FC = () => {
         onViewPhoto={() => setIsPreviewFoodOpen(true)}
         onChangePhoto={() => foodFileInputRef.current?.click()}
         onDeletePhoto={() => {
+          triggerHapticDelete();
           if (targetPhotoMode === 'add') {
             setAddPhotoPath(null);
           } else {

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
+import { triggerHapticDelete } from '../../lib/device/haptics.ts';
 
 export interface PhotoActionsDialogProps {
   isOpen: boolean;
@@ -144,6 +145,7 @@ export const PhotoActionsDialog: React.FC<PhotoActionsDialogProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    triggerHapticDelete();
                     onClose();
                     onDeletePhoto();
                   }}

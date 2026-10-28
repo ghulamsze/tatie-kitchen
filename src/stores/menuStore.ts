@@ -1321,6 +1321,7 @@ interface MenuState {
   setToastMessage: (msg: string | null) => void;
   toggleItemAvailability: (itemId: string, available: boolean) => Promise<void>;
   updateMenuItem: (updated: Partial<MenuItem> & { id: string }) => Promise<void>;
+  deleteMenuItem: (itemId: string) => Promise<void>;
   addMenuItem: (newItem: Omit<MenuItem, 'id' | 'shop_id' | 'active' | 'created_at'>) => Promise<MenuItem>;
   fetchMenu: (shopId?: string) => Promise<void>;
   subscribeToMenuChanges: () => () => void;
@@ -1333,6 +1334,14 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
     if (customRaw) {
       const customMap = JSON.parse(customRaw);
       result = result.map((it) => (customMap[it.id] ? { ...it, ...customMap[it.id] } : it));
+    }
+    const deletedRaw = localStorage.getItem('tk_deleted_menu_ids');
+    if (deletedRaw) {
+      try {
+        const deletedArr: string[] = JSON.parse(deletedRaw);
+        const deletedSet = new Set(deletedArr);
+        result = result.filter((it) => !deletedSet.has(it.id));
+      } catch {}
     }
     const addedRaw = localStorage.getItem('tk_added_menu_items');
     if (addedRaw) {
@@ -1409,6 +1418,40 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         }).eq('id', updated.id);
       } catch (err) {
         logError('menuStore:updateMenuItem', err);
+      }
+    }
+  },
+
+  deleteMenuItem: async (itemId: string) => {
+    set((state) => {
+      const newItems = state.items.filter((it) => it.id !== itemId);
+      try {
+        const deletedRaw = localStorage.getItem('tk_deleted_menu_ids');
+        const deletedArr: string[] = deletedRaw ? JSON.parse(deletedRaw) : [];
+        if (!deletedArr.includes(itemId)) {
+          deletedArr.push(itemId);
+          localStorage.setItem('tk_deleted_menu_ids', JSON.stringify(deletedArr));
+        }
+
+        const addedRaw = localStorage.getItem('tk_added_menu_items');
+        if (addedRaw) {
+          const addedList = JSON.parse(addedRaw);
+          if (Array.isArray(addedList)) {
+            const filtered = addedList.filter((it: any) => it.id !== itemId);
+            localStorage.setItem('tk_added_menu_items', JSON.stringify(filtered));
+          }
+        }
+      } catch (err) {
+        logError('menuStore:deleteMenuItem:localStorage', err);
+      }
+      return { items: newItems };
+    });
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('menu_items').delete().eq('id', itemId);
+      } catch (err) {
+        logError('menuStore:deleteMenuItem:supabase', err);
       }
     }
   },

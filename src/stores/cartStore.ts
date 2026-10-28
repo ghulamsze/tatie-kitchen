@@ -22,6 +22,7 @@ interface CartState {
   setCashReceived: (amount: number) => void;
   calculateTotal: () => number;
   clearCart: () => void;
+  setLines: (lines: CartLine[]) => void;
   setLastOrder: (order: Order, items: OrderItem[]) => void;
 }
 
@@ -86,6 +87,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     return lines.reduce((acc, l) => acc + l.item.price_idr * l.qty, 0);
   },
 
+  setLines: (lines) => set({ lines }),
   clearCart: () =>
     set({
       lines: [],

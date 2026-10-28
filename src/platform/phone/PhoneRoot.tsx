@@ -14,10 +14,13 @@ import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { SwipePager } from '../tablet/SwipePager.tsx';
 import { usePhoneSwipeNav } from './usePhoneSwipeNav.ts';
+import { useDevice } from '../../lib/device/useDevice.ts';
 
 const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Menu', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
+  const device = useDevice();
+  const isSwipeEnabled = device.platform === 'ios';
   const [showIntro, setShowIntro] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<NavItem>('Beranda');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -41,6 +44,7 @@ export const PhoneRoot: React.FC = () => {
     tabs: PHONE_NAV_TABS,
     activeTab,
     onTabChange: (tab) => setActiveTab(tab),
+    isSwipeEnabled,
   });
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, Button } from '../../design/components/index.ts';
 import { Cashier } from '../../lib/supabase/types.ts';
 import { isImmutableCashier } from '../../stores/cashierStore.ts';
+import { triggerHapticDelete } from '../../lib/device/haptics.ts';
 
 export interface DeleteCashierDialogProps {
   cashier: Cashier | null;
@@ -35,6 +36,7 @@ export const DeleteCashierDialog: React.FC<DeleteCashierDialogProps> = ({
     if (!canConfirm || isDeleting) return;
     try {
       setIsDeleting(true);
+      triggerHapticDelete();
       await onConfirm(cashier.id);
       onClose();
     } finally {

@@ -1,10 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { NavItem } from '../../design/components/NavbarPill.tsx';
+import { triggerHapticSwipe } from '../../lib/device/haptics.ts';
 
 export interface UsePhoneSwipeNavOptions {
   tabs: NavItem[];
   activeTab: NavItem;
   onTabChange: (tab: NavItem) => void;
+  isSwipeEnabled?: boolean;
 }
 
 const isModalActive = (): boolean => {
@@ -21,6 +23,7 @@ export function usePhoneSwipeNav({
   tabs,
   activeTab,
   onTabChange,
+  isSwipeEnabled = true,
 }: UsePhoneSwipeNavOptions) {
   const activeIndex = Math.max(0, tabs.indexOf(activeTab));
   const activeIndexRef = useRef<number>(activeIndex);
@@ -31,6 +34,7 @@ export function usePhoneSwipeNav({
 
   const tRef = useRef<number>(activeIndex);
   const isDraggingRef = useRef<boolean>(false);
+  const rAFRef = useRef<number | null>(null);
 
   // References ke elemen DOM untuk manipulasi langsung hardware-accelerated 60/120 FPS
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -121,6 +125,9 @@ export function usePhoneSwipeNav({
 
   // Pointer Handlers untuk Pager
   const handlePagerPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Nonaktifkan swipe gestures sepenuhnya jika bukan iOS (misal Android phone)
+    if (!isSwipeEnabled) return;
+
     if (isModalActive()) return;
 
     // Abaikan klik kanan atau secondary pointer
@@ -143,32 +150,32 @@ export function usePhoneSwipeNav({
     isLockedOutRef.current = false;
     capturedElementRef.current = e.currentTarget;
     capturedPointerIdRef.current = e.pointerId;
-  }, []);
+  }, [isSwipeEnabled]);
 
   const handlePagerPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!pointerActiveRef.current || isLockedOutRef.current) return;
+    if (!isSwipeEnabled || !pointerActiveRef.current || isLockedOutRef.current) return;
 
     const dx = e.clientX - startXRef.current;
     const dy = e.clientY - startYRef.current;
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // 1. Fase deteksi arah: pastikan geseran vertikal tidak sengaja memicu swipe horizontal
+    // 1. Fase deteksi arah: respon instan tanpa lag (threshold rendah 3px)
     if (!hasDecidedDirectionRef.current) {
-      // Tunggu hingga ada gerakan minimal 7px
-      if (absDx < 7 && absDy < 7) {
+      // Tunggu hingga ada gerakan minimal 3px
+      if (absDx < 3 && absDy < 3) {
         return;
       }
 
-      // Jika gerak lebih dominan ke vertikal (scroll up/down), kunci swipe horizontal!
-      if (absDy >= absDx * 0.9) {
+      // Jika gerak vertikal lebih dominan (scroll halaman atas-bawah), kunci swipe horizontal
+      if (absDy >= absDx * 0.8) {
         hasDecidedDirectionRef.current = true;
         isLockedOutRef.current = true;
         return;
       }
 
-      // Jika geseran horizontal jelas (absDx > absDy * 1.15), aktifkan mode geser layar iOS!
-      if (absDx >= 7 && absDx > absDy * 1.15) {
+      // Jika gerak horizontal, aktifkan swipe seketika
+      if (absDx >= 3) {
         hasDecidedDirectionRef.current = true;
         isDraggingRef.current = true;
         setIsDragging(true);
@@ -183,7 +190,7 @@ export function usePhoneSwipeNav({
       }
     }
 
-    // 2. Mode Geser Layar Aktif (Dragging)
+    // 2. Mode Geser Layar Aktif (Dragging) - dioptimalkan dengan rAF agar 60/120 FPS bebas lag
     if (isDraggingRef.current) {
       const now = performance.now();
       const dt = Math.max(1, now - lastTimeRef.current);
@@ -207,13 +214,24 @@ export function usePhoneSwipeNav({
       const newT = currIdx + deltaT;
       const clampedT = Math.max(-0.12, Math.min(tabs.length - 1 + 0.12, newT));
 
-      applyT(clampedT, true);
+      if (rAFRef.current !== null) {
+        cancelAnimationFrame(rAFRef.current);
+      }
+      rAFRef.current = requestAnimationFrame(() => {
+        applyT(clampedT, true);
+        rAFRef.current = null;
+      });
     }
-  }, [applyT, tabs.length]);
+  }, [applyT, isSwipeEnabled, tabs.length]);
 
   const handlePagerPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!pointerActiveRef.current) return;
+    if (!isSwipeEnabled || !pointerActiveRef.current) return;
     pointerActiveRef.current = false;
+
+    if (rAFRef.current !== null) {
+      cancelAnimationFrame(rAFRef.current);
+      rAFRef.current = null;
+    }
 
     try {
       if (capturedElementRef.current && capturedPointerIdRef.current !== null) {
@@ -234,8 +252,8 @@ export function usePhoneSwipeNav({
     const velocity = Math.abs(totalDx) / totalDt;
     const containerWidth = containerRef.current?.clientWidth || window.innerWidth || 390;
 
-    // Geseran ringan (flick velocity > 0.14 atau geser > 18% lebar layar) langsung pindah tab
-    const isSwipe = Math.abs(totalDx) >= containerWidth * 0.18 || velocity > 0.14;
+    // Threshold swipe diturunkan secara drastis (hanya butuh geser 8% lebar layar atau flick ringan velocity > 0.07)
+    const isSwipe = Math.abs(totalDx) >= containerWidth * 0.08 || velocity > 0.07;
 
     const currIdx = activeIndexRef.current;
     let targetIndex = currIdx;
@@ -251,11 +269,21 @@ export function usePhoneSwipeNav({
     isDraggingRef.current = false;
     setIsDragging(false);
 
+    // Berikan Haptic Feedback jika gestur swipe berhasil berpindah tab di iOS!
+    if (targetIndex !== currIdx) {
+      triggerHapticSwipe();
+    }
+
     animateTo(targetIndex);
-  }, [animateTo, tabs.length]);
+  }, [animateTo, isSwipeEnabled, tabs.length]);
 
   const handlePagerPointerCancel = useCallback((_e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isSwipeEnabled) return;
     pointerActiveRef.current = false;
+    if (rAFRef.current !== null) {
+      cancelAnimationFrame(rAFRef.current);
+      rAFRef.current = null;
+    }
     try {
       if (capturedElementRef.current && capturedPointerIdRef.current !== null) {
         capturedElementRef.current.releasePointerCapture(capturedPointerIdRef.current);
@@ -271,7 +299,7 @@ export function usePhoneSwipeNav({
       setIsDragging(false);
       animateTo(activeIndexRef.current);
     }
-  }, [animateTo]);
+  }, [animateTo, isSwipeEnabled]);
 
   const scrollToTab = useCallback((item: NavItem) => {
     const idx = tabs.indexOf(item);

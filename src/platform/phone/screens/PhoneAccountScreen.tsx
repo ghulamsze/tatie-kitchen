@@ -4,7 +4,7 @@ import { useCashierStore, DEFAULT_CASHIERS, isImmutableCashier, removeInvalidCas
 import { useShopStore, removeInvalidOwnerAvatar } from '../../../stores/shopStore.ts';
 import { PhoneThemeSheet } from '../components/PhoneThemeSheet.tsx';
 import { Cashier } from '../../../lib/supabase/types.ts';
-import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
+import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from '../../../lib/device/haptics.ts';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 import { PhotoActionsDialog } from '../../../design/components/PhotoActionsDialog.tsx';
@@ -88,6 +88,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   };
 
   const handleRemoveOwnerPhoto = async () => {
+    triggerHapticDelete();
     setOwnerAvatar(null);
     setIsOwnerActionsOpen(false);
     try {
@@ -237,7 +238,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     if (isImmutableCashier(cashier.id, cashier.name)) {
       holdTimerRef.current = window.setTimeout(() => {
         setRejectingCashierId(cashier.id);
-        triggerHapticFeedback([40, 60, 40]);
+        triggerHapticReject();
         setTimeout(() => setRejectingCashierId(null), 500);
         holdTimerRef.current = null;
       }, 420);
@@ -285,6 +286,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
     if (!selectedCashierToRemove) return;
     const id = selectedCashierToRemove.id;
     setSelectedCashierToRemove(null);
+    triggerHapticDelete();
 
     try {
       await removeCashier(id);
