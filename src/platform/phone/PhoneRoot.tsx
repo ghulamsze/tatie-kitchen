@@ -101,8 +101,23 @@ export const PhoneRoot: React.FC = () => {
   // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
   if (showIntro) {
     return (
-      <div className="tk-phone-root" style={{ width: '100%', height: '100%', position: 'relative' }}>
-        <IntroScreen onFinish={() => setShowIntro(false)} />
+      <div className="tk-phone-root" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
+        <div
+          className="tk-global-bg"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }}
+        >
+          <DynamicBackground />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+          <IntroScreen onFinish={() => setShowIntro(false)} />
+        </div>
       </div>
     );
   }

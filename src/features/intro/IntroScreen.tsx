@@ -36,7 +36,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
 
   return (
     <div
-      className="scr tk-intro-container"
+      className="tk-intro-container"
       onClick={onFinish}
       role="button"
       tabIndex={0}
@@ -44,6 +44,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
         if (e.key === 'Enter' || e.key === ' ') onFinish();
       }}
       aria-label="Intro Tati’e Kitchen, ketuk untuk melanjutkan"
+      style={{ background: 'transparent' }}
     >
       <div className="tk-intro-wordmark" role="img" aria-label="Tati’e Kitchen">
         {renderWord('Tati’e', 0)}

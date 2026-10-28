@@ -114,9 +114,24 @@ export const TabletRoot: React.FC = () => {
   // 1. Layar Intro
   if (currentScreen === 'intro') {
     return (
-      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
         {renderOfflineBanner()}
-        <IntroScreen onFinish={handleIntroFinish} />
+        <div
+          className="tk-global-bg"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }}
+        >
+          <DynamicBackground />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+          <IntroScreen onFinish={handleIntroFinish} />
+        </div>
       </div>
     );
   }
@@ -124,12 +139,27 @@ export const TabletRoot: React.FC = () => {
   // 2. Layar Pilih Profil Kasir
   if (currentScreen === 'select-cashier') {
     return (
-      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
         {renderOfflineBanner()}
-        <SelectCashierScreen
-          onSelectCashier={handleSelectCashier}
-          onOpenDeviceSetup={() => setIsDeviceSetupOpen(true)}
-        />
+        <div
+          className="tk-global-bg"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }}
+        >
+          <DynamicBackground />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+          <SelectCashierScreen
+            onSelectCashier={handleSelectCashier}
+            onOpenDeviceSetup={() => setIsDeviceSetupOpen(true)}
+          />
+        </div>
         <DeviceSetupModal
           isOpen={isDeviceSetupOpen}
           onClose={() => setIsDeviceSetupOpen(false)}

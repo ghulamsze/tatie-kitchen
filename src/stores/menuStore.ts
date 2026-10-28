@@ -1395,6 +1395,97 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
   });
 };
 
+async function resolveAvailableGroupId(
+  requestedGroupId?: string,
+  requestedCategory?: string
+): Promise<string> {
+  const fallbackMap: Record<string, string> = {
+    makanan: '00000000-0000-0000-0000-000000000010',
+    mie: '00000000-0000-0000-0000-000000000011',
+    snack: '00000000-0000-0000-0000-000000000012',
+    minuman: '00000000-0000-0000-0000-000000000013',
+  };
+
+  const targetCategory = (requestedCategory || 'makanan').toLowerCase().trim();
+  const defaultFallback = fallbackMap[targetCategory] || fallbackMap.makanan;
+
+  try {
+    // 1. Ambil hitungan item aktif per kelompok saat ini dari Supabase
+    const { data: activeItems } = await (supabase.from('menu_items') as any)
+      .select('group_id')
+      .eq('active', true);
+
+    const counts: Record<string, number> = {};
+    if (Array.isArray(activeItems)) {
+      activeItems.forEach((it: any) => {
+        if (it?.group_id) {
+          counts[it.group_id] = (counts[it.group_id] || 0) + 1;
+        }
+      });
+    }
+
+    // 2. Jika requestedGroupId adalah UUID valid dan kapasitasnya masih < 7, gunakan langsung
+    if (requestedGroupId && isUuid(requestedGroupId)) {
+      if ((counts[requestedGroupId] || 0) < 7) {
+        return requestedGroupId;
+      }
+    }
+
+    // 3. Ambil daftar semua kelompok menu dari Supabase
+    const { data: allGroups } = await (supabase.from('menu_groups') as any)
+      .select('id, category')
+      .order('sort', { ascending: true });
+
+    if (Array.isArray(allGroups) && allGroups.length > 0) {
+      // Cari kelompok yang kategorinya sama dan memiliki item < 7
+      const sameCategoryGroups = allGroups.filter(
+        (g: any) => (g.category || '').toLowerCase() === targetCategory
+      );
+      const availableSameCat = sameCategoryGroups.find((g: any) => (counts[g.id] || 0) < 7);
+      if (availableSameCat?.id) {
+        return availableSameCat.id;
+      }
+
+      // Periksa apakah kelompok umum (00000000-0000-0000-0000-000000000010..13) masih ada slot
+      if ((counts[defaultFallback] || 0) < 7) {
+        return defaultFallback;
+      }
+
+      // Jika kategori tersebut penuh, cari kelompok apa pun yang masih memiliki slot < 7
+      const anyAvailable = allGroups.find((g: any) => (counts[g.id] || 0) < 7);
+      if (anyAvailable?.id) {
+        return anyAvailable.id;
+      }
+    }
+
+    // 4. Jika semua kelompok penuh, buat kelompok baru secara otomatis
+    try {
+      const newGroupId = generateUuid();
+      const catTitle = targetCategory.charAt(0).toUpperCase() + targetCategory.slice(1);
+      const { data: newGrp, error: newGrpErr } = await (supabase.from('menu_groups') as any)
+        .insert({
+          id: newGroupId,
+          shop_id: TATIE_SHOP_ID,
+          category: targetCategory,
+          name: `${catTitle} Tambahan`,
+          icon_key: catTitle,
+          sort: (allGroups?.length || 10) + 1,
+        })
+        .select('id')
+        .single();
+      if (!newGrpErr && newGrp?.id) {
+        return newGrp.id;
+      }
+    } catch {
+      // fallback jika pembuatan gagal
+    }
+
+    return defaultFallback;
+  } catch {
+    return defaultFallback;
+  }
+}
+
 export const useMenuStore = create<MenuState>((set, get) => ({
   items: loadSavedAvailability(SEED_MENU_ITEMS),
   groups: SEED_MENU_GROUPS,
@@ -1431,7 +1522,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           photo_path: updated.photo_path,
         };
         if (isUuid(updated.group_id)) {
-          updatePayload.group_id = updated.group_id;
+          const safeGroupId = await resolveAvailableGroupId(updated.group_id);
+          updatePayload.group_id = safeGroupId;
         }
 
         if (isUuid(updated.id)) {
@@ -1516,9 +1608,16 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
     if (isSupabaseConfigured()) {
       try {
+        const safeGroupId = await resolveAvailableGroupId(
+          created.group_id,
+          (newItem as any).category
+        );
+        created.group_id = safeGroupId;
+
         const payload: Record<string, any> = {
           id: created.id,
           shop_id: TATIE_SHOP_ID,
+          group_id: safeGroupId,
           name: created.name.trim(),
           price_idr: Number(created.price_idr) || 0,
           available: Boolean(created.available),
@@ -1526,22 +1625,6 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           active: true,
           sort: created.sort || 99,
         };
-
-        if (isUuid(created.group_id)) {
-          payload.group_id = created.group_id;
-        } else {
-          // Cari group_id yang valid dari menu_groups jika ada
-          try {
-            const { data: grpData } = await (supabase.from('menu_groups') as any)
-              .select('id')
-              .limit(1);
-            if (grpData && grpData[0]?.id && isUuid(grpData[0].id)) {
-              payload.group_id = grpData[0].id;
-            }
-          } catch {
-            // abaikan fallback
-          }
-        }
 
         const { data: insData, error: insErr } = await (supabase.from('menu_items') as any)
           .insert(payload)
@@ -1551,17 +1634,17 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           const remoteId = insData[0].id;
           if (remoteId && remoteId !== newId) {
             created.id = remoteId;
-            set((state) => {
-              const updated = state.items.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
-              try {
-                const raw = localStorage.getItem('tk_added_menu_items');
-                const addedList: any[] = raw ? JSON.parse(raw) : [];
-                const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
-                localStorage.setItem('tk_added_menu_items', JSON.stringify(mapped));
-              } catch {}
-              return { items: updated };
-            });
           }
+          set((state) => {
+            const updated = state.items.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: safeGroupId } : it));
+            try {
+              const raw = localStorage.getItem('tk_added_menu_items');
+              const addedList: any[] = raw ? JSON.parse(raw) : [];
+              const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: safeGroupId } : it));
+              localStorage.setItem('tk_added_menu_items', JSON.stringify(mapped));
+            } catch {}
+            return { items: updated };
+          });
         } else if (insErr) {
           logWarning('menuStore:addMenuItem:insert', insErr.message || String(insErr));
         }
@@ -1637,6 +1720,18 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   fetchMenu: async (shopId) => {
     if (!isSupabaseConfigured()) return;
     try {
+      // Muat daftar kelompok menu dari database Supabase
+      try {
+        const { data: grpData } = await (supabase.from('menu_groups') as any)
+          .select('*')
+          .order('sort', { ascending: true });
+        if (Array.isArray(grpData) && grpData.length > 0) {
+          set({ groups: grpData });
+        }
+      } catch (grpErr) {
+        logWarning('menuStore:fetchGroups', String(grpErr));
+      }
+
       let query = (supabase.from('menu_items') as any).select('*').eq('active', true);
       if (shopId) query = query.eq('shop_id', shopId);
       const { data, error } = await query;

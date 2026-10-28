@@ -45,17 +45,17 @@ export const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
     );
   }
 
-  // Dark-Mode-Only Vivid Aurora Motion (Deep Contrast, Zero Glare)
+  // Google Stitch Aurora Wave Motion (Fluid Mesh Curtains & Shimmer)
   return (
     <div
       className={`tk-stitch-motion-container ${className}`}
       style={style}
       aria-hidden="true"
     >
-      <div className="tk-stitch-base-ambient" />
-      <div className="tk-stitch-ribbon-primary" />
-      <div className="tk-stitch-ribbon-secondary" />
-      <div className="tk-stitch-shadow-void" />
+      <div className="tk-aurora-sky-base tk-stitch-base-ambient" />
+      <div className="tk-aurora-curtain-primary tk-stitch-ribbon-primary" />
+      <div className="tk-aurora-curtain-secondary tk-stitch-ribbon-secondary" />
+      <div className="tk-aurora-curtain-shimmer tk-stitch-shadow-void" />
       <div className="tk-stitch-noise" />
     </div>
   );

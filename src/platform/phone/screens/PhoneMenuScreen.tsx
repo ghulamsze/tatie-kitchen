@@ -406,6 +406,12 @@ export const PhoneMenuScreen: React.FC = () => {
   const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
   const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (groups && groups.length > 0 && (!addGroupId || !groups.some((g) => g.id === addGroupId))) {
+      setAddGroupId(groups[0].id);
+    }
+  }, [groups, addGroupId]);
+
   // Foto Makanan Crop State (1:1 fixed resolution sesuai profil)
   const [cropFoodImageSrc, setCropFoodImageSrc] = useState<string | null>(null);
   const [isCropFoodOpen, setIsCropFoodOpen] = useState(false);
