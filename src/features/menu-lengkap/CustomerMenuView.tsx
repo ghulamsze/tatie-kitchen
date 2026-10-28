@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useMenuStore } from '../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory } from '../../stores/menuStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
@@ -10,7 +10,7 @@ export interface CustomerMenuViewProps {
 
 interface MenuGroupDefinition {
   title: string;
-  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman' | 'pizza' | 'kue';
+  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman' | 'kue';
   iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread' | 'pizza' | 'cake';
   items: { name: string; defaultPrice: number }[];
 }
@@ -64,6 +64,17 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Cadburry Pandan', defaultPrice: 18000 },
       { name: 'Cadburry Mint', defaultPrice: 18000 },
       { name: 'Cadburry Banana', defaultPrice: 18000 },
+      { name: 'Butterscotch Latte Coffee', defaultPrice: 15000 },
+      { name: 'Vanilla Coffee', defaultPrice: 15000 },
+      { name: 'Vanilla', defaultPrice: 15000 },
+      { name: 'Red Velvet', defaultPrice: 15000 },
+      { name: 'Matcha', defaultPrice: 15000 },
+      { name: 'Green Tea', defaultPrice: 15000 },
+      { name: 'Nestum', defaultPrice: 15000 },
+      { name: 'Mangga Squash', defaultPrice: 15000 },
+      { name: 'Blue Curacao', defaultPrice: 15000 },
+      { name: 'Strawberry Squash', defaultPrice: 15000 },
+      { name: 'Extrajoss Susu', defaultPrice: 10000 },
     ],
   },
   {
@@ -149,10 +160,11 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
   // --- PIZZA ---
   {
     title: 'Pizza Spesial',
-    category: 'pizza',
+    category: 'makanan',
     iconType: 'pizza',
     items: [
       { name: 'Pizza', defaultPrice: 10000 },
+      { name: 'Pizza Big', defaultPrice: 100000 },
     ],
   },
 
@@ -310,8 +322,8 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'pizza' | 'roti' | 'kue' | 'snack'>('semua');
-  const { items } = useMenuStore();
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti' | 'kue' | 'snack'>('semua');
+  const { items, groups } = useMenuStore();
   const { orders } = useHistoryStore();
 
   // Tangani tombol ESC pada Windows dan Back button pada Android
@@ -322,13 +334,12 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     }, 25);
   }, [onClose]);
 
-  // Urutan kategori yang rapi dan terstruktur logis
+  // Urutan kategori yang rapi dan terstruktur logis (Pizza masuk di makanan)
   const categories = [
     { key: 'semua', label: 'Semua' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'mie', label: 'Mie' },
     { key: 'minuman', label: 'Minuman' },
-    { key: 'pizza', label: 'Pizza' },
     { key: 'roti', label: 'Roti' },
     { key: 'kue', label: 'Kue' },
     { key: 'snack', label: 'Snack' },
@@ -403,17 +414,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     );
 
     extraItems.forEach((it) => {
-      let cat: 'makanan' | 'mie' | 'minuman' | 'pizza' | 'roti' | 'kue' | 'snack' = 'makanan';
-      const gid = (it.group_id || '').toLowerCase();
-      const itemCat = ((it as any).category || '').toLowerCase();
-
-      if (gid.includes('makanan') || itemCat === 'makanan') cat = 'makanan';
-      else if (gid.includes('mie') || itemCat === 'mie') cat = 'mie';
-      else if (gid.includes('minuman') || gid.includes('coffee') || itemCat === 'minuman') cat = 'minuman';
-      else if (gid.includes('pizza') || itemCat === 'pizza') cat = 'pizza';
-      else if (gid.includes('roti') || itemCat === 'roti') cat = 'roti';
-      else if (gid.includes('kue') || itemCat === 'kue') cat = 'kue';
-      else if (gid.includes('snack') || itemCat === 'snack') cat = 'snack';
+      const cat = getItemCategory(it, groups);
 
       const title = `Menu Tambahan ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
       if (!groupsMap.has(title)) {
@@ -425,8 +426,6 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               ? 'iced-coffee'
               : cat === 'mie'
               ? 'noodle'
-              : cat === 'pizza'
-              ? 'pizza'
               : cat === 'roti'
               ? 'bread'
               : cat === 'kue'
@@ -444,7 +443,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     });
 
     return Array.from(groupsMap.values());
-  }, [items]);
+  }, [items, groups]);
 
   const displayedGroups = useMemo(() => {
     if (selectedCategory === 'semua') return allGroups;

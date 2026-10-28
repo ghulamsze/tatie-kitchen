@@ -6,6 +6,7 @@ export interface CategoryDropdownProps {
   groups: { id: string; name: string }[];
   onSelectGroup: (groupId: string) => void;
   direction?: 'down' | 'up';
+  disabled?: boolean;
 }
 
 export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
@@ -14,6 +15,7 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   groups,
   onSelectGroup,
   direction = 'down',
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,7 +62,8 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
       {/* Trigger Button Liquid Glass */}
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         style={{
@@ -68,15 +71,16 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
           height: '42px',
           padding: '0 12px',
           borderRadius: 'var(--r-md)',
-          background: 'var(--ctl)',
+          background: disabled ? 'rgba(255, 255, 255, 0.04)' : 'var(--ctl)',
           border: isOpen ? '1.5px solid var(--accent)' : '1px solid var(--ctl-line)',
-          color: 'var(--ink)',
+          color: disabled ? 'var(--ink-2)' : 'var(--ink)',
           fontSize: 'var(--t-sm)',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.55 : 1,
           boxSizing: 'border-box',
           transition: 'border-color 0.15s ease',
         }}

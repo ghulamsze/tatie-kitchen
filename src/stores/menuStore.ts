@@ -29,6 +29,142 @@ const generateUuid = (): string => {
   });
 };
 
+export type CanonicalMenuCategory = 'makanan' | 'mie' | 'minuman' | 'roti' | 'kue' | 'snack';
+
+/**
+ * Resolver kategori kanonikal tunggal untuk seluruh aplikasi (Tablet, Phone, Menu Lengkap)
+ * Aturan: hanya kategori makanan, mie, minuman, roti, kue dan snack. Pizza masuk di makanan.
+ */
+export function getItemCategory(
+  item: MenuItem,
+  groups: MenuGroup[] = []
+): CanonicalMenuCategory {
+  const normName = (item.name || '').trim().toLowerCase();
+  const gid = (item.group_id || '').toLowerCase();
+
+  const grp = groups.find((g) => g.id === item.group_id);
+  const grpCat = grp ? (grp.category || '').toLowerCase().trim() : '';
+  const grpName = grp ? (grp.name || '').toLowerCase().trim() : '';
+
+  // 1. Pizza masuk ke makanan sesuai instruksi
+  if (
+    normName.includes('pizza') ||
+    grpCat === 'pizza' ||
+    grpName.includes('pizza') ||
+    gid.includes('pizza')
+  ) {
+    return 'makanan';
+  }
+
+  // 2. Kue
+  if (
+    grpCat === 'kue' ||
+    gid.includes('kue') ||
+    grpName.includes('kue') ||
+    grpName.includes('donat') ||
+    grpName.includes('cake') ||
+    grpName.includes('brownies') ||
+    normName.includes('donat') ||
+    normName.includes('brownies') ||
+    normName.includes('bolu') ||
+    normName.includes('pie') ||
+    normName.includes('cake') ||
+    normName.includes('tart')
+  ) {
+    return 'kue';
+  }
+
+  // 3. Roti
+  if (
+    grpCat === 'roti' ||
+    gid.includes('roti') ||
+    grpName.includes('roti') ||
+    grpName.includes('pastry') ||
+    normName.includes('roti') ||
+    normName.includes('toast')
+  ) {
+    return 'roti';
+  }
+
+  // 4. Minuman
+  if (
+    grpCat === 'minuman' ||
+    gid.includes('minuman') ||
+    grpName.includes('kopi') ||
+    grpName.includes('teh') ||
+    grpName.includes('es ') ||
+    grpName.includes('cokelat') ||
+    normName.includes('kopi') ||
+    normName.includes('coffee') ||
+    normName.includes('latte') ||
+    normName.includes('teh') ||
+    normName.includes('tea') ||
+    normName.includes('cokelat') ||
+    normName.includes('chocolate') ||
+    normName.includes('milo') ||
+    normName.includes('cadbur') ||
+    normName.includes('squash') ||
+    normName.includes('jus') ||
+    normName.includes('juice') ||
+    normName.includes('jeruk') ||
+    normName.includes('americano') ||
+    normName.includes('cappuccino') ||
+    normName.includes('mochachino') ||
+    normName.includes('butterscotch') ||
+    normName.includes('vanilla') ||
+    normName.includes('vanila') ||
+    normName.includes('red velvet') ||
+    normName.includes('matcha') ||
+    normName.includes('green tea') ||
+    normName.includes('nestum') ||
+    normName.includes('hazelnut') ||
+    normName.includes('caramel') ||
+    normName.includes('air mineral') ||
+    normName.includes('susu') ||
+    normName.includes('extrajoss') ||
+    normName.includes('curacao')
+  ) {
+    return 'minuman';
+  }
+
+  // 5. Mie
+  if (
+    grpCat === 'mie' ||
+    gid.includes('mie') ||
+    grpName.includes('mie') ||
+    normName.includes('mie') ||
+    normName.includes('indomie') ||
+    normName.includes('bihun') ||
+    normName.includes('kwetiau') ||
+    normName.includes('pasta') ||
+    normName.includes('spaghetti')
+  ) {
+    return 'mie';
+  }
+
+  // 6. Snack
+  if (
+    grpCat === 'snack' ||
+    gid.includes('snack') ||
+    grpName.includes('camilan') ||
+    grpName.includes('burger') ||
+    normName.includes('risol') ||
+    normName.includes('nugget') ||
+    normName.includes('lekor') ||
+    normName.includes('sosis') ||
+    normName.includes('platter') ||
+    normName.includes('kentang') ||
+    normName.includes('burger') ||
+    normName.includes('kebab') ||
+    normName.includes('pisang') ||
+    normName.includes('camilan')
+  ) {
+    return 'snack';
+  }
+
+  return 'makanan';
+}
+
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
 export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
   // --- MIE ---
@@ -1408,7 +1544,7 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
 async function resolveAvailableGroupId(
   requestedGroupId?: string,
   requestedCategory?: string
-): Promise<string> {
+): Promise<string | null> {
   const fallbackMap: Record<string, string> = {
     makanan: '00000000-0000-0000-0000-000000000010',
     mie: '00000000-0000-0000-0000-000000000011',
@@ -1416,7 +1552,11 @@ async function resolveAvailableGroupId(
     minuman: '00000000-0000-0000-0000-000000000013',
   };
 
-  const targetCategory = (requestedCategory || 'makanan').toLowerCase().trim();
+  let rawCat = (requestedCategory || 'makanan').toLowerCase().trim();
+  if (rawCat === 'pizza') rawCat = 'makanan';
+  if (rawCat === 'roti' || rawCat === 'kue') rawCat = 'snack';
+
+  const targetCategory = ['makanan', 'mie', 'minuman', 'snack'].includes(rawCat) ? rawCat : 'makanan';
   const defaultFallback = fallbackMap[targetCategory] || fallbackMap.makanan;
 
   try {
@@ -1456,7 +1596,7 @@ async function resolveAvailableGroupId(
         return availableSameCat.id;
       }
 
-      // Periksa apakah kelompok umum (00000000-0000-0000-0000-000000000010..13) masih ada slot
+      // Periksa apakah kelompok umum (00000000-0000-0000-0000-000000000010..13) masih ada slot < 7
       if ((counts[defaultFallback] || 0) < 7) {
         return defaultFallback;
       }
@@ -1468,29 +1608,7 @@ async function resolveAvailableGroupId(
       }
     }
 
-    // 4. Jika semua kelompok penuh, buat kelompok baru secara otomatis
-    try {
-      const newGroupId = generateUuid();
-      const catTitle = targetCategory.charAt(0).toUpperCase() + targetCategory.slice(1);
-      const { data: newGrp, error: newGrpErr } = await (supabase.from('menu_groups') as any)
-        .insert({
-          id: newGroupId,
-          shop_id: TATIE_SHOP_ID,
-          category: targetCategory,
-          name: `${catTitle} Tambahan`,
-          icon_key: catTitle,
-          sort: (allGroups?.length || 10) + 1,
-        })
-        .select('id')
-        .single();
-      if (!newGrpErr && newGrp?.id) {
-        return newGrp.id;
-      }
-    } catch {
-      // fallback jika pembuatan gagal
-    }
-
-    return defaultFallback;
+    return null;
   } catch {
     return defaultFallback;
   }
@@ -1532,8 +1650,12 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           photo_path: updated.photo_path,
         };
         if (isUuid(updated.group_id)) {
+          updatePayload.group_id = updated.group_id;
+        } else if (updated.group_id) {
           const safeGroupId = await resolveAvailableGroupId(updated.group_id);
-          updatePayload.group_id = safeGroupId;
+          if (safeGroupId && isUuid(safeGroupId)) {
+            updatePayload.group_id = safeGroupId;
+          }
         }
 
         if (isUuid(updated.id)) {
@@ -1626,35 +1748,54 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           created.group_id,
           (newItem as any).category
         );
-        created.group_id = safeGroupId;
+        if (safeGroupId) {
+          created.group_id = safeGroupId;
+        }
 
         const payload: Record<string, any> = {
-          id: created.id,
           shop_id: TATIE_SHOP_ID,
-          group_id: safeGroupId,
           name: created.name.trim(),
-          price_idr: Number(created.price_idr) || 0,
+          price_idr: Math.max(0, Number(created.price_idr) || 0),
           available: Boolean(created.available),
           photo_path: created.photo_path || null,
           active: true,
-          sort: created.sort || 99,
+          sort: Number(created.sort) || 99,
         };
+        if (isUuid(created.id)) {
+          payload.id = created.id;
+        }
+        if (isUuid(safeGroupId)) {
+          payload.group_id = safeGroupId;
+        }
 
-        const { data: insData, error: insErr } = await (supabase.from('menu_items') as any)
+        let { data: insData, error: insErr } = await (supabase.from('menu_items') as any)
           .insert(payload)
           .select();
 
+        // Jika kena trigger batas 7 item atau error constraint group_id, coba insert dengan group_id: null
+        if (insErr && payload.group_id) {
+          logWarning('menuStore:addMenuItem:retryWithNullGroup', insErr.message || String(insErr));
+          const retryPayload = { ...payload, group_id: null };
+          const resRetry = await (supabase.from('menu_items') as any)
+            .insert(retryPayload)
+            .select();
+          insData = resRetry.data;
+          insErr = resRetry.error;
+        }
+
         if (!insErr && Array.isArray(insData) && insData.length > 0 && insData[0]?.id) {
           const remoteId = insData[0].id;
+          const assignedGroupId = insData[0].group_id || safeGroupId || created.group_id;
           if (remoteId && remoteId !== newId) {
             created.id = remoteId;
           }
+          created.group_id = assignedGroupId;
           set((state) => {
-            const updated = state.items.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: safeGroupId } : it));
+            const updated = state.items.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: assignedGroupId } : it));
             try {
               const raw = localStorage.getItem('tk_added_menu_items');
               const addedList: any[] = raw ? JSON.parse(raw) : [];
-              const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: safeGroupId } : it));
+              const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: assignedGroupId } : it));
               localStorage.setItem('tk_added_menu_items', JSON.stringify(mapped));
             } catch {}
             return { items: updated };

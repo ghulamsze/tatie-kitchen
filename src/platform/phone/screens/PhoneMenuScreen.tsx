@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useMenuStore } from '../../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory } from '../../../stores/menuStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from '../../../lib/device/haptics.ts';
@@ -526,23 +526,10 @@ export const PhoneMenuScreen: React.FC = () => {
     return items.filter((item) => {
       // 1. Filter kategori
       if (selectedCategory !== 'Semua') {
-        const catLower = selectedCategory.toLowerCase();
-        const grp = groups.find((g) => g.id === item.group_id);
-        const groupCat = grp ? grp.category.toLowerCase() : '';
-        const itemCat = ((item as any).category || '').toLowerCase();
-
-        const matches =
-          groupCat === catLower ||
-          itemCat === catLower ||
-          (catLower === 'makanan' && item.group_id.includes('makanan')) ||
-          (catLower === 'mie' && item.group_id.includes('mie')) ||
-          (catLower === 'pizza' && item.group_id.includes('pizza')) ||
-          (catLower === 'roti' && item.group_id.includes('roti')) ||
-          (catLower === 'kue' && item.group_id.includes('kue')) ||
-          (catLower === 'snack' && item.group_id.includes('snack')) ||
-          (catLower === 'minuman' && (item.group_id.includes('minuman') || item.group_id.includes('coffee')));
-
-        if (!matches) return false;
+        const itemCat = getItemCategory(item, groups);
+        if (itemCat !== selectedCategory.toLowerCase()) {
+          return false;
+        }
       }
 
       // 2. Filter pencarian

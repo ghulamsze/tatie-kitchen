@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { useMenuStore } from '../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
@@ -56,6 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 
   const {
     items,
+    groups,
     selectedCategory,
     setCategory,
     searchQuery,
@@ -170,8 +171,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
     { key: 'Minuman', label: 'Minuman' },
-    { key: 'Pizza', label: 'Pizza' },
-    { key: 'Roti', label: 'Roti' },
+        { key: 'Roti', label: 'Roti' },
     { key: 'Kue', label: 'Kue' },
     { key: 'Snack', label: 'Snack' },
   ];
@@ -181,15 +181,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     return items.filter((item) => {
       // 1. Kategori
       if (selectedCategory !== 'Semua') {
-        const catLower = selectedCategory.toLowerCase();
-        const itemCat = ((item as any).category || '').toLowerCase();
-        if (catLower === 'makanan' && !item.group_id.includes('makanan') && itemCat !== 'makanan') return false;
-        if (catLower === 'mie' && !item.group_id.includes('mie') && itemCat !== 'mie') return false;
-        if (catLower === 'minuman' && !item.group_id.includes('minuman') && !item.group_id.includes('coffee') && itemCat !== 'minuman') return false;
-        if (catLower === 'pizza' && !item.group_id.includes('pizza') && itemCat !== 'pizza') return false;
-        if (catLower === 'roti' && !item.group_id.includes('roti') && itemCat !== 'roti') return false;
-        if (catLower === 'kue' && !item.group_id.includes('kue') && itemCat !== 'kue') return false;
-        if (catLower === 'snack' && !item.group_id.includes('snack') && itemCat !== 'snack') return false;
+        const itemCat = getItemCategory(item, groups);
+        if (itemCat !== selectedCategory.toLowerCase()) {
+          return false;
+        }
       }
       // 2. Query pencarian
       if (searchQuery.trim().length > 0) {
@@ -197,7 +192,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
       }
       return true;
     });
-  }, [items, selectedCategory, searchQuery]);
+  }, [items, selectedCategory, searchQuery, groups]);
 
   const total = calculateTotal();
 
