@@ -2,6 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link id="app-icon-ico" rel="icon" type="image/x-icon" href="/icons/icon-hijau.ico?v=hijau" />
+  <link id="app-shortcut-ico" rel="shortcut icon" type="image/x-icon" href="/icons/icon-hijau.ico?v=hijau" />
+  <link id="app-icon-32" rel="icon" type="image/png" sizes="32x32" href="/icons/icon-hijau-32.png?v=hijau" />
+  <link id="app-icon-16" rel="icon" type="image/png" sizes="16x16" href="/icons/icon-hijau-16.png?v=hijau" />
+  <link id="app-apple-icon" rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-hijau.png?v=hijau" />
   <script>
     try {
       if (localStorage.getItem("tk-theme-v2") !== "1") {
@@ -15,23 +21,30 @@
         localStorage.setItem("tk-palette-v4", "1");
       }
       var q = localStorage.getItem("tk-pal");
-      document.documentElement.dataset.palette = /^(hijau|mono|netflix|samudra|senja|blush)$/.test(q) ? q : "hijau";
+      var pal = /^(hijau|mono|netflix|samudra|senja|blush)$/.test(q) ? q : "hijau";
+      document.documentElement.dataset.palette = pal;
       var m = localStorage.getItem("tk-theme") || "system";
       var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
       var eff = m === "system" ? (isDark ? "dark" : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) : m;
       document.documentElement.dataset.theme = eff;
       document.documentElement.style.colorScheme = eff;
+
+      // Sinkronkan icon sesuai tema aktif user
+      var ico = document.getElementById("app-icon-ico");
+      if (ico) ico.href = "/icons/icon-" + pal + ".ico?v=" + pal;
+      var sico = document.getElementById("app-shortcut-ico");
+      if (sico) sico.href = "/icons/icon-" + pal + ".ico?v=" + pal;
+      var p32 = document.getElementById("app-icon-32");
+      if (p32) p32.href = "/icons/icon-" + pal + "-32.png?v=" + pal;
+      var p16 = document.getElementById("app-icon-16");
+      if (p16) p16.href = "/icons/icon-" + pal + "-16.png?v=" + pal;
+      var app = document.getElementById("app-apple-icon");
+      if (app) app.href = "/icons/apple-touch-icon-" + pal + ".png?v=" + pal;
     } catch(e) {
       document.documentElement.dataset.theme = "dark";
       document.documentElement.dataset.palette = "hijau";
     }
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="icon" type="image/x-icon" href="/icon.ico?v=2" />
-  <link rel="shortcut icon" type="image/x-icon" href="/icon.ico?v=2" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
   <title>Tati’e Kitchen</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 </head>

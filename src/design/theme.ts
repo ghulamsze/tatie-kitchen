@@ -78,9 +78,30 @@ export function applyTheme(mode: ThemeMode): void {
   }
 }
 
+export function applyFavicon(palette: Palette): void {
+  if (typeof document === 'undefined') return;
+  const pal = /^(hijau|mono|netflix|samudra|senja|blush)$/.test(palette) ? palette : 'hijau';
+
+  const iconIco = document.getElementById('app-icon-ico') as HTMLLinkElement | null;
+  if (iconIco) iconIco.href = `/icons/icon-${pal}.ico?v=${pal}`;
+
+  const iconShort = document.getElementById('app-shortcut-ico') as HTMLLinkElement | null;
+  if (iconShort) iconShort.href = `/icons/icon-${pal}.ico?v=${pal}`;
+
+  const icon32 = document.getElementById('app-icon-32') as HTMLLinkElement | null;
+  if (icon32) icon32.href = `/icons/icon-${pal}-32.png?v=${pal}`;
+
+  const icon16 = document.getElementById('app-icon-16') as HTMLLinkElement | null;
+  if (icon16) icon16.href = `/icons/icon-${pal}-16.png?v=${pal}`;
+
+  const appleIcon = document.getElementById('app-apple-icon') as HTMLLinkElement | null;
+  if (appleIcon) appleIcon.href = `/icons/apple-touch-icon-${pal}.png?v=${pal}`;
+}
+
 export function applyPalette(palette: Palette): void {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.palette = palette;
+  applyFavicon(palette);
   try {
     localStorage.setItem(PALETTE_STORAGE_KEY, palette);
   } catch {
@@ -93,6 +114,7 @@ export function initTheme(): { theme: ThemeMode; palette: Palette } {
   const palette = getStoredPalette();
   applyTheme(theme);
   applyPalette(palette);
+  applyFavicon(palette);
   applyBgMotion(getStoredBgMotion());
 
   if (typeof window !== 'undefined') {

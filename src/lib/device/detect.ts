@@ -30,6 +30,28 @@ export interface DeviceEnv {
 export const DEVICE_OVERRIDE_KEY = 'tk-device';
 
 /**
+ * Helper untuk memeriksa apakah parameter ada di URLSearchParams secara case-insensitive
+ */
+export function hasCaseInsensitiveParam(params: URLSearchParams, targetKey: string): boolean {
+  const lowerTarget = targetKey.toLowerCase();
+  for (const key of params.keys()) {
+    if (key.toLowerCase() === lowerTarget) return true;
+  }
+  return false;
+}
+
+/**
+ * Helper untuk mengambil nilai parameter dari URLSearchParams secara case-insensitive
+ */
+export function getCaseInsensitiveParam(params: URLSearchParams, targetKey: string): string | null {
+  const lowerTarget = targetKey.toLowerCase();
+  for (const [key, value] of params.entries()) {
+    if (key.toLowerCase() === lowerTarget) return value;
+  }
+  return null;
+}
+
+/**
  * Fungsi murni untuk mengklasifikasikan perangkat berdasarkan hierarki sinyal
  * yang didefinisikan dalam docs/arsitektur.md bagian 3.
  */
@@ -40,20 +62,28 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   const isRealIPhone = /iPhone|iPod/i.test(ua);
   const isPhysPhone = isRealIPhone || (shortestSide > 0 && shortestSide < 600 && (touchPoints > 0 || /Mobile|Android/i.test(ua)));
 
-  // 1. Sinyal 1: Override (?device=tablet|laptop|phone, atau localStorage)
+  // 1. Sinyal 1: Override (?tablet=..., ?android=..., ?iPhone=..., ?device=..., atau localStorage)
   let overrideVal: FormFactor | null = null;
   let isAutoReset = false;
+  let urlPlatformOverride: Platform | null = null;
 
   if (env.urlSearch) {
     const params = new URLSearchParams(env.urlSearch);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (params.has('phone') || params.has('android') || params.has('iphone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+
+    if (hasCaseInsensitiveParam(params, 'iphone') || hasCaseInsensitiveParam(params, 'ios') || paramDevice === 'iphone' || paramDevice === 'ios') {
       overrideVal = 'phone';
-    } else if (params.has('tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
+      urlPlatformOverride = 'ios';
+    } else if (hasCaseInsensitiveParam(params, 'android') || paramDevice === 'android') {
+      overrideVal = 'phone';
+      urlPlatformOverride = 'android';
+    } else if (hasCaseInsensitiveParam(params, 'tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
       overrideVal = 'tablet';
-    } else if (params.has('laptop') || paramDevice === 'laptop') {
+    } else if (hasCaseInsensitiveParam(params, 'laptop') || paramDevice === 'laptop') {
       overrideVal = 'laptop';
-    } else if (paramDevice === 'auto') {
+    } else if (hasCaseInsensitiveParam(params, 'phone') || paramDevice === 'phone' || paramDevice === 'hp' || paramDevice === 'mobile') {
+      overrideVal = 'phone';
+    } else if (paramDevice === 'auto' || hasCaseInsensitiveParam(params, 'auto')) {
       isAutoReset = true;
       overrideVal = null;
     }
@@ -65,18 +95,20 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
 
   if (!isAutoReset && !overrideVal && env.storedOverride) {
     // Jangan biarkan storedOverride memaksa mode tablet di HP fisik berlayar sempit
-    const isPhysPhone = shortestSide > 0 && shortestSide < 600 && /Mobile/i.test(ua);
-    if (env.storedOverride === 'tablet' && isPhysPhone) {
+    const isNarrowPhys = shortestSide > 0 && shortestSide < 600 && /Mobile/i.test(ua);
+    if (env.storedOverride === 'tablet' && isNarrowPhys) {
       // Abaikan paksaan tablet pada ponsel fisik sempit
     } else if (env.storedOverride === 'tablet' || env.storedOverride === 'laptop' || env.storedOverride === 'phone') {
       overrideVal = env.storedOverride;
     }
   }
 
-  if (env.urlSearch && new URLSearchParams(env.urlSearch).has('android')) {
-    basePlatform = 'android';
-  } else if (env.urlSearch && new URLSearchParams(env.urlSearch).has('iphone')) {
+  if (urlPlatformOverride) {
+    basePlatform = urlPlatformOverride;
+  } else if (env.urlSearch && (hasCaseInsensitiveParam(new URLSearchParams(env.urlSearch), 'iphone') || hasCaseInsensitiveParam(new URLSearchParams(env.urlSearch), 'ios'))) {
     basePlatform = 'ios';
+  } else if (env.urlSearch && hasCaseInsensitiveParam(new URLSearchParams(env.urlSearch), 'android')) {
+    basePlatform = 'android';
   } else if (env.capacitor?.platform === 'android') {
     basePlatform = 'android';
   } else if (env.capacitor?.platform === 'ios') {
@@ -114,14 +146,23 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
       };
     }
     let finalPlatform: Platform = basePlatform;
-    if (env.urlSearch) {
+    if (urlPlatformOverride) {
+      finalPlatform = urlPlatformOverride;
+    } else if (env.urlSearch) {
       const p = new URLSearchParams(env.urlSearch).get('platform')?.toLowerCase();
       if (p === 'ios') finalPlatform = 'ios';
       else if (p === 'android') finalPlatform = 'android';
     }
-    if (finalPlatform === 'unknown' || finalPlatform === 'windows') {
-      if (env.storedPlatformOverride === 'ios') finalPlatform = 'ios';
-      else if (env.storedPlatformOverride === 'android') finalPlatform = 'android';
+    if (overrideVal === 'phone') {
+      if (urlPlatformOverride) {
+        finalPlatform = urlPlatformOverride;
+      } else if (env.storedPlatformOverride === 'ios') {
+        finalPlatform = 'ios';
+      } else if (env.storedPlatformOverride === 'android') {
+        finalPlatform = 'android';
+      } else if (finalPlatform === 'unknown' || finalPlatform === 'windows') {
+        finalPlatform = 'android';
+      }
     }
     return {
       platform: finalPlatform,
@@ -233,8 +274,10 @@ export function getCurrentDevice(): DeviceInfo {
   }
 
   let storedOverride: string | null = null;
+  let storedPlatform: string | null = null;
   try {
     storedOverride = localStorage.getItem(DEVICE_OVERRIDE_KEY);
+    storedPlatform = localStorage.getItem('tk-platform');
   } catch {
     // ignore
   }
@@ -244,34 +287,47 @@ export function getCurrentDevice(): DeviceInfo {
   if (search) {
     const params = new URLSearchParams(search);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (params.has('phone') || params.has('android') || params.has('iphone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+
+    if (hasCaseInsensitiveParam(params, 'iphone') || hasCaseInsensitiveParam(params, 'ios') || paramDevice === 'iphone' || paramDevice === 'ios') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
-      } catch {
-        // ignore
-      }
+        localStorage.setItem('tk-platform', 'ios');
+      } catch {}
       storedOverride = 'phone';
-    } else if (params.has('tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
+      storedPlatform = 'ios';
+    } else if (hasCaseInsensitiveParam(params, 'android') || paramDevice === 'android') {
+      try {
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
+        localStorage.setItem('tk-platform', 'android');
+      } catch {}
+      storedOverride = 'phone';
+      storedPlatform = 'android';
+    } else if (hasCaseInsensitiveParam(params, 'tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'tablet');
-      } catch {
-        // ignore
-      }
+        localStorage.removeItem('tk-platform');
+      } catch {}
       storedOverride = 'tablet';
-    } else if (params.has('laptop') || paramDevice === 'laptop') {
+      storedPlatform = null;
+    } else if (hasCaseInsensitiveParam(params, 'laptop') || paramDevice === 'laptop') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'laptop');
-      } catch {
-        // ignore
-      }
+        localStorage.removeItem('tk-platform');
+      } catch {}
       storedOverride = 'laptop';
-    } else if (paramDevice === 'auto') {
+      storedPlatform = null;
+    } else if (hasCaseInsensitiveParam(params, 'phone') || paramDevice === 'phone' || paramDevice === 'hp' || paramDevice === 'mobile') {
+      try {
+        localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
+      } catch {}
+      storedOverride = 'phone';
+    } else if (paramDevice === 'auto' || hasCaseInsensitiveParam(params, 'auto')) {
       try {
         localStorage.removeItem(DEVICE_OVERRIDE_KEY);
-      } catch {
-        // ignore
-      }
+        localStorage.removeItem('tk-platform');
+      } catch {}
       storedOverride = null;
+      storedPlatform = null;
     }
   }
 
@@ -286,21 +342,12 @@ export function getCurrentDevice(): DeviceInfo {
   const isPhysPhoneDevice = /iPhone|iPod/i.test(navigator.userAgent) ||
     (Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600 && (navigator.maxTouchPoints > 0 || /Mobile|Android/i.test(navigator.userAgent)));
   if (storedOverride === 'tablet' && (!search || isPhysPhoneDevice)) {
-        if (isPhysPhoneDevice) {
+    if (isPhysPhoneDevice) {
       try {
         localStorage.removeItem(DEVICE_OVERRIDE_KEY);
-      } catch {
-        // ignore
-      }
+      } catch {}
       storedOverride = null;
     }
-  }
-
-  let storedPlatform: string | null = null;
-  try {
-    storedPlatform = localStorage.getItem('tk-platform');
-  } catch {
-    // ignore
   }
 
   const env: DeviceEnv = {
@@ -328,18 +375,23 @@ export function getCurrentDevice(): DeviceInfo {
 }
 
 /**
- * Mengubah override perangkat secara instan tanpa reload halaman yang berisiko 404
+ * Mengubah override perangkat secara instan tanpa reload halaman
  */
 export function setDeviceOverride(override: FormFactor | 'auto', platformOverride?: Platform): void {
   if (typeof window === 'undefined') return;
+
+  const resolvedPlatform = override === 'phone'
+    ? (platformOverride || 'android')
+    : undefined;
+
   try {
     if (override === 'auto') {
       localStorage.removeItem(DEVICE_OVERRIDE_KEY);
       localStorage.removeItem('tk-platform');
     } else {
       localStorage.setItem(DEVICE_OVERRIDE_KEY, override);
-      if (platformOverride) {
-        localStorage.setItem('tk-platform', platformOverride);
+      if (resolvedPlatform) {
+        localStorage.setItem('tk-platform', resolvedPlatform);
       } else {
         localStorage.removeItem('tk-platform');
       }
@@ -349,39 +401,42 @@ export function setDeviceOverride(override: FormFactor | 'auto', platformOverrid
   }
 
   try {
-    const currentUrl = new URL(window.location.href);
-    const params = currentUrl.searchParams;
-    params.delete('phone');
-    params.delete('tablet');
-    params.delete('laptop');
-    params.delete('device');
-    params.delete('platform');
-    params.delete('auto');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    for (let i = 0; i < 11; i++) token += chars[Math.floor(Math.random() * chars.length)];
+
+    let newRelativeUrl = '';
+    const currentPath = '/device';
 
     if (override === 'auto') {
-      params.set('auto', 'true');
+      newRelativeUrl = `${currentPath}?auto=true`;
+    } else if (override === 'tablet') {
+      newRelativeUrl = `${currentPath}?tablet=${token}`;
+    } else if (override === 'phone' && resolvedPlatform === 'ios') {
+      newRelativeUrl = `${currentPath}?iPhone=${token}&`;
+    } else if (override === 'phone') {
+      newRelativeUrl = `${currentPath}?android=${token}`;
+    } else if (override === 'laptop') {
+      newRelativeUrl = `${currentPath}?laptop=${token}`;
     } else {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      let token = '';
-      for (let i = 0; i < 11; i++) token += chars[Math.floor(Math.random() * chars.length)];
-      params.set(override, token);
-      if (platformOverride) {
-        params.set('platform', platformOverride);
-      }
+      newRelativeUrl = `${currentPath}?${override}=${token}`;
     }
-
-    const currentPath = window.location.pathname.startsWith('/device') ? '/device' : window.location.pathname;
-    const newRelativeUrl = `${currentPath}?${params.toString()}`;
 
     window.history.replaceState(null, '', newRelativeUrl);
     window.dispatchEvent(new Event('popstate'));
-    window.dispatchEvent(new CustomEvent('tk-device-change', { detail: { override, platform: platformOverride } }));
+    window.dispatchEvent(new CustomEvent('tk-device-change', { detail: { override, platform: resolvedPlatform } }));
   } catch {
     // Fallback aman tanpa merubah path dasar
     if (override === 'auto') {
       window.location.search = '?auto=true';
+    } else if (override === 'tablet') {
+      window.location.search = '?tablet=true';
+    } else if (resolvedPlatform === 'ios') {
+      window.location.search = '?iPhone=true&';
+    } else if (resolvedPlatform === 'android') {
+      window.location.search = '?android=true';
     } else {
-      window.location.search = `?${override}=true${platformOverride ? `&platform=${platformOverride}` : ''}`;
+      window.location.search = `?${override}=true`;
     }
   }
 }

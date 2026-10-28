@@ -46,8 +46,8 @@ export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode, cur
   }, []);
 
   const isTabletActive = currentMode === 'tablet' || currentMode === 'laptop';
-  const isAndroidActive = currentMode === 'phone' && (currentPlatform === 'android' || currentPlatform === 'windows' || !currentPlatform);
   const isIosActive = currentMode === 'phone' && currentPlatform === 'ios';
+  const isAndroidActive = currentMode === 'phone' && !isIosActive;
 
   return (
     <div
