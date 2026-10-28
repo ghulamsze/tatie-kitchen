@@ -332,14 +332,14 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     }, 25);
   }, [onClose]);
 
-  // Urutan kategori yang rapi: Makanan, Minuman, Roti & Kue, Tunagizi, Camilan
+  // Urutan kategori alfabetis A-Z: Semua, Camilan, Makanan, Minuman, Roti & Kue, Tunagizi
   const categories = [
     { key: 'semua', label: 'Semua' },
+    { key: 'camilan', label: 'Camilan' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'minuman', label: 'Minuman' },
     { key: 'roti_kue', label: 'Roti & Kue' },
     { key: 'tunagizi', label: 'Tunagizi' },
-    { key: 'camilan', label: 'Camilan' },
   ] as const;
 
   // Hitung menu terlaris secara dinamis berdasarkan data pesanan riil

@@ -17,11 +17,11 @@ function parseThousands(value: string): number {
 }
 
 const CATEGORY_OPTIONS: { key: CanonicalMenuCategory; label: string }[] = [
+  { key: 'camilan', label: 'Camilan' },
   { key: 'makanan', label: 'Makanan' },
   { key: 'minuman', label: 'Minuman' },
   { key: 'roti_kue', label: 'Roti & Kue' },
   { key: 'tunagizi', label: 'Tunagizi' },
-  { key: 'camilan', label: 'Camilan' },
 ];
 
 export interface MenuDetailModalProps {
@@ -41,7 +41,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
   onSaved,
   isCashierTablet = false,
 }) => {
-  const { groups, toggleItemAvailability, updateMenuItem, deleteMenuItem } = useMenuStore();
+  const { groups, toggleItemAvailability, updateMenuItem, deleteMenuItem, togglePinItem, isItemPinned } = useMenuStore();
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState(0);
@@ -224,6 +224,8 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
 
   if (!isOpen || !item) return null;
 
+  const isPinned = item ? isItemPinned(item.id, item.name) : false;
+
   const currentCategoryLabel =
     CATEGORY_OPTIONS.find((c) => c.key === category)?.label || 'Makanan';
 
@@ -237,10 +239,12 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       aria-modal="true"
       style={{
         display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
+        padding: '0 0 calc(16px + env(safe-area-inset-bottom, 0px)) 0',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       <input
@@ -258,14 +262,15 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         style={{
-          width: '100%',
-          maxWidth: '420px',
-          maxHeight: 'calc(100dvh - 32px)',
+          width: 'min(440px, calc(100% - 24px))',
+          maxWidth: '440px',
+          maxHeight: 'min(90dvh, 620px)',
           overflowY: 'auto',
+          overflowX: 'hidden',
           boxSizing: 'border-box',
           padding: '20px',
           borderRadius: 'var(--r-xl, 24px)',
-          margin: 'auto',
+          margin: '0 auto',
         }}
       >
         {/* Header (Tanpa sub-deskripsi) */}
@@ -282,6 +287,38 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
           </b>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Tombol Sematkan Menu (Pin) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (item) {
+                  triggerHapticFeedback([25]);
+                  togglePinItem(item.id);
+                }
+              }}
+              aria-label={isPinned ? 'Lepas sematan menu' : 'Sematkan menu ke atas'}
+              title={isPinned ? 'Lepas sematan menu dari paling atas' : 'Sematkan menu ke paling atas'}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--r-md)',
+                background: isPinned ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'rgba(255, 255, 255, 0.05)',
+                border: isPinned ? '1px solid var(--accent)' : '1px solid var(--ctl-line)',
+                color: isPinned ? 'var(--accent)' : 'var(--ink-3)',
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+                padding: 0,
+                boxSizing: 'border-box',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill={isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 17v5" />
+                <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V5a1 1 0 0 1 1-1 1 1 0 0 0 1-1V2H7v1a1 1 0 0 0 1 1 1 1 0 0 1 1 1z" />
+              </svg>
+            </button>
+
             {/* Tombol Hapus Menu */}
             <button
               type="button"
@@ -371,64 +408,120 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
               Nama Menu
             </label>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              {/* Box Foto Makanan */}
+              {/* Box Foto Makanan dengan Badge Sunting Liquid Glass */}
               <div
-                onClick={() => {
-                  if (!isCashierTablet) {
-                    fileInputRef.current?.click();
-                  }
-                }}
-                role={isCashierTablet ? 'img' : 'button'}
-                aria-label="Foto makanan"
-                title={isCashierTablet ? 'Foto makanan' : 'Klik untuk mengubah foto'}
                 style={{
+                  position: 'relative',
                   width: '52px',
                   height: '52px',
-                  borderRadius: 'var(--r-md)',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: isCashierTablet ? '1px solid var(--ctl-line)' : '1px dashed var(--accent)',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  display: 'grid',
-                  placeItems: 'center',
                   flexShrink: 0,
-                  cursor: isCashierTablet ? 'default' : 'pointer',
-                  opacity: isCashierTablet ? 0.6 : 1,
-                  boxSizing: 'border-box',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
                 }}
               >
-                {photoPath ? (
-                  <img
-                    src={photoPath}
-                    alt="Foto makanan"
-                    draggable={false}
+                <div
+                  onClick={() => {
+                    if (!isCashierTablet) {
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  role={isCashierTablet ? 'img' : 'button'}
+                  aria-label="Foto makanan"
+                  title={isCashierTablet ? 'Foto makanan' : 'Klik untuk mengubah foto'}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 'var(--r-md)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: isCashierTablet ? '1px solid var(--ctl-line)' : '1px dashed var(--accent)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: isCashierTablet ? 'default' : 'pointer',
+                    opacity: isCashierTablet ? 0.6 : 1,
+                    boxSizing: 'border-box',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                  }}
+                >
+                  {photoPath ? (
+                    <img
+                      src={photoPath}
+                      alt="Foto makanan"
+                      draggable={false}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isCashierTablet ? 'var(--ink-3)' : 'var(--accent)'}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                  )}
+                </div>
+
+                {/* Icon Sunting Liquid Glass di Ujung Bawah Kanan sedikit keluar dari frame (Sesuai Profile Pict) */}
+                {!isCashierTablet && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    aria-label="Sunting foto makanan"
+                    title="Sunting foto makanan"
+                    className="g-liquid"
                     style={{
                       position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      pointerEvents: 'none',
-                      userSelect: 'none',
+                      bottom: '-3px',
+                      right: '-3px',
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: 'var(--r-pill)',
+                      border: '1px solid rgba(255, 255, 255, 0.40)',
+                      background: 'color-mix(in srgb, var(--acrylic-bg) 85%, transparent)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      zIndex: 5,
+                      boxShadow: '0 3px 8px rgba(0, 0, 0, 0.45)',
+                      color: 'var(--ink)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'transform 0.15s ease, background 0.15s ease',
                     }}
-                  />
-                ) : (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={isCashierTablet ? 'var(--ink-3)' : 'var(--accent)'}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                   >
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                    <circle cx="9" cy="9" r="2" />
-                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                  </svg>
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
                 )}
               </div>
 

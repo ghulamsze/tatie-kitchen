@@ -35,7 +35,7 @@ export type CanonicalMenuCategory = 'camilan' | 'makanan' | 'minuman' | 'roti_ku
  * Resolver kategori kanonikal tunggal untuk seluruh aplikasi (Tablet, Phone, Menu Lengkap)
  * Aturan 5 Kategori:
  * 1. tunagizi: segala burger dan pizza
- * 2. roti_kue: roti, donat, cake, brownies, bolu, pie, tart, toast, pastry
+ * 2. roti_kue: roti, kue ulang tahun, donat, cake, brownies, bolu, pie, tart, toast, pastry
  * 3. camilan: platter, pisang nugget, sosis goreng, lekor, risol, nugget, kentang, kebab
  * 4. minuman: kopi, teh, cokelat, cadbury, squash, butterscotch, vanilla, red velvet, matcha, susu, dll.
  * 5. makanan: hidangan nasi dan mie (mie digabung dengan makanan)
@@ -58,15 +58,18 @@ export function getItemCategory(
     grpCat === 'pizza' ||
     grpCat === 'burger' ||
     grpName.includes('burger') ||
-    grpName.includes('pizza') ||
-    gid.includes('pizza')
+    (grpName.includes('pizza') && !normName.includes('roti')) ||
+    gid.includes('pizza') ||
+    gid.includes('burger')
   ) {
     return 'tunagizi';
   }
 
-  // 2. Roti & Kue (Roti, Pastry, Donat, Cake, Brownies, Bolu, dll. - Tanpa Burger/Pizza)
+  // 2. Roti & Kue (Roti, Kue Ulang Tahun, Pastry, Donat, Cake, Brownies, Bolu, dll. - Tanpa Burger/Pizza)
   if (
     normName.includes('roti') ||
+    normName.includes('kue') ||
+    normName.includes('ulang tahun') ||
     normName.includes('donat') ||
     normName.includes('cake') ||
     normName.includes('brownies') ||
@@ -77,11 +80,14 @@ export function getItemCategory(
     normName.includes('pastry') ||
     grpCat === 'roti' ||
     grpCat === 'kue' ||
+    grpCat === 'roti_kue' ||
     grpName.includes('kue') ||
     grpName.includes('donat') ||
     grpName.includes('cake') ||
     grpName.includes('roti') ||
-    grpName.includes('pastry')
+    grpName.includes('pastry') ||
+    gid.includes('roti') ||
+    gid.includes('kue')
   ) {
     return 'roti_kue';
   }
@@ -89,7 +95,7 @@ export function getItemCategory(
   // 3. Camilan (Platter, Pisang Nugget, Risol, Nugget, Lekor, Kentang, Sosis Goreng, Kebab)
   if (
     normName.includes('platter') ||
-    normName.includes('pisang') ||
+    (normName.includes('pisang') && !normName.includes('roti')) ||
     normName.includes('nugget') ||
     normName.includes('risol') ||
     normName.includes('lekor') ||
@@ -97,8 +103,11 @@ export function getItemCategory(
     normName.includes('kebab') ||
     (normName.includes('sosis') && !normName.includes('roti')) ||
     grpCat === 'snack' ||
+    grpCat === 'camilan' ||
     grpName.includes('camilan') ||
-    grpName.includes('snack')
+    grpName.includes('snack') ||
+    gid.includes('snack') ||
+    gid.includes('camilan')
   ) {
     return 'camilan';
   }
@@ -147,6 +156,54 @@ export function getItemCategory(
 
   // 5. Makanan (Termasuk Nasi Goreng, Nasi Ayam, Makanan Berkuah, dan Mie)
   return 'makanan';
+}
+
+/**
+ * Pengurutan menu cerdas:
+ * 1. Pinned Item (disematkan) selalu di urutan paling atas.
+ * 2. Terlaris jika pemesanan sering (>= 5 terjual).
+ * 3. Default: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah.
+ */
+export function sortMenuItems(
+  items: MenuItem[],
+  pinnedIds: string[] = [],
+  soldCounts: Map<string, number> = new Map()
+): MenuItem[] {
+  const pinnedSet = new Set(pinnedIds.map((id) => id.toLowerCase().trim()));
+  const FREQUENT_THRESHOLD = 5;
+
+  return [...items].sort((a, b) => {
+    const aId = (a.id || '').toLowerCase().trim();
+    const bId = (b.id || '').toLowerCase().trim();
+    const aName = (a.name || '').toLowerCase().trim();
+    const bName = (b.name || '').toLowerCase().trim();
+
+    const aPinned = pinnedSet.has(aId) || pinnedSet.has(aName);
+    const bPinned = pinnedSet.has(bId) || pinnedSet.has(bName);
+
+    // 1. Pinned item selalu di urutan paling atas
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+    if (aPinned && bPinned) {
+      return (a.name || '').localeCompare(b.name || '', 'id');
+    }
+
+    // 2. Terlaris jika pemesanan sering (>= 5 kali terjual)
+    const aQty = Math.max(soldCounts.get(aId) || 0, soldCounts.get(aName) || 0);
+    const bQty = Math.max(soldCounts.get(bId) || 0, soldCounts.get(bName) || 0);
+
+    const aFrequent = aQty >= FREQUENT_THRESHOLD;
+    const bFrequent = bQty >= FREQUENT_THRESHOLD;
+
+    if (aFrequent || bFrequent) {
+      if (aFrequent && !bFrequent) return -1;
+      if (!aFrequent && bFrequent) return 1;
+      if (bQty !== aQty) return bQty - aQty;
+    }
+
+    // 3. Default: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah
+    return (a.name || '').localeCompare(b.name || '', 'id');
+  });
 }
 
 // Data menu awal lengkap dari MG, TR, HB HTML dengan URL foto makanan asli internet
@@ -1459,11 +1516,14 @@ interface MenuState {
   searchQuery: string;
   heldItem: MenuItem | null; // Untuk interaksi tahan kartu tandai habis
   toastMessage: string | null;
+  pinnedIds: string[]; // Daftar ID / Nama menu yang disematkan ke paling atas
 
   setCategory: (category: string) => void;
   setSearchQuery: (query: string) => void;
   setHeldItem: (item: MenuItem | null) => void;
   setToastMessage: (msg: string | null) => void;
+  togglePinItem: (itemId: string) => void;
+  isItemPinned: (itemId: string, itemName?: string) => boolean;
   toggleItemAvailability: (itemId: string, available: boolean) => Promise<void>;
   updateMenuItem: (updated: Partial<MenuItem> & { id: string }) => Promise<void>;
   deleteMenuItem: (itemId: string) => Promise<void>;
@@ -1592,6 +1652,28 @@ async function resolveAvailableGroupId(
       if (anyAvailable?.id) {
         return anyAvailable.id;
       }
+
+      // Jika seluruh kelompok sudah terisi 7 item, buat kelompok baru secara otomatis agar aman dari trigger
+      try {
+        const freshGrpId = generateUuid();
+        const grpTitle = `${targetCategory.charAt(0).toUpperCase() + targetCategory.slice(1)} ${sameCategoryGroups.length + 1}`;
+        const { data: newGrp } = await (supabase.from('menu_groups') as any)
+          .insert({
+            id: freshGrpId,
+            shop_id: TATIE_SHOP_ID,
+            category: targetCategory,
+            name: grpTitle,
+            icon_key: targetCategory,
+            sort: 50 + (allGroups?.length || 0),
+          })
+          .select('id')
+          .single();
+        if (newGrp?.id) {
+          return newGrp.id;
+        }
+      } catch (createErr) {
+        logWarning('menuStore:resolveAvailableGroupId:createGrp', String(createErr));
+      }
     }
 
     return null;
@@ -1607,11 +1689,43 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   searchQuery: '',
   heldItem: null,
   toastMessage: null,
+  pinnedIds: (() => {
+    try {
+      const raw = localStorage.getItem('tk_pinned_menu_ids');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })(),
 
   setCategory: (category) => set({ selectedCategory: category }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setHeldItem: (item) => set({ heldItem: item }),
   setToastMessage: (msg) => set({ toastMessage: msg }),
+
+  togglePinItem: (itemId: string) => {
+    set((state) => {
+      const normId = itemId.trim();
+      const isPinned = state.pinnedIds.some((id) => id.toLowerCase() === normId.toLowerCase());
+      const updated = isPinned
+        ? state.pinnedIds.filter((id) => id.toLowerCase() !== normId.toLowerCase())
+        : [...state.pinnedIds, normId];
+      try {
+        localStorage.setItem('tk_pinned_menu_ids', JSON.stringify(updated));
+      } catch {}
+      return { pinnedIds: updated };
+    });
+  },
+
+  isItemPinned: (itemId: string, itemName?: string) => {
+    const state = get();
+    const idNorm = (itemId || '').toLowerCase().trim();
+    const nameNorm = (itemName || '').toLowerCase().trim();
+    return state.pinnedIds.some((p) => {
+      const pNorm = (p || '').toLowerCase().trim();
+      return pNorm === idNorm || (nameNorm && pNorm === nameNorm);
+    });
+  },
 
   updateMenuItem: async (updated) => {
     set((state) => {
@@ -1758,15 +1872,38 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           .insert(payload)
           .select();
 
-        // Jika kena trigger batas 7 item atau error constraint group_id, coba insert dengan group_id: null
-        if (insErr && payload.group_id) {
-          logWarning('menuStore:addMenuItem:retryWithNullGroup', insErr.message || String(insErr));
-          const retryPayload = { ...payload, group_id: null };
-          const resRetry = await (supabase.from('menu_items') as any)
-            .insert(retryPayload)
-            .select();
-          insData = resRetry.data;
-          insErr = resRetry.error;
+        // Jika kena trigger batas 7 item atau error constraint group_id, coba buat kelompok baru
+        if (insErr) {
+          logWarning('menuStore:addMenuItem:retryWithNewGroup', insErr.message || String(insErr));
+          try {
+            const freshGid = generateUuid();
+            await (supabase.from('menu_groups') as any).insert({
+              id: freshGid,
+              shop_id: TATIE_SHOP_ID,
+              category: 'makanan',
+              name: 'Menu Tambahan',
+              icon_key: 'makanan',
+              sort: 99,
+            });
+            const resRetry = await (supabase.from('menu_items') as any)
+              .insert({ ...payload, group_id: freshGid })
+              .select();
+            if (!resRetry.error && resRetry.data && resRetry.data.length > 0) {
+              insData = resRetry.data;
+              insErr = null;
+            }
+          } catch {}
+
+          if (insErr && payload.group_id) {
+            const retryPayload = { ...payload, group_id: null };
+            const resNull = await (supabase.from('menu_items') as any)
+              .insert(retryPayload)
+              .select();
+            if (!resNull.error && resNull.data && resNull.data.length > 0) {
+              insData = resNull.data;
+              insErr = null;
+            }
+          }
         }
 
         if (!insErr && Array.isArray(insData) && insData.length > 0 && insData[0]?.id) {

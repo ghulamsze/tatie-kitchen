@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useMenuStore, getItemCategory } from '../../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory, sortMenuItems } from '../../../stores/menuStore.ts';
+import { useHistoryStore } from '../../../stores/historyStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from '../../../lib/device/haptics.ts';
@@ -20,30 +21,32 @@ function parseThousands(value: string): number {
   return digits ? parseInt(digits, 10) : 0;
 }
 
+const CANONICAL_CATEGORY_OPTIONS: { key: 'camilan' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi'; label: string }[] = [
+  { key: 'camilan', label: 'Camilan' },
+  { key: 'makanan', label: 'Makanan' },
+  { key: 'minuman', label: 'Minuman' },
+  { key: 'roti_kue', label: 'Roti & Kue' },
+  { key: 'tunagizi', label: 'Tunagizi' },
+];
+
 interface CategoryDropdownProps {
   label: string;
-  selectedGroupId: string;
-  groups: { id: string; name: string }[];
-  onSelectGroup: (groupId: string) => void;
+  selectedCategory: 'camilan' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi';
+  onSelectCategory: (category: 'camilan' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi') => void;
   direction?: 'down' | 'up';
 }
 
 const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
   label,
-  selectedGroupId,
-  groups,
-  onSelectGroup,
+  selectedCategory,
+  onSelectCategory,
   direction = 'down',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Urutkan grup secara alfabetis A-Z sesuai instruksi
-  const sortedGroups = useMemo(() => {
-    return [...groups].sort((a, b) => a.name.localeCompare(b.name, 'id'));
-  }, [groups]);
-
-  const selectedGroup = sortedGroups.find((g) => g.id === selectedGroupId) || sortedGroups[0];
+  const selectedOption =
+    CANONICAL_CATEGORY_OPTIONS.find((c) => c.key === selectedCategory) || CANONICAL_CATEGORY_OPTIONS[0];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -101,7 +104,7 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
           transition: 'border-color 0.15s ease',
         }}
       >
-        <span>{selectedGroup?.name || 'Pilih Kategori'}</span>
+        <span>{selectedOption.label}</span>
         <svg
           width="16"
           height="16"
@@ -147,16 +150,16 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
             animation: 'tk-fade-in 0.15s ease',
           }}
         >
-          {sortedGroups.map((g) => {
-            const isSelected = g.id === selectedGroupId;
+          {CANONICAL_CATEGORY_OPTIONS.map((c) => {
+            const isSelected = c.key === selectedCategory;
             return (
               <button
-                key={g.id}
+                key={c.key}
                 type="button"
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => {
-                  onSelectGroup(g.id);
+                  onSelectCategory(c.key);
                   setIsOpen(false);
                 }}
                 style={{
@@ -177,7 +180,7 @@ const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
                   transition: 'background 0.12s ease',
                 }}
               >
-                <span>{g.name}</span>
+                <span>{c.label}</span>
                 {isSelected && (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
@@ -200,6 +203,7 @@ interface PhoneMenuItemCardProps {
 
 const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, onEdit, onToggle }) => {
   const isAvailable = item.available;
+  const isPinned = useMenuStore((state) => state.isItemPinned(item.id, item.name));
   const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMovedRef = useRef<boolean>(false);
   const didHoldRef = useRef<boolean>(false);
@@ -326,19 +330,26 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
 
       {/* Deskripsi Nama & Harga */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <span
-          style={{
-            fontSize: 'var(--t-sm)',
-            lineHeight: 'var(--l-sm)',
-            fontWeight: 800,
-            color: 'var(--ink)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {item.name}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {isPinned && (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1" style={{ flexShrink: 0 }}>
+              <path d="M16 3a1 1 0 0 1 .117 1.993L16 5v4.586l1.707 1.707A1 1 0 0 1 17.79 12.7l-.083.093H13v7a1 1 0 0 1-1.993.117L11 20v-7.207H6.293a1 1 0 0 1-.787-1.614l.08-.086L7.293 9.586V5a1 1 0 0 1-.117-1.993L7 3h9z" />
+            </svg>
+          )}
+          <span
+            style={{
+              fontSize: 'var(--t-sm)',
+              lineHeight: 'var(--l-sm)',
+              fontWeight: 800,
+              color: 'var(--ink)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.name}
+          </span>
+        </div>
         <span
           style={{
             fontSize: 'var(--t-xs)',
@@ -393,7 +404,8 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
 PhoneMenuItemCard.displayName = 'PhoneMenuItemCard';
 
 export const PhoneMenuScreen: React.FC = () => {
-  const { items, groups, selectedCategory, toggleItemAvailability, addMenuItem, fetchMenu } = useMenuStore();
+  const { items, groups, selectedCategory, toggleItemAvailability, addMenuItem, fetchMenu, pinnedIds } = useMenuStore();
+  const { orders } = useHistoryStore();
 
   const [search, setSearch] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -404,18 +416,12 @@ export const PhoneMenuScreen: React.FC = () => {
   const [addPrice, setAddPrice] = useState(0);
   const [addPriceStr, setAddPriceStr] = useState('');
   const [addAvailable, setAddAvailable] = useState(true);
-  const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
+  const [addCategory, setAddCategory] = useState<'camilan' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi'>('makanan');
   const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMenu().catch(() => {});
   }, [fetchMenu]);
-
-  useEffect(() => {
-    if (groups && groups.length > 0 && (!addGroupId || !groups.some((g) => g.id === addGroupId))) {
-      setAddGroupId(groups[0].id);
-    }
-  }, [groups, addGroupId]);
 
   // Foto Makanan Crop State (1:1 fixed resolution sesuai profil)
   const [cropFoodImageSrc, setCropFoodImageSrc] = useState<string | null>(null);
@@ -544,6 +550,27 @@ export const PhoneMenuScreen: React.FC = () => {
     });
   }, [items, selectedCategory, search, groups]);
 
+  // Hitung jumlah terjual untuk algoritma menu terlaris
+  const soldCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    orders.forEach((h) => {
+      if (h.order.status === 'cancelled') return;
+      h.items.forEach((it) => {
+        const norm = it.name_snapshot.trim().toLowerCase();
+        map.set(norm, (map.get(norm) || 0) + it.qty);
+        if (it.menu_item_id) {
+          map.set(it.menu_item_id, (map.get(it.menu_item_id) || 0) + it.qty);
+        }
+      });
+    });
+    return map;
+  }, [orders]);
+
+  // Urutkan item: Disematkan (Pin) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
+  const sortedItems = useMemo(() => {
+    return sortMenuItems(filteredItems, pinnedIds, soldCounts);
+  }, [filteredItems, pinnedIds, soldCounts]);
+
   // Virtualisasi Viewport Culling List Menu
   const ITEM_HEIGHT = 86;
   const OVERSCAN = 3;
@@ -573,7 +600,7 @@ export const PhoneMenuScreen: React.FC = () => {
     }
   }, [selectedCategory, search]);
 
-  const totalItems = filteredItems.length;
+  const totalItems = sortedItems.length;
   const totalHeight = totalItems * ITEM_HEIGHT;
 
   const { startIndex, endIndex, offsetY } = useMemo(() => {
@@ -588,8 +615,8 @@ export const PhoneMenuScreen: React.FC = () => {
   }, [scrollTop, viewportHeight, totalItems]);
 
   const visibleItems = useMemo(() => {
-    return filteredItems.slice(startIndex, endIndex);
-  }, [filteredItems, startIndex, endIndex]);
+    return sortedItems.slice(startIndex, endIndex);
+  }, [sortedItems, startIndex, endIndex]);
 
   const handleOpenEdit = useCallback((item: MenuItem) => {
     setEditingItem(item);
@@ -615,14 +642,20 @@ export const PhoneMenuScreen: React.FC = () => {
       return;
     }
 
-    const selectedGroup = groups.find((g) => g.id === addGroupId) || groups[0];
+    const safeGroup = groups.find((g) => {
+      const gc = (g.category || '').toLowerCase();
+      if (addCategory === 'roti_kue' || addCategory === 'tunagizi' || addCategory === 'camilan') {
+        return gc === 'snack';
+      }
+      return gc === addCategory;
+    });
 
     await addMenuItem({
       name: trimmed,
       price_idr: Number(addPrice) || 0,
       available: addAvailable,
-      group_id: addGroupId,
-      category: selectedGroup ? selectedGroup.category : 'makanan',
+      group_id: safeGroup ? safeGroup.id : (groups[0]?.id || 'g-snack'),
+      category: addCategory,
       photo_path: addPhotoPath,
       sort: items.length + 1,
     } as any);
@@ -823,6 +856,11 @@ export const PhoneMenuScreen: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(440px, calc(100% - 24px))',
+              maxWidth: '440px',
+              boxSizing: 'border-box',
+            }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b
@@ -1102,9 +1140,8 @@ export const PhoneMenuScreen: React.FC = () => {
               {/* Baris Ketiga: Kategori Menu (Drop Up) */}
               <CategoryDropdown
                 label="Kategori Menu"
-                selectedGroupId={addGroupId}
-                groups={groups}
-                onSelectGroup={(id) => setAddGroupId(id)}
+                selectedCategory={addCategory}
+                onSelectCategory={(cat) => setAddCategory(cat)}
                 direction="up"
               />
 

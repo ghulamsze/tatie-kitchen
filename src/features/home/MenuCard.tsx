@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { MenuItem } from '../../lib/supabase/types.ts';
+import { useMenuStore } from '../../stores/menuStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { triggerHapticFeedback } from '../../lib/device/haptics.ts';
 
@@ -20,6 +21,7 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
   const [isVisible, setIsVisible] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isHolding, setIsHolding] = useState(false);
+  const isPinned = useMenuStore((state) => state.isItemPinned(item.id, item.name));
   const hue = item.hue || 28;
 
   // Optimasi Performa: Hanya render kartu yang berada di layar (viewport)
@@ -161,6 +163,32 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
         }}
       />
       <div className="blur-layer" />
+
+      {/* Pin Badge jika disematkan ke paling atas */}
+      {isPinned && (
+        <span
+          className="g-liquid"
+          style={{
+            position: 'absolute',
+            top: '8px',
+            left: '8px',
+            width: '24px',
+            height: '24px',
+            borderRadius: 'var(--r-pill)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 4,
+            background: 'var(--accent)',
+            color: '#ffffff',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+          }}
+          title="Menu disematkan di paling atas"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 3a1 1 0 0 1 .117 1.993L16 5v4.586l1.707 1.707A1 1 0 0 1 17.79 12.7l-.083.093H13v7a1 1 0 0 1-1.993.117L11 20v-7.207H6.293a1 1 0 0 1-.787-1.614l.08-.086L7.293 9.586V5a1 1 0 0 1-.117-1.993L7 3h9z" />
+          </svg>
+        </span>
+      )}
 
       {/* Tag Harga Liquid Glass di Sudut Kanan Atas */}
       <span className="g-liquid price-tag">

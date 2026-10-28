@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { useMenuStore, getItemCategory } from '../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory, sortMenuItems } from '../../stores/menuStore.ts';
 import { useCartStore } from '../../stores/cartStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
@@ -66,7 +66,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     heldItem,
     setHeldItem,
     toastMessage,
+    pinnedIds,
   } = useMenuStore();
+
+  const { orders } = useHistoryStore();
 
   const {
     lines,
@@ -170,12 +173,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
 
   const categories = [
     { key: 'Semua', label: 'Semua' },
+    { key: 'Camilan', label: 'Camilan' },
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Minuman', label: 'Minuman' },
     { key: 'Roti & Kue', label: 'Roti & Kue' },
     { key: 'Tunagizi', label: 'Tunagizi' },
-    { key: 'Camilan', label: 'Camilan' },
   ];
+
+  // Hitung jumlah terjual untuk algoritma menu terlaris
+  const soldCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    orders.forEach((h) => {
+      if (h.order.status === 'cancelled') return;
+      h.items.forEach((it) => {
+        const norm = it.name_snapshot.trim().toLowerCase();
+        map.set(norm, (map.get(norm) || 0) + it.qty);
+        if (it.menu_item_id) {
+          map.set(it.menu_item_id, (map.get(it.menu_item_id) || 0) + it.qty);
+        }
+      });
+    });
+    return map;
+  }, [orders]);
 
   // Filter items berdasarkan kategori dan pencarian
   const filteredItems = useMemo(() => {
@@ -196,6 +215,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
       return true;
     });
   }, [items, selectedCategory, searchQuery, groups]);
+
+  // Urutkan item: Disematkan (Pin) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
+  const sortedItems = useMemo(() => {
+    return sortMenuItems(filteredItems, pinnedIds, soldCounts);
+  }, [filteredItems, pinnedIds, soldCounts]);
 
   const total = calculateTotal();
 
@@ -365,7 +389,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
               alignContent: 'start',
             }}
           >
-            {filteredItems.map((item) => (
+            {sortedItems.map((item) => (
               <MenuCard
                 key={item.id}
                 item={item}
@@ -384,7 +408,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
                 }}
               />
             ))}
-            {filteredItems.length === 0 && (
+            {sortedItems.length === 0 && (
               <div
                 style={{
                   gridColumn: '1 / -1',
