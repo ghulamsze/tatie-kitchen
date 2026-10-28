@@ -108,16 +108,19 @@ export const useShopStore = create<ShopState>((set, get) => ({
         logError('shopStore:fetchShop_query', error);
       } else if (data) {
         const remoteData = data as unknown as Partial<ShopSettings>;
+        const remoteAvatar = remoteData.owner_avatar_url || undefined;
         const merged: ShopSettings = {
           ...get().shop,
           ...remoteData,
-          owner_avatar_url: remoteData.owner_avatar_url || get().shop.owner_avatar_url,
+          owner_avatar_url: remoteAvatar,
         };
         set({ shop: merged });
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          if (merged.owner_avatar_url) {
-            localStorage.setItem('tk_owner_avatar', merged.owner_avatar_url);
+          if (remoteAvatar) {
+            localStorage.setItem('tk_owner_avatar', remoteAvatar);
+          } else {
+            localStorage.removeItem('tk_owner_avatar');
           }
         } catch (err) {
           logError('shopStore:persistShop', err);
@@ -269,21 +272,31 @@ export const useShopStore = create<ShopState>((set, get) => ({
     if (isSupabaseConfigured()) {
       try {
         const targetShopId = get().shop.id || TATIE_SHOP_ID;
+        // 1. Hapus file gambar dari Supabase Storage
         try {
           await supabase.storage.from('avatars').remove([`owner_${targetShopId}.jpg`]);
         } catch {
           // ignore
         }
 
+        // 2. Kosongkan kolom owner_avatar_url di tabel shops secara langsung
         try {
-          await (supabase.rpc as any)('update_shop_profile', {
-            p_shop_id: targetShopId,
-            p_owner_avatar_url: null,
-          });
-        } catch {
           await (supabase.from('shops') as any)
             .update({ owner_avatar_url: null })
             .eq('id', targetShopId);
+        } catch {
+          // ignore
+        }
+
+        // 3. Panggil RPC update_shop_profile jika tersedia
+        try {
+          await (supabase.rpc as any)('update_shop_profile', {
+            p_shop_id: targetShopId,
+            p_owner_avatar_url: 'DELETE',
+            p_clear_avatar: true,
+          });
+        } catch {
+          // ignore
         }
       } catch (err) {
         logError('shopStore:removeOwnerAvatar_remote', err);

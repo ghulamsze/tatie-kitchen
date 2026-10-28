@@ -36,9 +36,7 @@ export const PhoneAccountScreen: React.FC<PhoneAccountScreenProps> = ({
   });
 
   useEffect(() => {
-    if (shop.owner_avatar_url) {
-      setOwnerAvatar(shop.owner_avatar_url);
-    }
+    setOwnerAvatar(shop.owner_avatar_url || null);
   }, [shop.owner_avatar_url]);
 
   useEffect(() => {

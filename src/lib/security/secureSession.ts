@@ -51,15 +51,36 @@ export const getSecureSubdomainToken = getSecureDeviceToken;
  * Mendeteksi formFactor perangkat aktif dari URL atau localStorage
  */
 function resolveCurrentDeviceKey(params: URLSearchParams): 'phone' | 'tablet' | 'laptop' {
+  // 1. Cek ponsel fisik nyata (iPhone, iPod, ponsel Android)
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent || '';
+    const isIPhone = /iPhone|iPod/i.test(ua);
+    const shortestSide = typeof window !== 'undefined' && window.screen
+      ? Math.min(window.screen.width, window.screen.height)
+      : 0;
+
+    // iPhone atau ponsel fisik berlayar < 600px WAJIB selalu menjadi 'phone'
+    if (isIPhone || (shortestSide > 0 && shortestSide < 600 && (/Mobile|Android/i.test(ua) || navigator.maxTouchPoints > 0))) {
+      try {
+        localStorage.removeItem(DEVICE_OVERRIDE_KEY);
+      } catch {
+        // ignore
+      }
+      return 'phone';
+    }
+  }
+
+  // 2. Cek parameter eksplisit di URL
   if (params.has('phone')) return 'phone';
   if (params.has('tablet')) return 'tablet';
   if (params.has('laptop')) return 'laptop';
 
   const paramDevice = params.get('device')?.toLowerCase();
-  if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp') return 'phone';
+  if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') return 'phone';
   if (paramDevice === 'tablet' || paramDevice === 'tab') return 'tablet';
   if (paramDevice === 'laptop') return 'laptop';
 
+  // 3. Cek localStorage untuk switch dev di desktop
   try {
     const stored = localStorage.getItem(DEVICE_OVERRIDE_KEY);
     if (stored === 'phone' || stored === 'tablet' || stored === 'laptop') {
@@ -69,11 +90,13 @@ function resolveCurrentDeviceKey(params: URLSearchParams): 'phone' | 'tablet' | 
     // ignore
   }
 
-  // Fallback berdasarkan dimensi layar
+  // 4. Fallback berdasarkan dimensi fisik layar
   if (typeof window !== 'undefined') {
-    const width = Math.min(window.innerWidth, window.screen?.width || window.innerWidth);
-    if (width < 600) return 'phone';
-    if (width <= 1180) return 'tablet';
+    const physShortest = window.screen
+      ? Math.min(window.screen.width, window.screen.height)
+      : Math.min(window.innerWidth, window.innerHeight);
+    if (physShortest < 600) return 'phone';
+    if (physShortest <= 1180) return 'tablet';
     return 'laptop';
   }
 

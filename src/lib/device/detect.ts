@@ -37,6 +37,8 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   const ua = env.userAgent || '';
   const touchPoints = env.maxTouchPoints || 0;
   const shortestSide = Math.min(env.screenWidth || 0, env.screenHeight || 0);
+  const isRealIPhone = /iPhone|iPod/i.test(ua);
+  const isPhysPhone = isRealIPhone || (shortestSide > 0 && shortestSide < 600 && (touchPoints > 0 || /Mobile|Android/i.test(ua)));
 
   // 1. Sinyal 1: Override (?device=tablet|laptop|phone, atau localStorage)
   let overrideVal: FormFactor | null = null;
@@ -99,6 +101,14 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
 
   // Jika ada override, override MENANG sebagai sinyal tertinggi
   if (overrideVal) {
+    if (isPhysPhone && overrideVal !== 'phone') {
+      return {
+        platform: isRealIPhone ? 'ios' : basePlatform,
+        formFactor: 'phone',
+        source: 'user-agent',
+        native: isCapacitorNative,
+      };
+    }
     let finalPlatform: Platform = basePlatform;
     if (env.urlSearch) {
       const p = new URLSearchParams(env.urlSearch).get('platform')?.toLowerCase();
@@ -162,11 +172,17 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   }
 
   if (/iPad/i.test(ua)) {
+    if (shortestSide > 0 && shortestSide < 600) {
+      return { platform: 'ios', formFactor: 'phone', source: 'user-agent', native: false };
+    }
     return { platform: 'ios', formFactor: 'tablet', source: 'user-agent', native: false };
   }
 
   if (/Macintosh/i.test(ua) && touchPoints > 0) {
     // iPadOS modern yang mengaku Macintosh dengan multitouch
+    if (shortestSide > 0 && shortestSide < 600) {
+      return { platform: 'ios', formFactor: 'phone', source: 'user-agent', native: false };
+    }
     return { platform: 'ios', formFactor: 'tablet', source: 'user-agent', native: false };
   }
 
@@ -263,9 +279,10 @@ export function getCurrentDevice(): DeviceInfo {
 
   // Jika perangkat fisik adalah ponsel (< 600px) atau ber-UA Mobile tanpa parameter ?device=...,
   // bersihkan storedOverride lama agar tidak pernah memaksakan mode tablet di HP Android
-  if (storedOverride === 'tablet' && !search) {
-    const isPhysPhone = Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600 && /Mobile/i.test(navigator.userAgent);
-    if (isPhysPhone) {
+  const isPhysPhoneDevice = /iPhone|iPod/i.test(navigator.userAgent) ||
+    (Math.min(physWidth, physHeight) > 0 && Math.min(physWidth, physHeight) < 600 && (navigator.maxTouchPoints > 0 || /Mobile|Android/i.test(navigator.userAgent)));
+  if (storedOverride === 'tablet' && (!search || isPhysPhoneDevice)) {
+        if (isPhysPhoneDevice) {
       try {
         localStorage.removeItem(DEVICE_OVERRIDE_KEY);
       } catch {

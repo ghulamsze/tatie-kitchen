@@ -11,3 +11,4 @@ DELETE FROM public.orders;
 
 -- 3. Reset counter nomor antrian harian toko
 DELETE FROM public.shop_queue_counters;
+
