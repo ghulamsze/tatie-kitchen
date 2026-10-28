@@ -26,6 +26,12 @@ export const AppShell: React.FC = () => {
     return <ComponentGallery />;
   }
 
+  // Hanya tampilkan WebDevControls pada perangkat desktop Windows (tidak muncul di device selain windows)
+  const isWindowsDesktop = !device.native && (
+    device.platform === 'windows' ||
+    (typeof navigator !== 'undefined' && /Win/i.test(navigator.userAgent || ''))
+  );
+
   return (
     <>
       {device.formFactor === 'phone' ? (
@@ -37,7 +43,12 @@ export const AppShell: React.FC = () => {
           <TabletRoot />
         </DevFrame>
       )}
-      {!device.native && <WebDevControls currentMode={device.formFactor} />}
+      {isWindowsDesktop && (
+        <WebDevControls
+          currentMode={device.formFactor}
+          currentPlatform={device.platform}
+        />
+      )}
     </>
   );
 };

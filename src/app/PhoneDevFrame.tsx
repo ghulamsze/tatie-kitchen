@@ -19,6 +19,10 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
     isWideScreen &&
     (import.meta.env.DEV || import.meta.env.VITE_BETA_FRAME === '1');
 
+  const isIos = device.platform === 'ios';
+  const phoneWidth = isIos ? 393 : 390;
+  const phoneHeight = isIos ? 852 : 800;
+
   useEffect(() => {
     const handleResize = () => {
       const wide = window.innerWidth > 500;
@@ -28,8 +32,8 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
         const availableWidth = window.innerWidth - 32;
         const availableHeight = window.innerHeight - 32;
 
-        const scaleX = availableWidth / 390;
-        const scaleY = availableHeight / 800;
+        const scaleX = availableWidth / phoneWidth;
+        const scaleY = availableHeight / phoneHeight;
         const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1);
         setScale(newScale);
       }
@@ -38,7 +42,7 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [phoneWidth, phoneHeight]);
 
   if (!isFrameEnabled) {
     return <>{children}</>;
@@ -62,19 +66,19 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
       <div
         className="phone-dev-frame-wrapper"
         style={{
-          width: `${390 * scale}px`,
-          height: `${800 * scale}px`,
+          width: `${phoneWidth * scale}px`,
+          height: `${phoneHeight * scale}px`,
           position: 'relative',
         }}
       >
         <div
           className="phone-dev-frame-inner"
           style={{
-            width: '390px',
-            height: '800px',
+            width: `${phoneWidth}px`,
+            height: `${phoneHeight}px`,
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
-            borderRadius: 'var(--r-xl)',
+            borderRadius: isIos ? '50px' : 'var(--r-xl)',
             overflow: 'hidden',
             boxShadow: '0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.15)',
             position: 'relative',
@@ -84,6 +88,43 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
             contain: 'paint',
           }}
         >
+          {/* iOS Dynamic Island */}
+          {isIos && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '110px',
+                height: '30px',
+                borderRadius: '20px',
+                background: '#000000',
+                zIndex: 999,
+                pointerEvents: 'none',
+                boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.08)',
+              }}
+            />
+          )}
+
+          {/* iOS Home Indicator Bar */}
+          {isIos && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '8px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '136px',
+                height: '5px',
+                borderRadius: '3px',
+                background: 'rgba(255, 255, 255, 0.4)',
+                zIndex: 999,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+
           <div
             style={{
               width: '100%',
@@ -93,6 +134,8 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
+              paddingTop: isIos ? '18px' : 0,
+              boxSizing: 'border-box',
             }}
           >
             {children}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FormFactor, setDeviceOverride } from '../lib/device/detect.ts';
+import { FormFactor, Platform, setDeviceOverride } from '../lib/device/detect.ts';
 
 export interface WebDevControlsProps {
   currentMode: FormFactor;
+  currentPlatform?: Platform;
 }
 
-export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode }) => {
+export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode, currentPlatform }) => {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(() => {
     return typeof document !== 'undefined' ? Boolean(document.fullscreenElement) : false;
   });
@@ -45,7 +46,8 @@ export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode }) =
   }, []);
 
   const isTabletActive = currentMode === 'tablet' || currentMode === 'laptop';
-  const isPhoneActive = currentMode === 'phone';
+  const isAndroidActive = currentMode === 'phone' && (currentPlatform === 'android' || currentPlatform === 'windows' || !currentPlatform);
+  const isIosActive = currentMode === 'phone' && currentPlatform === 'ios';
 
   return (
     <div
@@ -67,12 +69,12 @@ export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode }) =
         userSelect: 'none',
       }}
     >
-      {/* Tombol Mode Tablet */}
+      {/* 1. Tombol Mode Tablet */}
       <button
         type="button"
         onClick={() => setDeviceOverride('tablet')}
-        title="Mode Tablet"
-        aria-label="Mode Tablet"
+        title="Mode Tablet POS (1024x640)"
+        aria-label="Mode Tablet POS"
         style={{
           border: 'none',
           background: isTabletActive ? 'var(--accent)' : 'transparent',
@@ -94,16 +96,16 @@ export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode }) =
         </svg>
       </button>
 
-      {/* Tombol Mode Android HP */}
+      {/* 2. Tombol Mode Android HP */}
       <button
         type="button"
-        onClick={() => setDeviceOverride('phone')}
+        onClick={() => setDeviceOverride('phone', 'android')}
         title="Mode Android HP"
         aria-label="Mode Android HP"
         style={{
           border: 'none',
-          background: isPhoneActive ? 'var(--accent)' : 'transparent',
-          color: isPhoneActive ? 'var(--on-accent)' : 'var(--ink-2)',
+          background: isAndroidActive ? 'var(--accent)' : 'transparent',
+          color: isAndroidActive ? 'var(--on-accent)' : 'var(--ink-2)',
           width: '36px',
           height: '36px',
           borderRadius: '50%',
@@ -118,6 +120,34 @@ export const WebDevControls: React.FC<WebDevControlsProps> = ({ currentMode }) =
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="5" y="2" width="14" height="20" rx="2" />
           <path d="M12 18h.01" />
+        </svg>
+      </button>
+
+      {/* 3. Tombol Mode iOS / iPhone */}
+      <button
+        type="button"
+        onClick={() => setDeviceOverride('phone', 'ios')}
+        title="Mode iOS / iPhone"
+        aria-label="Mode iOS / iPhone"
+        style={{
+          border: 'none',
+          background: isIosActive ? 'var(--accent)' : 'transparent',
+          color: isIosActive ? 'var(--on-accent)' : 'var(--ink-2)',
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          padding: 0,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="4" />
+          <line x1="10" y1="5" x2="14" y2="5" />
+          <line x1="10" y1="20" x2="14" y2="20" />
         </svg>
       </button>
 

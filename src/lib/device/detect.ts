@@ -12,6 +12,7 @@ export interface DeviceInfo {
 export interface DeviceEnv {
   urlSearch?: string;
   storedOverride?: string | null;
+  storedPlatformOverride?: string | null;
   userAgent?: string;
   maxTouchPoints?: number;
   screenWidth?: number;
@@ -98,8 +99,18 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
 
   // Jika ada override, override MENANG sebagai sinyal tertinggi
   if (overrideVal) {
+    let finalPlatform: Platform = basePlatform;
+    if (env.urlSearch) {
+      const p = new URLSearchParams(env.urlSearch).get('platform')?.toLowerCase();
+      if (p === 'ios') finalPlatform = 'ios';
+      else if (p === 'android') finalPlatform = 'android';
+    }
+    if (finalPlatform === 'unknown' || finalPlatform === 'windows') {
+      if (env.storedPlatformOverride === 'ios') finalPlatform = 'ios';
+      else if (env.storedPlatformOverride === 'android') finalPlatform = 'android';
+    }
     return {
-      platform: basePlatform,
+      platform: finalPlatform,
       formFactor: overrideVal,
       source: 'override',
       native: isCapacitorNative,
@@ -264,9 +275,17 @@ export function getCurrentDevice(): DeviceInfo {
     }
   }
 
+  let storedPlatform: string | null = null;
+  try {
+    storedPlatform = localStorage.getItem('tk-platform');
+  } catch {
+    // ignore
+  }
+
   const env: DeviceEnv = {
     urlSearch: search,
     storedOverride,
+    storedPlatformOverride: storedPlatform,
     userAgent: navigator.userAgent,
     maxTouchPoints: navigator.maxTouchPoints || 0,
     screenWidth: screenW,
@@ -290,13 +309,19 @@ export function getCurrentDevice(): DeviceInfo {
 /**
  * Mengubah override perangkat secara instan tanpa reload halaman yang berisiko 404
  */
-export function setDeviceOverride(override: FormFactor | 'auto'): void {
+export function setDeviceOverride(override: FormFactor | 'auto', platformOverride?: Platform): void {
   if (typeof window === 'undefined') return;
   try {
     if (override === 'auto') {
       localStorage.removeItem(DEVICE_OVERRIDE_KEY);
+      localStorage.removeItem('tk-platform');
     } else {
       localStorage.setItem(DEVICE_OVERRIDE_KEY, override);
+      if (platformOverride) {
+        localStorage.setItem('tk-platform', platformOverride);
+      } else {
+        localStorage.removeItem('tk-platform');
+      }
     }
   } catch {
     // ignore
@@ -309,6 +334,7 @@ export function setDeviceOverride(override: FormFactor | 'auto'): void {
     params.delete('tablet');
     params.delete('laptop');
     params.delete('device');
+    params.delete('platform');
     params.delete('auto');
 
     if (override === 'auto') {
@@ -318,6 +344,9 @@ export function setDeviceOverride(override: FormFactor | 'auto'): void {
       let token = '';
       for (let i = 0; i < 11; i++) token += chars[Math.floor(Math.random() * chars.length)];
       params.set(override, token);
+      if (platformOverride) {
+        params.set('platform', platformOverride);
+      }
     }
 
     const currentPath = window.location.pathname.startsWith('/device') ? '/device' : window.location.pathname;
@@ -325,13 +354,13 @@ export function setDeviceOverride(override: FormFactor | 'auto'): void {
 
     window.history.replaceState(null, '', newRelativeUrl);
     window.dispatchEvent(new Event('popstate'));
-    window.dispatchEvent(new CustomEvent('tk-device-change', { detail: override }));
+    window.dispatchEvent(new CustomEvent('tk-device-change', { detail: { override, platform: platformOverride } }));
   } catch {
     // Fallback aman tanpa merubah path dasar
     if (override === 'auto') {
       window.location.search = '?auto=true';
     } else {
-      window.location.search = `?${override}=true`;
+      window.location.search = `?${override}=true${platformOverride ? `&platform=${platformOverride}` : ''}`;
     }
   }
 }
