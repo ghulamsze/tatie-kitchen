@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useMenuStore, getItemCategory } from '../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory, sanitizeMenuPhotoPath } from '../../stores/menuStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
@@ -360,7 +360,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
             name: key,
             qty: it.qty,
             price: menuItem ? menuItem.price_idr : it.price_snapshot_idr,
-            photo_path: menuItem?.photo_path || null,
+            photo_path: sanitizeMenuPhotoPath(key, menuItem?.photo_path),
             available: menuItem ? menuItem.available : true,
           });
         }
@@ -536,7 +536,7 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
                     className="photo-layer"
                     style={{
                       background: topSellers[0].photo_path
-                        ? `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('${topSellers[0].photo_path}') center/cover no-repeat`
+                        ? `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), url('${sanitizeMenuPhotoPath(topSellers[0].name, topSellers[0].photo_path)}') center/cover no-repeat`
                         : `linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.68) 100%), var(--acrylic)`,
                     }}
                   />

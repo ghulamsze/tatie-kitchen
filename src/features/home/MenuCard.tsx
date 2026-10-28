@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { MenuItem } from '../../lib/supabase/types.ts';
-import { useMenuStore } from '../../stores/menuStore.ts';
+import { useMenuStore, sanitizeMenuPhotoPath } from '../../stores/menuStore.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { triggerHapticFeedback } from '../../lib/device/haptics.ts';
 
@@ -119,7 +119,8 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
 
   const backgroundGradient = `radial-gradient(circle at 45% 48%, hsl(${hue} 85% 62%) 0 22%, transparent 48%), radial-gradient(circle at 68% 60%, hsl(${hue + 25} 75% 42%) 0 20%, transparent 46%), hsl(${hue} 42% 20%)`;
 
-  const hasPhotoUrl = Boolean(item.photo_path && item.photo_path.trim().length > 0);
+  const cleanedPhotoPath = sanitizeMenuPhotoPath(item.name, item.photo_path);
+  const hasPhotoUrl = Boolean(cleanedPhotoPath && cleanedPhotoPath.trim().length > 0);
 
   return (
     <div
@@ -158,7 +159,7 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
         className="photo-layer"
         style={{
           background: hasPhotoUrl
-            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%), url('${item.photo_path}') center/cover no-repeat`
+            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%), url('${cleanedPhotoPath}') center/cover no-repeat`
             : backgroundGradient,
         }}
       />

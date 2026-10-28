@@ -1532,6 +1532,153 @@ export const TOP_SELLERS_DEFAULT: [string, number][] = [
   ['Teh Susu', 15000],
 ];
 
+export const CANONICAL_MENU_PHOTOS: Record<string, string> = {
+  'americano': '/assets/images/minuman/ice_coffee/americano.webp',
+  'cappuccino': '/assets/images/minuman/ice_coffee/cappuccino.webp',
+  'cappucino': '/assets/images/minuman/ice_coffee/cappuccino.webp',
+  'cokelat ori': '/assets/images/minuman/ice_non_coffee/cokelat_ori.webp',
+  'coklat ori': '/assets/images/minuman/ice_non_coffee/cokelat_ori.webp',
+  'kopi susu': '/assets/images/minuman/minuman_panas/kopi_susu.webp',
+  'milo': '/assets/images/minuman/ice_non_coffee/milo.webp',
+  'milo panas': '/assets/images/minuman/minuman_panas/milo_panas.webp',
+  'risol mayo': '/assets/images/snack/risol_mayo.webp',
+  'pizza': '/assets/images/roti_dan_kue/pizza_big.webp',
+  'pizza mini': '/assets/images/roti_dan_kue/pizza_mini.webp',
+  'pizza big': '/assets/images/roti_dan_kue/pizza_big.webp',
+  'burger daging': '/assets/images/snack/burger_daging.webp',
+  'burger telur': '/assets/images/snack/burger_telur.webp',
+  'burger komplit': '/assets/images/snack/burger_komplit.webp',
+  'kebab': '/assets/images/snack/kebab.webp',
+  'lekor': '/assets/images/snack/lekor.webp',
+  'nugget': '/assets/images/snack/nugget.webp',
+  'platter': '/assets/images/snack/platter.webp',
+  'pisang nugget coklat': '/assets/images/snack/pisang_nugget_coklat.webp',
+  'pisang nugget coklat keju': '/assets/images/snack/pisang_nugget_coklat_keju.webp',
+  'pisang nugget coklat & keju': '/assets/images/snack/pisang_nugget_coklat_keju.webp',
+  'pisang nugget keju': '/assets/images/snack/pisang_nugget_keju.webp',
+  'roti bakar': '/assets/images/snack/roti_bakar.webp',
+  'roti john': '/assets/images/snack/roti_john.webp',
+  'roti jhon': '/assets/images/snack/roti_john.webp',
+  'sosis goreng': '/assets/images/snack/sosis_goreng.webp',
+  'teh': '/assets/images/minuman/minuman_panas/teh.webp',
+  'teh susu': '/assets/images/minuman/minuman_panas/teh_susu.webp',
+  'kopi hitam': '/assets/images/minuman/minuman_panas/kopi_hitam.webp',
+  'es teh': '/assets/images/minuman/ice_non_coffee/es_teh.webp',
+  'es jeruk': '/assets/images/minuman/ice_non_coffee/es_jeruk.webp',
+  'jeruk': '/assets/images/minuman/ice_non_coffee/es_jeruk.webp',
+  'lemon tea': '/assets/images/minuman/ice_non_coffee/lemon_tea.webp',
+  'teh tarik': '/assets/images/minuman/ice_non_coffee/teh_tarik.webp',
+  'thai tea': '/assets/images/minuman/ice_non_coffee/thai_tea.webp',
+  'susu pandan': '/assets/images/minuman/ice_non_coffee/susu_pandan.webp',
+  'brown sugar': '/assets/images/minuman/ice_non_coffee/brown_sugar.webp',
+  'taro': '/assets/images/minuman/ice_non_coffee/taro.webp',
+  'strawberry': '/assets/images/minuman/ice_non_coffee/strawberry.webp',
+  'mangga milky': '/assets/images/minuman/ice_non_coffee/mangga_milky.webp',
+  'red velvet': '/assets/images/minuman/ice_non_coffee/red_velvet.webp',
+  'vanilla': '/assets/images/minuman/ice_non_coffee/vanilla.webp',
+  'vanila': '/assets/images/minuman/ice_non_coffee/vanilla.webp',
+  'cadbury': '/assets/images/minuman/ice_non_coffee/cadbury.webp',
+  'cadburry': '/assets/images/minuman/ice_non_coffee/cadbury.webp',
+  'almond coklat': '/assets/images/minuman/ice_non_coffee/almond_coklat.webp',
+  'cokelat almond': '/assets/images/minuman/ice_non_coffee/almond_coklat.webp',
+  'extra joss susu': '/assets/images/minuman/ice_non_coffee/extra_joss_susu.webp',
+  'extrajoss susu': '/assets/images/minuman/ice_non_coffee/extra_joss_susu.webp',
+  'butterscotch latte': '/assets/images/minuman/ice_coffee/butterscotch_latte.webp',
+  'butterscote latte coffee': '/assets/images/minuman/ice_coffee/butterscotch_latte.webp',
+  'caramel coffee': '/assets/images/minuman/ice_coffee/caramel_coffee.webp',
+  'gula aren coffee': '/assets/images/minuman/ice_coffee/gula_aren_coffee.webp',
+  'gula aren coffee cream': '/assets/images/minuman/ice_coffee/gula_aren_cream.webp',
+  'gula aren cream': '/assets/images/minuman/ice_coffee/gula_aren_cream.webp',
+  'hazelnut coffee': '/assets/images/minuman/ice_coffee/hazelnut_coffee.webp',
+  'latte coffee': '/assets/images/minuman/ice_coffee/latte_coffee.webp',
+  'melon coffee cream': '/assets/images/minuman/ice_coffee/melon_coffee_cream.webp',
+  'mochacino': '/assets/images/minuman/ice_coffee/mochacino.webp',
+  'mochachino': '/assets/images/minuman/ice_coffee/mochacino.webp',
+  'pandan coffee': '/assets/images/minuman/ice_coffee/pandan_coffee.webp',
+  'panda coffee cream': '/assets/images/minuman/ice_coffee/pandan_coffee.webp',
+  'strawberry coffee': '/assets/images/minuman/ice_coffee/strawberry_coffee.webp',
+  'tiramisu coffee': '/assets/images/minuman/ice_coffee/tiramisu_coffee.webp',
+  'vanilla coffee': '/assets/images/minuman/ice_coffee/vanilla_coffee.webp',
+  'vanila coffee': '/assets/images/minuman/ice_coffee/vanilla_coffee.webp',
+  'blue curacao': '/assets/images/minuman/minuman_special/blue_curacao.webp',
+  'blue curacao squash': '/assets/images/minuman/minuman_special/blue_curacao.webp',
+  'green tea': '/assets/images/minuman/minuman_special/green_tea.webp',
+  'mangga squash': '/assets/images/minuman/minuman_special/mangga_squash.webp',
+  'matcha': '/assets/images/minuman/minuman_special/matcha.webp',
+  'strawberry squash': '/assets/images/minuman/minuman_special/strawberry_squash.webp',
+  'indomie goreng': '/assets/images/mie/indomie_goreng.webp',
+  'mie goreng ayam': '/assets/images/mie/mie_goreng_ayam.webp',
+  'mie goreng komplit': '/assets/images/mie/mie_goreng_komplit.webp',
+  'mie goreng telur': '/assets/images/mie/mie_goreng_telur.webp',
+  'mie tek tek': '/assets/images/mie/mie_tek_tek.webp',
+  'mie titi': '/assets/images/mie/mie_titi.webp',
+  'coto makassar': '/assets/images/makanan_berat/coto_makassar.webp',
+  'nasgor ayam': '/assets/images/makanan_berat/nasgor_ayam.webp',
+  'nasi goreng ayam': '/assets/images/makanan_berat/nasgor_ayam.webp',
+  'nasgor ayam komplit': '/assets/images/makanan_berat/nasgor_ayam_komplit.webp',
+  'nasi goreng ayam komplit': '/assets/images/makanan_berat/nasgor_ayam_komplit.webp',
+  'nasgor mercon komplit': '/assets/images/makanan_berat/nasgor_mercon_komplit.webp',
+  'nasi goreng mercon komplit': '/assets/images/makanan_berat/nasgor_mercon_komplit.webp',
+  'nasgor mercon telur': '/assets/images/makanan_berat/nasgor_mercon_telur.webp',
+  'nasi goreng mercon telur': '/assets/images/makanan_berat/nasgor_mercon_telur.webp',
+  'nasgor telur': '/assets/images/makanan_berat/nasgor_telur.webp',
+  'nasi goreng telur': '/assets/images/makanan_berat/nasgor_telur.webp',
+  'nasgor telur ayam suwir': '/assets/images/makanan_berat/nasgor_telur_ayam_suwir.webp',
+  'nasi goreng telur ayam suwir': '/assets/images/makanan_berat/nasgor_telur_ayam_suwir.webp',
+  'nasi ayam bakar': '/assets/images/makanan_berat/nasi_ayam_bakar.webp',
+  'nasi ayam crispy': '/assets/images/makanan_berat/nasi_ayam_crispy.webp',
+  'nasi ayam crispy lava': '/assets/images/makanan_berat/nasi_ayam_crispy_lava.webp',
+  'nasi ayam geprek': '/assets/images/makanan_berat/nasi_ayam_geprek.webp',
+  'nasi ayam lalap': '/assets/images/makanan_berat/nasi_ayam_lalap.webp',
+  'nasi ayam penyet': '/assets/images/makanan_berat/nasi_ayam_penyet.webp',
+  'nasi goreng mercon ayam': '/assets/images/makanan_berat/nasi_goreng_mercon_ayam.webp',
+  'soto ayam': '/assets/images/makanan_berat/soto_ayam.webp',
+  'bolu pandan': '/assets/images/roti_dan_kue/bolu_pandan.webp',
+  'bolu vanilla': '/assets/images/roti_dan_kue/bolu_vanilla.webp',
+  'brownies': '/assets/images/roti_dan_kue/brownies.webp',
+  'donat': '/assets/images/roti_dan_kue/donat_all_varian.webp',
+  'kue ulang tahun': '/assets/images/roti_dan_kue/kue_ultah_all_varian.webp',
+  'pie brownies': '/assets/images/roti_dan_kue/pie_brownies.webp',
+  'pie susu': '/assets/images/roti_dan_kue/pie_susu.webp',
+  'roti pintal sosis': '/assets/images/roti_dan_kue/pintal_sosis.webp',
+  'pintal sosis': '/assets/images/roti_dan_kue/pintal_sosis.webp',
+  'roti pisang coklat': '/assets/images/roti_dan_kue/pisang_coklat.webp',
+  'pisang coklat': '/assets/images/roti_dan_kue/pisang_coklat.webp',
+  'roti abon': '/assets/images/roti_dan_kue/roti_abon.webp',
+  'roti bund isi coklat': '/assets/images/roti_dan_kue/roti_bund_isi_coklat.webp',
+  'roti coklat': '/assets/images/roti_dan_kue/roti_coklat_1.webp',
+  'roti meses': '/assets/images/roti_dan_kue/roti_cream_meses.webp',
+  'roti cream meses': '/assets/images/roti_dan_kue/roti_cream_meses.webp',
+  'roti keju': '/assets/images/roti_dan_kue/roti_keju.webp',
+  'roti cream keju': '/assets/images/roti_dan_kue/roti_keju.webp',
+  'roti o': '/assets/images/roti_dan_kue/roti_o.webp',
+  'roti sobek': '/assets/images/roti_dan_kue/roti_sobek.webp',
+  'roti sosis': '/assets/images/roti_dan_kue/roti_sosis.webp',
+};
+
+export const sanitizeMenuPhotoPath = (itemName: string, currentPath?: string | null): string | null => {
+  const norm = (itemName || '').trim().toLowerCase();
+  const canonical = CANONICAL_MENU_PHOTOS[norm];
+
+  // Jika currentPath adalah null, kosong, atau format lama bermasalah (foto/...)
+  if (!currentPath || currentPath.startsWith('foto/')) {
+    return canonical || null;
+  }
+
+  // Jika currentPath adalah string base64 / blob / https URL / asset path yang valid
+  if (currentPath.startsWith('data:') || currentPath.startsWith('blob:') || currentPath.startsWith('http://') || currentPath.startsWith('https://')) {
+    return currentPath;
+  }
+
+  // Pastikan path lokal diawali '/'
+  let formatted = currentPath;
+  if (!formatted.startsWith('/') && formatted.startsWith('assets/')) {
+    formatted = '/' + formatted;
+  }
+
+  return formatted || canonical || null;
+};
+
 interface MenuState {
   items: (MenuItem & { hue?: number })[];
   groups: MenuGroup[];
@@ -1561,6 +1708,16 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
     const customRaw = localStorage.getItem('tk_custom_menu_items');
     if (customRaw) {
       const customMap = JSON.parse(customRaw);
+      let modified = false;
+      Object.keys(customMap).forEach((k) => {
+        if (customMap[k]?.photo_path?.startsWith('foto/')) {
+          delete customMap[k].photo_path;
+          modified = true;
+        }
+      });
+      if (modified) {
+        localStorage.setItem('tk_custom_menu_items', JSON.stringify(customMap));
+      }
       result = result.map((it) => (customMap[it.id] ? { ...it, ...customMap[it.id] } : it));
     }
     const deletedRaw = localStorage.getItem('tk_deleted_menu_ids');
@@ -1575,13 +1732,23 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
     if (addedRaw) {
       const addedList = JSON.parse(addedRaw);
       if (Array.isArray(addedList)) {
+        let modified = false;
+        addedList.forEach((it: any) => {
+          if (it?.photo_path?.startsWith('foto/')) {
+            it.photo_path = sanitizeMenuPhotoPath(it.name, it.photo_path);
+            modified = true;
+          }
+        });
+        if (modified) {
+          localStorage.setItem('tk_added_menu_items', JSON.stringify(addedList));
+        }
         result = [...addedList, ...result];
       }
     }
     const raw = localStorage.getItem('tk_item_availability');
     if (raw) {
       const map: Record<string, boolean | { available: boolean }> = JSON.parse(raw);
-      return result.map((it) => {
+      result = result.map((it) => {
         const normName = it.name.trim().toLowerCase();
         const alias = MENU_NAME_ALIASES[normName];
         let val: boolean | undefined;
@@ -1604,7 +1771,11 @@ const loadSavedAvailability = (initialItems: (MenuItem & { hue: number })[]) => 
   return result.map((it) => {
     let gid = it.group_id;
     if (gid.startsWith('g-makanan')) gid = 'g-makanan';
-    return gid !== it.group_id ? { ...it, group_id: gid } : it;
+    return {
+      ...it,
+      group_id: gid !== it.group_id ? gid : it.group_id,
+      photo_path: sanitizeMenuPhotoPath(it.name, it.photo_path),
+    };
   });
 };
 
@@ -1698,13 +1869,16 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   updateMenuItem: async (updated) => {
     const prevItem = get().items.find((it) => it.id === updated.id);
     const oldName = prevItem?.name?.trim();
+    const effectiveName = (updated.name || oldName || '').trim();
+    const cleanPhoto = sanitizeMenuPhotoPath(effectiveName, updated.photo_path);
+    const sanitizedUpdated = { ...updated, photo_path: cleanPhoto };
 
     set((state) => {
-      const newItems = state.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it));
+      const newItems = state.items.map((it) => (it.id === updated.id ? { ...it, ...sanitizedUpdated } : it));
       try {
         const raw = localStorage.getItem('tk_custom_menu_items');
         const customMap: Record<string, Partial<MenuItem>> = raw ? JSON.parse(raw) : {};
-        customMap[updated.id] = { ...(customMap[updated.id] || {}), ...updated };
+        customMap[updated.id] = { ...(customMap[updated.id] || {}), ...sanitizedUpdated };
         localStorage.setItem('tk_custom_menu_items', JSON.stringify(customMap));
       } catch {}
       return { items: newItems };
@@ -1713,10 +1887,10 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     if (isSupabaseConfigured()) {
       try {
         const updatePayload: Record<string, any> = {
-          name: (updated.name || oldName || '').trim(),
+          name: effectiveName,
           price_idr: Math.max(0, Number(updated.price_idr) || 0),
           available: updated.available ?? true,
-          photo_path: updated.photo_path || null,
+          photo_path: cleanPhoto,
         };
         if (isUuid(updated.group_id)) {
           updatePayload.group_id = updated.group_id;
@@ -1849,7 +2023,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       name: newItem.name,
       price_idr: newItem.price_idr || 0,
       available: newItem.available ?? true,
-      photo_path: newItem.photo_path || null,
+      photo_path: sanitizeMenuPhotoPath(newItem.name, newItem.photo_path),
       sort: 99,
       active: true,
       created_at: new Date().toISOString(),
@@ -2083,10 +2257,12 @@ export const useMenuStore = create<MenuState>((set, get) => ({
               price_idr: item.variants && item.variants.length > 0 ? item.price_idr : (typeof matchingRow.price_idr === 'number' ? matchingRow.price_idr : item.price_idr),
               group_id: matchingRow.group_id || item.group_id,
               available: Boolean(matchingRow.available),
-              photo_path:
+              photo_path: sanitizeMenuPhotoPath(
+                matchingRow.name || item.name,
                 matchingRow.photo_path && !matchingRow.photo_path.startsWith('foto/')
                   ? matchingRow.photo_path
-                  : item.photo_path || matchingRow.photo_path,
+                  : item.photo_path
+              ),
               sort: typeof matchingRow.sort === 'number' ? matchingRow.sort : item.sort,
               active: Boolean(matchingRow.active),
               variants: item.variants,
@@ -2107,7 +2283,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
               name: row.name,
               price_idr: Number(row.price_idr) || 0,
               available: Boolean(row.available),
-              photo_path: row.photo_path || null,
+              photo_path: sanitizeMenuPhotoPath(row.name, row.photo_path),
               sort: typeof row.sort === 'number' ? row.sort : 99,
               active: true,
               created_at: row.created_at || new Date().toISOString(),

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useMenuStore, getItemCategory, sortMenuItems } from '../../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory, sortMenuItems, sanitizeMenuPhotoPath } from '../../../stores/menuStore.ts';
 import { useHistoryStore } from '../../../stores/historyStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
 import { MenuItem, MenuVariant } from '../../../lib/supabase/types.ts';
@@ -300,11 +300,20 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
       >
         {item.photo_path ? (
           <img
-            src={item.photo_path}
+            src={sanitizeMenuPhotoPath(item.name, item.photo_path) || item.photo_path}
             alt={item.name}
             loading="lazy"
             decoding="async"
             draggable={false}
+            onError={(e) => {
+              const target = e.currentTarget;
+              const canonical = sanitizeMenuPhotoPath(item.name);
+              if (canonical && target.src !== canonical && !target.src.endsWith(canonical)) {
+                target.src = canonical;
+                return;
+              }
+              target.style.display = 'none';
+            }}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (

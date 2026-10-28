@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MenuItem, MenuVariant } from '../../lib/supabase/types.ts';
-import { useMenuStore, getItemCategory, CanonicalMenuCategory } from '../../stores/menuStore.ts';
+import { useMenuStore, getItemCategory, CanonicalMenuCategory, sanitizeMenuPhotoPath } from '../../stores/menuStore.ts';
 import { triggerHapticFeedback, triggerHapticDelete } from '../../lib/device/haptics.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { PhotoActionsDialog } from '../../design/components/PhotoActionsDialog.tsx';
@@ -72,7 +72,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       setPrice(item.price_idr || 0);
       setPriceStr(formatThousands(item.price_idr || 0));
       setAvailable(item.available ?? true);
-      setPhotoPath(item.photo_path || null);
+      setPhotoPath(sanitizeMenuPhotoPath(item.name, item.photo_path));
       setCategory(getItemCategory(item, groups));
       setVariants(item.variants ? JSON.parse(JSON.stringify(item.variants)) : []);
       setIsAdvancedOpen(false);
@@ -498,6 +498,15 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
                       src={photoPath}
                       alt="Foto makanan"
                       draggable={false}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const canonical = sanitizeMenuPhotoPath(name || item.name);
+                        if (canonical && target.src !== canonical && !target.src.endsWith(canonical)) {
+                          target.src = canonical;
+                          return;
+                        }
+                        target.style.display = 'none';
+                      }}
                       style={{
                         position: 'absolute',
                         inset: 0,

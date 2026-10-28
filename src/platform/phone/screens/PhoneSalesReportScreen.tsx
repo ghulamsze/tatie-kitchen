@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useHistoryStore, DateRangePreset } from '../../../stores/historyStore.ts';
-import { useMenuStore } from '../../../stores/menuStore.ts';
+import { useMenuStore, sanitizeMenuPhotoPath } from '../../../stores/menuStore.ts';
 import {
   formatRupiah,
   formatDate,
@@ -1093,8 +1093,17 @@ export const PhoneSalesReportScreen: React.FC<PhoneSalesReportScreenProps> = ({ 
                       >
                         {item.photoPath ? (
                           <img
-                            src={item.photoPath}
+                            src={sanitizeMenuPhotoPath(item.name, item.photoPath) || item.photoPath}
                             alt={item.name}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              const canonical = sanitizeMenuPhotoPath(item.name);
+                              if (canonical && target.src !== canonical && !target.src.endsWith(canonical)) {
+                                target.src = canonical;
+                                return;
+                              }
+                              target.style.display = 'none';
+                            }}
                             style={{
                               width: '100%',
                               height: '100%',
