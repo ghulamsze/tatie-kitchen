@@ -38,6 +38,13 @@ export interface CashierAvatarChangedPayload {
   senderDeviceId?: string;
 }
 
+export interface MenuChangedPayload {
+  action: 'add' | 'update' | 'delete';
+  itemId?: string;
+  name?: string;
+  senderDeviceId?: string;
+}
+
 // Generate device session ID unik untuk menandai asal perubahan
 const DEVICE_SESSION_ID =
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -120,6 +127,33 @@ export async function broadcastMenuAvailability(
     logInfo('realtimeSync:broadcast', `Menu availability broadcast sent for ${name} -> ${available}`);
   } catch (err) {
     logError('realtimeSync:broadcast_menu_err', err);
+  }
+}
+
+/**
+ * Broadcast mutasi menu (tambah, edit, hapus) ke seluruh device secara instan (< 100ms)
+ */
+export async function broadcastMenuChanged(
+  action: 'add' | 'update' | 'delete',
+  itemId?: string,
+  name?: string
+): Promise<void> {
+  if (!isSupabaseConfigured() || !syncChannel) return;
+
+  try {
+    await syncChannel.send({
+      type: 'broadcast',
+      event: 'MENU_CHANGED',
+      payload: {
+        action,
+        itemId,
+        name,
+        senderDeviceId: DEVICE_SESSION_ID,
+      } as MenuChangedPayload,
+    });
+    logInfo('realtimeSync:broadcast', `Menu changed broadcast sent: ${action} - ${itemId || name}`);
+  } catch (err) {
+    logError('realtimeSync:broadcast_menu_changed_err', err);
   }
 }
 
@@ -269,7 +303,18 @@ export function initPosRealtimeSync(): () => void {
       }
     );
 
-    // 4. Fallback Postgres Changes pada public.menu_items
+    // 4. Dengar mutasi menu (tambah, edit, hapus) dari device lain via broadcast (< 100ms)
+    syncChannel.on(
+      'broadcast',
+      { event: 'MENU_CHANGED' },
+      ({ payload }: { payload: MenuChangedPayload }) => {
+        if (!payload || payload.senderDeviceId === DEVICE_SESSION_ID) return;
+        logInfo('realtimeSync:receive', `Menerima perubahan menu (${payload.action}) dari device lain`);
+        useMenuStore.getState().fetchMenu().catch(() => {});
+      }
+    );
+
+    // 5. Fallback Postgres Changes pada public.menu_items
     syncChannel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'menu_items' },

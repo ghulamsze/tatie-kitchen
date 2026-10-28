@@ -13,6 +13,7 @@ import { DynamicBackground } from '../../design/dynamicBg/index.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
+import { useMenuStore } from '../../stores/menuStore.ts';
 import { SwipePager } from '../tablet/SwipePager.tsx';
 import { usePhoneSwipeNav } from './usePhoneSwipeNav.ts';
 import { useDevice } from '../../lib/device/useDevice.ts';
@@ -52,6 +53,7 @@ export const PhoneRoot: React.FC = () => {
   useEffect(() => {
     const cleanup = initPosRealtimeSync();
     useCashierStore.getState().fetchCashiers().catch(() => {});
+    useMenuStore.getState().fetchMenu().catch(() => {});
     return () => {
       cleanup();
     };

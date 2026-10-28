@@ -39,6 +39,7 @@ export const TabletRoot: React.FC = () => {
   useEffect(() => {
     const cleanupRealtime = initPosRealtimeSync();
     useCashierStore.getState().fetchCashiers().catch(() => {});
+    useMenuStore.getState().fetchMenu().catch(() => {});
     return () => {
       cleanupRealtime();
     };

@@ -2,11 +2,21 @@ import { create } from 'zustand';
 import { MenuItem, MenuGroup } from '../lib/supabase/types.ts';
 import { supabase, isSupabaseConfigured, syncMenuItemAvailabilityToSupabase, MENU_NAME_ALIASES } from '../lib/supabase/client.ts';
 import { logError, logWarning } from '../lib/logger/logger.ts';
-import { broadcastMenuAvailability } from '../lib/supabase/realtime.ts';
+import { broadcastMenuAvailability, broadcastMenuChanged } from '../lib/supabase/realtime.ts';
 import { TATIE_SHOP_ID } from './shopStore.ts';
 
 const isUuid = (val?: string | null): boolean =>
   Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+const getStableHue = (name: string): number => {
+  let hash = 0;
+  const str = name || '';
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) % 360;
+};
 
 const generateUuid = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -1531,6 +1541,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         } else if (updated.name) {
           await (supabase.from('menu_items') as any).update(updatePayload).ilike('name', updated.name.trim());
         }
+        // Broadcast ke perangkat lain secara real-time
+        broadcastMenuChanged('update', updated.id, updated.name).catch(() => {});
       } catch (err) {
         logError('menuStore:updateMenuItem', err);
       }
@@ -1572,6 +1584,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         } else if (itemName) {
           await supabase.from('menu_items').delete().ilike('name', itemName);
         }
+        // Broadcast ke perangkat lain secara real-time
+        broadcastMenuChanged('delete', itemId, itemName).catch(() => {});
       } catch (err) {
         logError('menuStore:deleteMenuItem:supabase', err);
       }
@@ -1591,7 +1605,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       sort: 99,
       active: true,
       created_at: new Date().toISOString(),
-      hue: Math.floor(Math.random() * 360),
+      hue: getStableHue(newItem.name),
     };
     set((state) => {
       const newItems = [created, ...state.items];
@@ -1645,6 +1659,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
             } catch {}
             return { items: updated };
           });
+          // Broadcast ke perangkat lain secara real-time
+          broadcastMenuChanged('add', created.id, created.name).catch(() => {});
         } else if (insErr) {
           logWarning('menuStore:addMenuItem:insert', insErr.message || String(insErr));
         }
@@ -1737,53 +1753,111 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       const { data, error } = await query;
       if (error) {
         logError('menuStore:fetchMenu_query', error);
-      } else if (data && data.length > 0) {
-        // Ambil pemetaan status ketersediaan langsung dari database Supabase (Single Source of Truth)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return;
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        const dbRows = data as any[];
+
         const dbItemsById = new Map<string, any>();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dbItemsByName = new Map<string, any>();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data as any[]).forEach((row: any) => {
+        dbRows.forEach((row: any) => {
           if (row.id) dbItemsById.set(row.id, row);
           if (row.name) dbItemsByName.set(row.name.trim().toLowerCase(), row);
         });
 
-        // Simpan pembaruan status dari database ke localStorage agar tersinkron saat offline
+        const matchedDbRowIds = new Set<string>();
+
+        // A. Sinkronkan item yang sudah ada di state lokal dengan data dari database
+        const currentStateItems = get().items;
+        const updatedExisting = currentStateItems.map((item) => {
+          const normName = item.name.trim().toLowerCase();
+          const alias = MENU_NAME_ALIASES[normName];
+          const matchingRow =
+            dbItemsById.get(item.id) ||
+            dbItemsByName.get(normName) ||
+            (alias ? dbItemsByName.get(alias.trim().toLowerCase()) : undefined);
+
+          if (matchingRow) {
+            matchedDbRowIds.add(matchingRow.id);
+            return {
+              ...item,
+              id: matchingRow.id || item.id,
+              name: matchingRow.name || item.name,
+              price_idr: typeof matchingRow.price_idr === 'number' ? matchingRow.price_idr : item.price_idr,
+              group_id: matchingRow.group_id || item.group_id,
+              available: Boolean(matchingRow.available),
+              photo_path:
+                matchingRow.photo_path && !matchingRow.photo_path.startsWith('foto/')
+                  ? matchingRow.photo_path
+                  : item.photo_path || matchingRow.photo_path,
+              sort: typeof matchingRow.sort === 'number' ? matchingRow.sort : item.sort,
+              active: Boolean(matchingRow.active),
+            };
+          }
+
+          return item;
+        });
+
+        // B. Masukkan baris baru dari Supabase yang belum ada di state lokal (misal ditambah dari Windows/Android lain)
+        const newRemoteItems: (MenuItem & { hue: number })[] = [];
+        dbRows.forEach((row: any) => {
+          if (!matchedDbRowIds.has(row.id)) {
+            newRemoteItems.push({
+              id: row.id,
+              shop_id: row.shop_id || TATIE_SHOP_ID,
+              group_id: row.group_id || '00000000-0000-0000-0000-000000000010',
+              name: row.name,
+              price_idr: Number(row.price_idr) || 0,
+              available: Boolean(row.available),
+              photo_path: row.photo_path || null,
+              sort: typeof row.sort === 'number' ? row.sort : 99,
+              active: true,
+              created_at: row.created_at || new Date().toISOString(),
+              hue: getStableHue(row.name),
+            });
+          }
+        });
+
+        // Gabungkan: item baru diletakkan paling atas/depan agar langsung terlihat
+        const combined = [...newRemoteItems, ...updatedExisting];
+
+        // C. Filter keluar item yang telah dihapus di Supabase jika item tersebut memiliki UUID database
+        const activeDbIdSet = new Set(dbRows.map((r: any) => r.id));
+        const filteredFinalItems = combined.filter((it) => {
+          if (isUuid(it.id)) {
+            return activeDbIdSet.has(it.id);
+          }
+          return true;
+        });
+
+        // D. Simpan pembaruan status dan item tambahan ke localStorage agar tetap tersinkron offline
         try {
-          const raw = localStorage.getItem('tk_item_availability');
-          const localMap = raw ? JSON.parse(raw) : {};
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (data as any[]).forEach((row: any) => {
+          const rawAvail = localStorage.getItem('tk_item_availability');
+          const localMap = rawAvail ? JSON.parse(rawAvail) : {};
+          dbRows.forEach((row: any) => {
             if (row.id) localMap[row.id] = Boolean(row.available);
             if (row.name) localMap[row.name.trim().toLowerCase()] = Boolean(row.available);
           });
           localStorage.setItem('tk_item_availability', JSON.stringify(localMap));
+
+          if (newRemoteItems.length > 0) {
+            const rawAdded = localStorage.getItem('tk_added_menu_items');
+            const addedList: any[] = rawAdded ? JSON.parse(rawAdded) : [];
+            const addedIdSet = new Set(addedList.map((x) => x.id));
+            newRemoteItems.forEach((ri) => {
+              if (!addedIdSet.has(ri.id)) {
+                addedList.unshift(ri);
+              }
+            });
+            localStorage.setItem('tk_added_menu_items', JSON.stringify(addedList));
+          }
         } catch {
           // ignore
         }
 
-        set((state) => ({
-          items: state.items.map((item) => {
-            const normName = item.name.trim().toLowerCase();
-            const alias = MENU_NAME_ALIASES[normName];
-            const matchingRow =
-              dbItemsById.get(item.id) ||
-              dbItemsByName.get(normName) ||
-              (alias ? dbItemsByName.get(alias.trim().toLowerCase()) : undefined);
-
-            if (matchingRow) {
-              return {
-                ...item,
-                id: matchingRow.id || item.id, // Selaraskan ID lokal dengan UUID dari database Supabase
-                available: Boolean(matchingRow.available), // Status akurat langsung dari database!
-              };
-            }
-
-            return item;
-          }),
-        }));
+        set({ items: filteredFinalItems });
       }
     } catch (err) {
       logError('menuStore:fetchMenu_exception', err);

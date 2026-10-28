@@ -393,7 +393,7 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
 PhoneMenuItemCard.displayName = 'PhoneMenuItemCard';
 
 export const PhoneMenuScreen: React.FC = () => {
-  const { items, groups, selectedCategory, toggleItemAvailability, addMenuItem } = useMenuStore();
+  const { items, groups, selectedCategory, toggleItemAvailability, addMenuItem, fetchMenu } = useMenuStore();
 
   const [search, setSearch] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -406,6 +406,10 @@ export const PhoneMenuScreen: React.FC = () => {
   const [addAvailable, setAddAvailable] = useState(true);
   const [addGroupId, setAddGroupId] = useState(groups[0]?.id || 'g-makanan-1');
   const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMenu().catch(() => {});
+  }, [fetchMenu]);
 
   useEffect(() => {
     if (groups && groups.length > 0 && (!addGroupId || !groups.some((g) => g.id === addGroupId))) {
