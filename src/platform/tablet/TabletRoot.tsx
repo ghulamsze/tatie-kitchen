@@ -136,10 +136,19 @@ export const TabletRoot: React.FC = () => {
     );
   }
 
-  // 2. Layar Pilih Profil Kasir
+  // 2. Layar Pilih Profil Kasir (Latar belakang dinamis terhubung mulus)
   if (currentScreen === 'select-cashier') {
     return (
-      <div style={{ width: '1024px', height: '640px', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
+      <div
+        className="tk-tablet-root"
+        style={{
+          width: '1024px',
+          height: '640px',
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'var(--scr-bg)',
+        }}
+      >
         {renderOfflineBanner()}
         <div
           className="tk-global-bg"
@@ -154,7 +163,7 @@ export const TabletRoot: React.FC = () => {
         >
           <DynamicBackground />
         </div>
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', background: 'transparent' }}>
           <SelectCashierScreen
             onSelectCashier={handleSelectCashier}
             onOpenDeviceSetup={() => setIsDeviceSetupOpen(true)}

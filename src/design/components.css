@@ -1557,10 +1557,14 @@ body.tk-modal-open .tk-navbar,
 }
 
 /* Pastikan panel layar di dalam SwipePager transparan agar latar belakang global menyatu tanpa jahitan/potongan visual */
+.tk-select-cashier-screen,
+.tk-intro-screen,
 .tk-swipe-page .scr {
   background: transparent !important;
 }
 
+.tk-select-cashier-screen::before,
+.tk-intro-screen::before,
 .tk-swipe-page .scr::before {
   display: none !important;
 }

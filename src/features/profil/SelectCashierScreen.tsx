@@ -64,7 +64,7 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
 
   return (
     <div
-      className="scr"
+      className="scr tk-select-cashier-screen"
       style={{
         width: '1024px',
         height: '640px',
@@ -75,6 +75,7 @@ export const SelectCashierScreen: React.FC<SelectCashierScreenProps> = ({
         gap: '36px',
         position: 'relative',
         userSelect: 'none',
+        background: 'transparent',
       }}
     >
       <h2
