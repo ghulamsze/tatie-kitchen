@@ -5,6 +5,7 @@ import { MenuItem } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback } from '../../../lib/device/haptics.ts';
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
+import { PhotoActionsDialog } from '../../../design/components/PhotoActionsDialog.tsx';
 
 function formatThousands(value: number | string): string {
   const digits = String(value).replace(/\D/g, '');
@@ -1329,83 +1330,21 @@ export const PhoneMenuScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Opsi Foto Makanan (Sama Persis Profil saat diklik) */}
-      {isPhotoActionsOpen && (
-        <div
-          className="tk-phone-overlay ov"
-          onClick={() => setIsPhotoActionsOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          style={{ zIndex: 99 }}
-        >
-          <div
-            className="g-liquid tk-phone-sheet sh"
-            onClick={(e) => e.stopPropagation()}
-            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-          >
-            <b style={{ fontSize: 'var(--t-md)', color: 'var(--ink)', marginBottom: '4px' }}>
-              Foto Makanan
-            </b>
-            <button
-              type="button"
-              className="tk-btn-flat"
-              onClick={() => {
-                setIsPhotoActionsOpen(false);
-                setIsPreviewFoodOpen(true);
-              }}
-              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span>Lihat Foto</span>
-            </button>
-            <button
-              type="button"
-              className="tk-btn-flat"
-              onClick={() => {
-                setIsPhotoActionsOpen(false);
-                foodFileInputRef.current?.click();
-              }}
-              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span>Ganti Foto</span>
-            </button>
-            <button
-              type="button"
-              className="tk-btn-flat"
-              onClick={() => {
-                setIsPhotoActionsOpen(false);
-                if (targetPhotoMode === 'add') {
-                  setAddPhotoPath(null);
-                } else {
-                  setEditPhotoPath(null);
-                }
-              }}
-              style={{ height: '44px', justifyContent: 'flex-start', padding: '0 16px', gap: '10px', color: 'var(--danger)' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              <span>Hapus Foto</span>
-            </button>
-            <button
-              type="button"
-              className="tk-btn-flat"
-              onClick={() => setIsPhotoActionsOpen(false)}
-              style={{ height: '44px', marginTop: '4px' }}
-            >
-              Batal
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modal Opsi Foto Makanan Murni Ikon (Eyes, Sunting, Trash, Batal) */}
+      <PhotoActionsDialog
+        isOpen={isPhotoActionsOpen}
+        hasPhoto={Boolean(targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath)}
+        onClose={() => setIsPhotoActionsOpen(false)}
+        onViewPhoto={() => setIsPreviewFoodOpen(true)}
+        onChangePhoto={() => foodFileInputRef.current?.click()}
+        onDeletePhoto={() => {
+          if (targetPhotoMode === 'add') {
+            setAddPhotoPath(null);
+          } else {
+            setEditPhotoPath(null);
+          }
+        }}
+      />
 
       {/* Lightbox Pratinjau Foto Makanan (Sama Persis Profil saat di-hold) */}
       {isPreviewFoodOpen && (targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath) && (
@@ -1475,7 +1414,7 @@ export const PhoneMenuScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsPreviewFoodOpen(false);
-                  foodFileInputRef.current?.click();
+                  setIsPhotoActionsOpen(true);
                 }}
                 aria-label="Sunting foto makanan"
                 title="Sunting foto makanan"

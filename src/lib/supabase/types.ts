@@ -14,6 +14,14 @@ export interface Shop {
   name: string;
   timezone: string;
   queue_reset_time?: string;
+  phone_no?: string;
+  address?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_account_holder?: string;
+  qris_path?: string;
+  owner_name?: string;
+  owner_avatar_url?: string;
   created_at: string;
 }
 

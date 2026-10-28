@@ -1855,6 +1855,26 @@ body.tk-modal-open .tk-navbar,
   }
 }
 
+@keyframes tk-dialog-zoom-out {
+  0% {
+    transform: scale(0.38) translateY(16px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.03) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.tk-dialog-zoom-out {
+  animation: tk-dialog-zoom-out 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
 /* ===== OPTIMISASI PERFORMA LAYAR MENU HP / LOW-DEVICE CULLING ===== */
 .tk-phone-menu-card {
   content-visibility: auto;

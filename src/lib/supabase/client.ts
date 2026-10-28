@@ -22,14 +22,10 @@ const supabaseAnonKey =
   (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_ANON_KEY)) ||
   DEFAULT_SUPABASE_ANON_KEY;
 
-// Kunci rahasia service role untuk bypass RLS pada lingkungan server/backend.
-// PERHATIAN KEAMANAN: Di lingkungan browser, gateway Supabase menolak keras kunci 'sb_secret_'
-// dengan 401 Unauthorized: "Forbidden use of secret API key in browser".
-// Oleh karena itu, di browser selalu gunakan publishable anon key.
+// Kunci rahasia service role hanya boleh dimuat dari variabel lingkungan backend (Edge Function / Server)
+// dan TIDAK PERNAH boleh di-hardcode ke dalam bundel client browser / mobile app.
 const isBrowser = typeof window !== 'undefined';
-const SECRET_PREFIX = ['sb', 'secret'].join('_');
-const SECRET_TOKEN = 'OH2xreJItwC9RiOq3lvZyQ_ef_ELb4Y';
-export const DEFAULT_SUPABASE_SECRET_KEY = `${SECRET_PREFIX}_${SECRET_TOKEN}`;
+export const DEFAULT_SUPABASE_SECRET_KEY = '';
 
 export const supabaseSecretKey = isBrowser
   ? supabaseAnonKey

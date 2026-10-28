@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useCashierStore } from '../../stores/cashierStore.ts';
+import { useCashierStore, removeInvalidCashierAvatar } from '../../stores/cashierStore.ts';
 import { AppearanceSheet } from './AppearanceSheet.tsx';
 import { PrinterSheet } from './PrinterSheet.tsx';
 import { CropProfileDialog } from './CropProfileDialog.tsx';
 import { Button } from '../../design/components/Button.tsx';
 import { Dialog } from '../../design/components/Dialog.tsx';
+import { PhotoActionsDialog } from '../../design/components/PhotoActionsDialog.tsx';
 
 export interface AccountScreenProps {
   onChangeCashier: () => void;
@@ -53,8 +54,8 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
     didTriggerHoldRef.current = false;
     holdTimerRef.current = setTimeout(() => {
       didTriggerHoldRef.current = true;
-      setIsPreviewOpen(true);
-    }, 450);
+      setIsPhotoMenuOpen(true);
+    }, 400);
   };
 
   const handlePointerUpAvatar = () => {
@@ -69,11 +70,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
       didTriggerHoldRef.current = false;
       return;
     }
-    if (avatarUrl) {
-      setIsPhotoMenuOpen(true);
-    } else {
-      fileInputRef.current?.click();
-    }
+    setIsPhotoMenuOpen(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,6 +193,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
+                  removeInvalidCashierAvatar(cashierId);
                 }}
               />
             )}
@@ -216,14 +214,16 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
             />
           </div>
 
-          {/* Tombol Kamera Badge Kecil */}
+          {/* Tombol Sunting Badge Liquid Glass di Ujung Kanan Bawah (Sedikit Keluar) */}
           <button
             type="button"
+            className="g-liquid"
             onClick={(e) => {
               e.stopPropagation();
-              handleAvatarClick();
+              setIsPhotoMenuOpen(true);
             }}
-            aria-label="Kelola foto profil"
+            aria-label="Sunting foto profil"
+            title="Sunting foto profil"
             style={{
               position: 'absolute',
               bottom: '-4px',
@@ -231,28 +231,34 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               width: '32px',
               height: '32px',
               borderRadius: 'var(--r-pill)',
-              background: 'var(--accent)',
-              border: '2px solid var(--bg)',
+              border: '1px solid rgba(255, 255, 255, 0.40)',
+              background: 'color-mix(in srgb, var(--acrylic-bg) 85%, transparent)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: 'var(--sh-sm)',
+              zIndex: 3,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+              color: 'var(--ink)',
+              padding: 0,
+              transition: 'transform 0.1s ease',
             }}
           >
             <svg
-              width="16"
-              height="16"
+              width="15"
+              height="15"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--on-accent)"
+              stroke="currentColor"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
         </div>
@@ -342,59 +348,15 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
         onClose={() => setIsPrinterOpen(false)}
       />
 
-      {/* Dialog Pilihan Foto Profil (Lihat, Ubah, Hapus) */}
-      <Dialog
+      {/* Dialog Pilihan Foto Profil Murni Ikon (Eyes, Sunting, Trash, Batal) */}
+      <PhotoActionsDialog
         isOpen={isPhotoMenuOpen}
+        hasPhoto={Boolean(avatarUrl)}
         onClose={() => setIsPhotoMenuOpen(false)}
-        title="Foto Profil"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
-          <Button
-            variant="flat"
-            size="md"
-            onClick={() => {
-              setIsPhotoMenuOpen(false);
-              setIsPreviewOpen(true);
-            }}
-            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
-          >
-            Lihat Profil
-          </Button>
-
-          <Button
-            variant="flat"
-            size="md"
-            onClick={() => {
-              setIsPhotoMenuOpen(false);
-              fileInputRef.current?.click();
-            }}
-            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
-          >
-            Pilih Foto Baru
-          </Button>
-
-          <Button
-            variant="danger"
-            size="md"
-            onClick={() => {
-              setIsPhotoMenuOpen(false);
-              setIsConfirmDeletePhotoOpen(true);
-            }}
-            style={{ width: '100%', height: '48px', justifyContent: 'center' }}
-          >
-            Hapus Profil
-          </Button>
-
-          <Button
-            variant="flat"
-            size="md"
-            onClick={() => setIsPhotoMenuOpen(false)}
-            style={{ width: '100%', height: '44px', marginTop: '4px', opacity: 0.7 }}
-          >
-            Batal
-          </Button>
-        </div>
-      </Dialog>
+        onViewPhoto={() => setIsPreviewOpen(true)}
+        onChangePhoto={() => fileInputRef.current?.click()}
+        onDeletePhoto={() => setIsConfirmDeletePhotoOpen(true)}
+      />
 
       {/* Dialog Konfirmasi Hapus Foto Profil (Dilengkapi Delay Guard agar Tombol Tidak Seperti Ketekan) */}
       <Dialog
@@ -497,6 +459,10 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
                   zIndex: 1,
                   animation: 'tk-photo-zoom-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  removeInvalidCashierAvatar(cashierId);
+                }}
               />
             )}
             {/* Pelindung transparan lightbox agar tidak bisa disalin/diambil dengan hold */}
@@ -520,7 +486,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = React.memo(({ onChang
               type="button"
               onClick={() => {
                 setIsPreviewOpen(false);
-                fileInputRef.current?.click();
+                setIsPhotoMenuOpen(true);
               }}
               aria-label="Sunting foto profil"
               title="Sunting foto profil"

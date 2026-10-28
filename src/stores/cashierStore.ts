@@ -28,6 +28,30 @@ export function saveLocalCashierAvatar(cashierId: string, avatarUrl: string) {
   } catch {}
 }
 
+export function removeInvalidCashierAvatar(cashierId: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const map = getLocalCashierAvatars();
+      delete map[cashierId];
+      localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(map));
+      const saved = localStorage.getItem('tk_cashiers');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const updated = parsed.map((c: Cashier) => (c.id === cashierId ? { ...c, avatar_url: undefined } : c));
+          localStorage.setItem('tk_cashiers', JSON.stringify(updated));
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  useCashierStore.setState((state) => ({
+    cashiers: state.cashiers.map((c) => (c.id === cashierId ? { ...c, avatar_url: undefined } : c)),
+    activeCashier: state.activeCashier?.id === cashierId ? { ...state.activeCashier, avatar_url: undefined } : state.activeCashier,
+  }));
+}
+
 // Data kasir awal acuan dari seed / HTML
 export const DEFAULT_CASHIERS: Cashier[] = [
   {
@@ -186,21 +210,24 @@ export const useCashierStore = create<CashierState>((set) => ({
         try {
           const { data: files } = await supabase.storage.from('avatars').list('', { limit: 100 });
           if (Array.isArray(files)) {
-            const avatarMap = getLocalCashierAvatars();
+            const verifiedAvatarMap: Record<string, string> = {};
             files.forEach((f: { name: string; updated_at?: string | null }) => {
+              if (!f.name || f.name.startsWith('.')) return;
               const id = f.name.replace(/\.[^/.]+$/, '');
-              avatarMap[id] = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${f.name}?t=${new Date(f.updated_at || Date.now()).getTime()}`;
+              verifiedAvatarMap[id] = `${SUPABASE_BASE_URL}/storage/v1/object/public/avatars/${f.name}?t=${new Date(f.updated_at || Date.now()).getTime()}`;
             });
             if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(avatarMap));
+              localStorage.setItem(CASHIER_AVATARS_KEY, JSON.stringify(verifiedAvatarMap));
             }
           }
-        } catch {}
+        } catch {
+          // ignore
+        }
 
         const latestAvatars = getLocalCashierAvatars();
         unique = unique.map((c) => ({
           ...c,
-          avatar_url: latestAvatars[c.id] || c.avatar_url,
+          avatar_url: latestAvatars[c.id] || (c.avatar_url?.startsWith('data:') ? c.avatar_url : undefined),
         }));
 
         set({ cashiers: unique });
@@ -304,15 +331,34 @@ export const useCashierStore = create<CashierState>((set) => ({
           }
         } else {
           // Browser environment: gunakan Supabase client resmi (Publishable/Anon Key)
-          const { data: inserted, error: insertErr } = await (supabase.from('cashiers') as any)
-            .insert(payload)
-            .select();
+          let remoteCashier: Cashier | null = null;
 
-          if (!insertErr && Array.isArray(inserted) && inserted.length > 0) {
-            const remoteCashier = inserted[0] as Cashier;
+          // 1. Coba lewat RPC add_cashier (SECURITY DEFINER)
+          try {
+            const { data: rpcData, error: rpcErr } = await (supabase.rpc as any)('add_cashier', {
+              p_shop_id: shopId,
+              p_name: trimmed,
+            });
+            if (!rpcErr && rpcData?.id) {
+              remoteCashier = rpcData as Cashier;
+            }
+          } catch {}
+
+          // 2. Fallback insert langsung ke tabel cashiers
+          if (!remoteCashier) {
+            const { data: inserted, error: insertErr } = await (supabase.from('cashiers') as any)
+              .insert(payload)
+              .select();
+
+            if (!insertErr && Array.isArray(inserted) && inserted.length > 0) {
+              remoteCashier = inserted[0] as Cashier;
+            }
+          }
+
+          if (remoteCashier) {
             set((state) => {
               const updated = deduplicateCashiers(
-                state.cashiers.map((c) => (c.id === tempId ? remoteCashier : c))
+                state.cashiers.map((c) => (c.id === tempId ? remoteCashier! : c))
               );
               try {
                 localStorage.setItem('tk_cashiers', JSON.stringify(updated));
@@ -378,10 +424,23 @@ export const useCashierStore = create<CashierState>((set) => ({
             data: { active: false },
           });
         } else {
-          // Browser environment: gunakan Supabase client resmi (Publishable/Anon Key)
-          await (supabase.from('cashiers') as any)
-            .update({ active: false })
-            .eq('id', id);
+          // 1. Coba RPC remove_cashier (SECURITY DEFINER)
+          let rpcSuccess = false;
+          try {
+            const { error: rpcErr } = await (supabase.rpc as any)('remove_cashier', {
+              p_cashier_id: id,
+            });
+            if (!rpcErr) {
+              rpcSuccess = true;
+            }
+          } catch {}
+
+          // 2. Fallback update langsung ke tabel cashiers
+          if (!rpcSuccess) {
+            await (supabase.from('cashiers') as any)
+              .update({ active: false })
+              .eq('id', id);
+          }
         }
       } catch (err) {
         logError('cashierStore:removeCashier_rest_exception', err);
@@ -469,6 +528,13 @@ export const useCashierStore = create<CashierState>((set) => ({
 
       // Simpan di local cache
       saveLocalCashierAvatar(cashierId, publicUrl);
+
+      // Sinkronkan ke kolom avatar_url di tabel cashiers jika ada
+      try {
+        await (supabase.from('cashiers') as any)
+          .update({ avatar_url: publicUrl })
+          .eq('id', cashierId);
+      } catch {}
 
       // Perbarui dengan public URL setelah upload sukses
       set((state) => {
