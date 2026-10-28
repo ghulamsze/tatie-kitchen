@@ -1353,7 +1353,13 @@ export const PhoneMenuScreen: React.FC = () => {
           onClick={() => setIsPreviewFoodOpen(false)}
           role="dialog"
           aria-modal="true"
-          style={{ zIndex: 100 }}
+          style={{
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
         >
           <div
             className="g-liquid"
@@ -1448,31 +1454,14 @@ export const PhoneMenuScreen: React.FC = () => {
             <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>
               {(targetPhotoMode === 'add' ? addName : editName) || 'Foto Makanan'}
             </b>
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-              <button
-                type="button"
-                className="tk-btn-flat"
-                onClick={() => {
-                  setIsPreviewFoodOpen(false);
-                  if (targetPhotoMode === 'add') {
-                    setAddPhotoPath(null);
-                  } else {
-                    setEditPhotoPath(null);
-                  }
-                }}
-                style={{ flex: 1, height: '40px', color: 'var(--danger)', fontSize: 'var(--t-xs)', fontWeight: 700 }}
-              >
-                Hapus Foto
-              </button>
-              <button
-                type="button"
-                className="tk-btn-lime"
-                onClick={() => setIsPreviewFoodOpen(false)}
-                style={{ flex: 1, height: '40px', fontSize: 'var(--t-xs)' }}
-              >
-                Tutup
-              </button>
-            </div>
+            <button
+              type="button"
+              className="tk-btn-lime"
+              onClick={() => setIsPreviewFoodOpen(false)}
+              style={{ width: '100%', height: '44px', fontSize: 'var(--t-sm)', fontWeight: 700 }}
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

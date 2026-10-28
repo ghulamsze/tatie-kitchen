@@ -134,7 +134,7 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              paddingTop: isIos ? '18px' : 0,
+              paddingTop: isIos ? '54px' : 0,
               boxSizing: 'border-box',
             }}
           >

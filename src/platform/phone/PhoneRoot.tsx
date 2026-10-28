@@ -12,6 +12,8 @@ import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { useHistoryStore } from '../../stores/historyStore.ts';
+import { SwipePager } from '../tablet/SwipePager.tsx';
+import { usePhoneSwipeNav } from './usePhoneSwipeNav.ts';
 
 const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Menu', 'Akun'];
 
@@ -22,6 +24,24 @@ export const PhoneRoot: React.FC = () => {
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState<boolean>(false);
   const [isAllHistoryOpen, setIsAllHistoryOpen] = useState<boolean>(false);
   const [isSalesReportOpen, setIsSalesReportOpen] = useState<boolean>(false);
+
+  const {
+    progress,
+    isDragging,
+    containerRef,
+    trackRef,
+    indicatorRef,
+    navbarRef,
+    handlePagerPointerDown,
+    handlePagerPointerMove,
+    handlePagerPointerUp,
+    handlePagerPointerCancel,
+    scrollToTab,
+  } = usePhoneSwipeNav({
+    tabs: PHONE_NAV_TABS,
+    activeTab,
+    onTabChange: (tab) => setActiveTab(tab),
+  });
 
   // Sinkronisasi real-time dua arah berbasis database Supabase di perangkat HP
   useEffect(() => {
@@ -84,6 +104,7 @@ export const PhoneRoot: React.FC = () => {
 
   return (
     <div
+      ref={containerRef}
       className="tk-phone-root"
       style={{
         '--bg-t': bgT,
@@ -119,7 +140,7 @@ export const PhoneRoot: React.FC = () => {
         />
       </div>
 
-      {/* Area Layar Utama (Navigasi Beranda, Riwayat, Akun via Tab Bar Bawah tanpa Geser Layar) */}
+      {/* Area Layar Utama (Swipeable Horizontal Pager: Beranda, Menu, Akun) */}
       <div
         style={{
           flex: 1,
@@ -130,7 +151,15 @@ export const PhoneRoot: React.FC = () => {
           zIndex: 1,
         }}
       >
-        {activeTab === 'Beranda' && (
+        <SwipePager
+          trackRef={trackRef}
+          progress={progress}
+          isDragging={isDragging}
+          onPointerDown={handlePagerPointerDown}
+          onPointerMove={handlePagerPointerMove}
+          onPointerUp={handlePagerPointerUp}
+          onPointerCancel={handlePagerPointerCancel}
+        >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             <PhoneHomeScreen
               onOpenAllHistory={() => setIsAllHistoryOpen(true)}
@@ -138,19 +167,15 @@ export const PhoneRoot: React.FC = () => {
               onSelectOrder={(id) => setSelectedOrderId(id)}
             />
           </div>
-        )}
 
-        {(activeTab === 'Menu' || activeTab === 'Riwayat') && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             <PhoneMenuScreen />
           </div>
-        )}
 
-        {activeTab === 'Akun' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             <PhoneAccountScreen onOpenPrintMenu={() => setIsPrintMenuOpen(true)} />
           </div>
-        )}
+        </SwipePager>
 
         {/* Overlay Semua Riwayat jika dibuka dari Beranda */}
         {isAllHistoryOpen && (
@@ -238,7 +263,11 @@ export const PhoneRoot: React.FC = () => {
           <NavbarPill
             items={PHONE_NAV_TABS}
             activeItem={activeTab === 'Riwayat' ? 'Menu' : activeTab}
-            onSelect={(item) => setActiveTab(item)}
+            onSelect={scrollToTab}
+            progress={progress}
+            isDragging={isDragging}
+            navRef={navbarRef}
+            indicatorRef={indicatorRef}
           />
         </div>
       )}

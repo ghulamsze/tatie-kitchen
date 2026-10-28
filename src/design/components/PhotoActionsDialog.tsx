@@ -176,8 +176,8 @@ export const PhotoActionsDialog: React.FC<PhotoActionsDialogProps> = ({
             <button
               type="button"
               onClick={() => {
-                onClose();
                 onChangePhoto();
+                onClose();
               }}
               aria-label="Pilih Foto"
               title="Pilih Foto"
@@ -197,11 +197,11 @@ export const PhotoActionsDialog: React.FC<PhotoActionsDialogProps> = ({
               }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="4" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-                <line x1="12" y1="9" x2="12" y2="15" />
-                <line x1="9" y1="12" x2="15" y2="12" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" />
+                <line x1="16" y1="5" x2="22" y2="5" />
+                <line x1="19" y1="2" x2="19" y2="8" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
             </button>
           )}
