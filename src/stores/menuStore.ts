@@ -942,7 +942,7 @@ export const SEED_MENU_ITEMS: (MenuItem & { hue: number })[] = [
     name: 'Risol',
     price_idr: 4000,
     available: true,
-    photo_path: null,
+    photo_path: '/assets/images/snack/risol_mayo.webp',
     sort: 55,
     active: true,
     created_at: '',
@@ -1696,6 +1696,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   updateMenuItem: async (updated) => {
+    const prevItem = get().items.find((it) => it.id === updated.id);
+    const oldName = prevItem?.name?.trim();
+
     set((state) => {
       const newItems = state.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it));
       try {
@@ -1706,16 +1709,14 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       } catch {}
       return { items: newItems };
     });
-    set({ toastMessage: `Menu ${updated.name || ''} berhasil diperbarui` });
-    setTimeout(() => set({ toastMessage: null }), 2500);
 
     if (isSupabaseConfigured()) {
       try {
         const updatePayload: Record<string, any> = {
-          name: updated.name,
-          price_idr: updated.price_idr,
-          available: updated.available,
-          photo_path: updated.photo_path,
+          name: (updated.name || oldName || '').trim(),
+          price_idr: Math.max(0, Number(updated.price_idr) || 0),
+          available: updated.available ?? true,
+          photo_path: updated.photo_path || null,
         };
         if (isUuid(updated.group_id)) {
           updatePayload.group_id = updated.group_id;
@@ -1726,13 +1727,70 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           }
         }
 
-        if (isUuid(updated.id)) {
-          await (supabase.from('menu_items') as any).update(updatePayload).eq('id', updated.id);
-        } else if (updated.name) {
-          await (supabase.from('menu_items') as any).update(updatePayload).ilike('name', updated.name.trim());
+        let targetId = updated.id;
+        let updateSuccess = false;
+
+        // 1. Coba update via UUID jika id berupa UUID valid
+        if (isUuid(targetId)) {
+          const { data: upData, error: upErr } = await (supabase.from('menu_items') as any)
+            .update(updatePayload)
+            .eq('id', targetId)
+            .select();
+          if (!upErr && Array.isArray(upData) && upData.length > 0) {
+            updateSuccess = true;
+          }
         }
-        // Broadcast ke perangkat lain secara real-time
-        broadcastMenuChanged('update', updated.id, updated.name).catch(() => {});
+
+        // 2. Jika belum berhasil, cari berdasarkan nama lama atau nama baru di database
+        if (!updateSuccess) {
+          const searchName = oldName || updated.name;
+          if (searchName) {
+            const { data: upData, error: upErr } = await (supabase.from('menu_items') as any)
+              .update(updatePayload)
+              .ilike('name', searchName.trim())
+              .select();
+            if (!upErr && Array.isArray(upData) && upData.length > 0) {
+              updateSuccess = true;
+              if (upData[0]?.id) {
+                targetId = upData[0].id;
+              }
+            }
+          }
+        }
+
+        // 3. Jika item belum ada di database (misal item bawaan/seed belum masuk ke Supabase):
+        // Lakukan INSERT otomatis agar item kini tercatat di database dan dapat dilihat seluruh perangkat!
+        if (!updateSuccess) {
+          const insertPayload: Record<string, any> = {
+            shop_id: TATIE_SHOP_ID,
+            name: (updated.name || oldName || '').trim(),
+            price_idr: Math.max(0, Number(updated.price_idr) || 0),
+            available: updated.available ?? true,
+            photo_path: updated.photo_path || null,
+            active: true,
+            sort: Number(updated.sort) || 99,
+          };
+          if (isUuid(updatePayload.group_id)) {
+            insertPayload.group_id = updatePayload.group_id;
+          }
+          const { data: insData, error: insErr } = await (supabase.from('menu_items') as any)
+            .insert(insertPayload)
+            .select();
+          if (!insErr && Array.isArray(insData) && insData.length > 0 && insData[0]?.id) {
+            targetId = insData[0].id;
+            updateSuccess = true;
+          }
+        }
+
+        // 4. Jika targetId berupa UUID valid dan berbeda dengan id lokal, sinkronkan id di state
+        if (targetId && targetId !== updated.id && isUuid(targetId)) {
+          set((state) => ({
+            items: state.items.map((it) => (it.id === updated.id ? { ...it, id: targetId } : it)),
+          }));
+        }
+
+        // 5. Broadcast ke seluruh perangkat lain secara real-time
+        broadcastMenuChanged('update', targetId, updated.name).catch(() => {});
       } catch (err) {
         logError('menuStore:updateMenuItem', err);
       }
@@ -2095,7 +2153,21 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           // ignore
         }
 
-        set({ items: filteredFinalItems });
+        // E. Pastikan tidak ada duplikasi item baik berdasarkan ID maupun Nama
+        const seenIds = new Set<string>();
+        const seenNames = new Set<string>();
+        const deduplicated: (MenuItem & { hue?: number })[] = [];
+
+        filteredFinalItems.forEach((it) => {
+          const normN = (it.name || '').trim().toLowerCase();
+          if (seenIds.has(it.id)) return;
+          if (normN && seenNames.has(normN)) return;
+          seenIds.add(it.id);
+          if (normN) seenNames.add(normN);
+          deduplicated.push(it);
+        });
+
+        set({ items: deduplicated });
       }
     } catch (err) {
       logError('menuStore:fetchMenu_exception', err);

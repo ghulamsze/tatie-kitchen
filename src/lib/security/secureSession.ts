@@ -48,65 +48,73 @@ export const getSecureSessionToken = getSecureDeviceToken;
 export const getSecureSubdomainToken = getSecureDeviceToken;
 
 /**
- * Mendeteksi formFactor perangkat aktif dari URL atau localStorage
+ * Mendeteksi formFactor dan platform perangkat aktif dari URL atau localStorage
  */
-function resolveCurrentDeviceKey(params: URLSearchParams): 'phone' | 'tablet' | 'laptop' {
-  // 1. Cek ponsel fisik nyata (iPhone, iPod, ponsel Android)
+function resolveCurrentDeviceKey(params: URLSearchParams): 'android' | 'iphone' | 'phone' | 'tablet' | 'laptop' {
+  // 1. Cek parameter eksplisit di URL
+  if (params.has('android')) return 'android';
+  if (params.has('iphone')) return 'iphone';
+
+  // 2. Cek ponsel fisik nyata (iPhone, iPod, ponsel Android)
   if (typeof navigator !== 'undefined') {
     const ua = navigator.userAgent || '';
     const isIPhone = /iPhone|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
     const shortestSide = typeof window !== 'undefined' && window.screen
       ? Math.min(window.screen.width, window.screen.height)
       : 0;
 
-    // iPhone atau ponsel fisik berlayar < 600px WAJIB selalu menjadi 'phone'
-    if (isIPhone || (shortestSide > 0 && shortestSide < 600 && (/Mobile|Android/i.test(ua) || navigator.maxTouchPoints > 0))) {
-      try {
-        localStorage.removeItem(DEVICE_OVERRIDE_KEY);
-      } catch {
-        // ignore
-      }
-      return 'phone';
+    if (isIPhone) {
+      try { localStorage.removeItem(DEVICE_OVERRIDE_KEY); } catch {}
+      return 'iphone';
+    }
+    if (isAndroid || (shortestSide > 0 && shortestSide < 600 && (/Mobile/i.test(ua) || navigator.maxTouchPoints > 0))) {
+      try { localStorage.removeItem(DEVICE_OVERRIDE_KEY); } catch {}
+      return 'android';
     }
   }
 
-  // 2. Cek parameter eksplisit di URL
-  if (params.has('phone')) return 'phone';
+  // 3. Cek parameter lain di URL
+  if (params.has('phone')) {
+    const ua = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
+    return /iPhone|iPod/i.test(ua) ? 'iphone' : 'android';
+  }
   if (params.has('tablet')) return 'tablet';
   if (params.has('laptop')) return 'laptop';
 
   const paramDevice = params.get('device')?.toLowerCase();
-  if (paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') return 'phone';
+  if (paramDevice === 'android') return 'android';
+  if (paramDevice === 'iphone' || paramDevice === 'ios') return 'iphone';
+  if (paramDevice === 'phone' || paramDevice === 'hp' || paramDevice === 'mobile') return 'android';
   if (paramDevice === 'tablet' || paramDevice === 'tab') return 'tablet';
   if (paramDevice === 'laptop') return 'laptop';
 
-  // 3. Cek localStorage untuk switch dev di desktop
+  // 4. Cek localStorage untuk switch dev di desktop
   try {
     const stored = localStorage.getItem(DEVICE_OVERRIDE_KEY);
-    if (stored === 'phone' || stored === 'tablet' || stored === 'laptop') {
-      return stored;
+    if (stored === 'android' || stored === 'iphone' || stored === 'phone' || stored === 'tablet' || stored === 'laptop') {
+      if (stored === 'phone') return 'android';
+      return stored as any;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
-  // 4. Fallback berdasarkan dimensi fisik layar
+  // 5. Fallback berdasarkan dimensi fisik layar
   if (typeof window !== 'undefined') {
     const physShortest = window.screen
       ? Math.min(window.screen.width, window.screen.height)
       : Math.min(window.innerWidth, window.innerHeight);
-    if (physShortest < 600) return 'phone';
+    if (physShortest < 600) return 'android';
     if (physShortest <= 1180) return 'tablet';
     return 'laptop';
   }
 
-  return 'phone';
+  return 'android';
 }
 
 /**
  * Inisialisasi format URL perangkat acak setiap kali halaman dibuka atau di-refresh.
  * Menghasilkan format persis:
- * `http://localhost:5173/device?phone=bFlLqX3QaRw` (atau tablet/laptop).
+ * `https://tatie-kitchen.vercel.app/device?android=5orS3HO46tB&` (atau ?iphone=1EztvTSnMz3& / ?tablet=... / ?laptop=...).
  */
 export function initSecureUrlSession(): string {
   if (typeof window === 'undefined') {
@@ -128,26 +136,37 @@ export function initSecureUrlSession(): string {
     const currentUrl = new URL(window.location.href);
     const searchParams = currentUrl.searchParams;
 
-    // Tentukan perangkat aktif (phone / tablet / laptop)
+    // Tentukan perangkat aktif (android / iphone / tablet / laptop)
     const deviceKey = resolveCurrentDeviceKey(searchParams);
 
-    // Simpan ke localStorage agar konsisten di seluruh aplikasi
+    // Simpan ke localStorage agar konsisten di seluruh aplikasi (android/iphone dimetakan sebagai phone untuk formFactor)
     try {
-      localStorage.setItem(DEVICE_OVERRIDE_KEY, deviceKey);
-    } catch {
-      // ignore
-    }
+      const formFactor = (deviceKey === 'android' || deviceKey === 'iphone') ? 'phone' : deviceKey;
+      localStorage.setItem(DEVICE_OVERRIDE_KEY, formFactor);
+    } catch {}
 
-    // Generate token acak baru setiap kali refresh / initial load
-    const freshToken = generateSecureToken(11);
+    // Gunakan token yang sudah diberikan di URL jika ada (misal android=5orS3HO46tB atau iphone=1EztvTSnMz3), atau buat token baru
+    const existingToken =
+      searchParams.get(deviceKey) ||
+      searchParams.get('android') ||
+      searchParams.get('iphone') ||
+      searchParams.get('phone') ||
+      searchParams.get('tablet') ||
+      searchParams.get('laptop');
 
-    // Susun parameter URL dengan format `/device?<deviceKey>=<freshToken>`
+    const token = existingToken && existingToken.trim().length >= 6
+      ? existingToken.trim()
+      : (deviceKey === 'android' ? '5orS3HO46tB' : deviceKey === 'iphone' ? '1EztvTSnMz3' : generateSecureToken(11));
+
+    // Susun parameter URL dengan format `/device?<deviceKey>=<token>&`
     const newParams = new URLSearchParams();
-    newParams.set(deviceKey, freshToken);
+    newParams.set(deviceKey, token);
 
     // Pindahkan parameter custom lain jika ada
     searchParams.forEach((val, key) => {
       if (
+        key !== 'android' &&
+        key !== 'iphone' &&
         key !== 'phone' &&
         key !== 'tablet' &&
         key !== 'laptop' &&
@@ -159,20 +178,18 @@ export function initSecureUrlSession(): string {
       }
     });
 
-    const newRelativeUrl = `/device?${newParams.toString()}`;
+    const newRelativeUrl = `/device?${newParams.toString()}&`;
 
     // Perbarui URL di address bar browser secara instan tanpa reload ulang
     window.history.replaceState(null, '', newRelativeUrl);
 
     // Simpan ke sessionStorage
     try {
-      sessionStorage.setItem(SECURE_TOKEN_STORAGE_KEY, freshToken);
+      sessionStorage.setItem(SECURE_TOKEN_STORAGE_KEY, token);
       sessionStorage.setItem(SECURE_TOKEN_TIME_KEY, Date.now().toString());
-    } catch {
-      // ignore
-    }
+    } catch {}
 
-    return freshToken;
+    return token;
   } catch (err) {
     console.warn('[secureSession] Gagal menginisialisasi URL session:', err);
     return generateSecureToken(11);

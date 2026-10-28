@@ -47,7 +47,7 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
   if (env.urlSearch) {
     const params = new URLSearchParams(env.urlSearch);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (params.has('phone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+    if (params.has('phone') || params.has('android') || params.has('iphone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
       overrideVal = 'phone';
     } else if (params.has('tablet') || paramDevice === 'tablet' || paramDevice === 'tab') {
       overrideVal = 'tablet';
@@ -73,7 +73,11 @@ export function classifyDevice(env: DeviceEnv): DeviceInfo {
     }
   }
 
-  if (env.capacitor?.platform === 'android') {
+  if (env.urlSearch && new URLSearchParams(env.urlSearch).has('android')) {
+    basePlatform = 'android';
+  } else if (env.urlSearch && new URLSearchParams(env.urlSearch).has('iphone')) {
+    basePlatform = 'ios';
+  } else if (env.capacitor?.platform === 'android') {
     basePlatform = 'android';
   } else if (env.capacitor?.platform === 'ios') {
     basePlatform = 'ios';
@@ -240,7 +244,7 @@ export function getCurrentDevice(): DeviceInfo {
   if (search) {
     const params = new URLSearchParams(search);
     const paramDevice = params.get('device')?.toLowerCase();
-    if (params.has('phone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
+    if (params.has('phone') || params.has('android') || params.has('iphone') || paramDevice === 'phone' || paramDevice === 'android' || paramDevice === 'hp' || paramDevice === 'mobile') {
       try {
         localStorage.setItem(DEVICE_OVERRIDE_KEY, 'phone');
       } catch {

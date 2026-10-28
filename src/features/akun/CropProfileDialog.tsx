@@ -153,8 +153,8 @@ export const CropProfileDialog: React.FC<CropProfileDialogProps> = ({
             setIsProcessing(false);
           }
         },
-        'image/jpeg',
-        0.88 // Kualitas 88% menghasilkan file ~40-60 KB, sangat ringan dan tajam
+        'image/webp',
+        0.88 // Resolusi 512x512 WebP hemat memori, ultra-tajam, dan cepat dimuat
       );
     } catch {
       setIsProcessing(false);

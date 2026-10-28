@@ -574,52 +574,13 @@ export const PhoneMenuScreen: React.FC = () => {
     return sortMenuItems(filteredItems, pinnedIds, soldCounts, groups, isAll);
   }, [filteredItems, pinnedIds, soldCounts, groups, selectedCategory]);
 
-  // Virtualisasi Viewport Culling List Menu
-  const ITEM_HEIGHT = 86;
-  const OVERSCAN = 3;
   const listContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(600);
-
-  useEffect(() => {
-    const container = listContainerRef.current;
-    if (!container) return;
-    const updateHeight = () => {
-      setViewportHeight(container.clientHeight || 600);
-    };
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
-  }, []);
-
-  const handleListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop);
-  }, []);
 
   useEffect(() => {
     if (listContainerRef.current) {
       listContainerRef.current.scrollTop = 0;
-      setScrollTop(0);
     }
   }, [selectedCategory, search]);
-
-  const totalItems = sortedItems.length;
-  const totalHeight = totalItems * ITEM_HEIGHT;
-
-  const { startIndex, endIndex, offsetY } = useMemo(() => {
-    if (totalItems === 0) {
-      return { startIndex: 0, endIndex: 0, offsetY: 0 };
-    }
-    const start = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
-    const visibleCount = Math.ceil(viewportHeight / ITEM_HEIGHT) + (2 * OVERSCAN);
-    const end = Math.min(totalItems, start + visibleCount);
-    const top = start * ITEM_HEIGHT;
-    return { startIndex: start, endIndex: end, offsetY: top };
-  }, [scrollTop, viewportHeight, totalItems]);
-
-  const visibleItems = useMemo(() => {
-    return sortedItems.slice(startIndex, endIndex);
-  }, [sortedItems, startIndex, endIndex]);
 
   const handleOpenEdit = useCallback((item: MenuItem) => {
     setEditingItem(item);
@@ -794,10 +755,9 @@ export const PhoneMenuScreen: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Daftar Kartu Menu Kafe (Dioptimalkan dengan Viewport Culling Virtualization) */}
+      {/* 4. Daftar Kartu Menu Kafe */}
       <div
         ref={listContainerRef}
-        onScroll={handleListScroll}
         className="tk-custom-slider"
         style={{
           flex: 1,
@@ -806,10 +766,12 @@ export const PhoneMenuScreen: React.FC = () => {
           paddingBottom: '88px', // Ruang untuk navbar pill
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorY: 'contain',
-          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
         }}
       >
-        {filteredItems.length === 0 ? (
+        {sortedItems.length === 0 ? (
           <div
             style={{
               padding: '48px 16px',
@@ -822,35 +784,14 @@ export const PhoneMenuScreen: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div
-            style={{
-              height: `${totalHeight}px`,
-              position: 'relative',
-              width: '100%',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                transform: `translate3d(0, ${offsetY}px, 0)`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-              }}
-            >
-              {visibleItems.map((item) => (
-                <PhoneMenuItemCard
-                  key={item.id}
-                  item={item}
-                  onEdit={handleOpenEdit}
-                  onToggle={handleToggleAvailability}
-                />
-              ))}
-            </div>
-          </div>
+          sortedItems.map((item) => (
+            <PhoneMenuItemCard
+              key={item.id}
+              item={item}
+              onEdit={handleOpenEdit}
+              onToggle={handleToggleAvailability}
+            />
+          ))
         )}
       </div>
 
