@@ -171,3 +171,4 @@ export const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
     </div>
   );
 };
+
