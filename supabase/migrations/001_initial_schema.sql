@@ -148,48 +148,58 @@ alter table public.order_items enable row level security;
 alter table public.devices enable row level security;
 
 -- POLICIES SHOPS
+drop policy if exists "Shops: anggota toko dapat membaca" on public.shops;
 create policy "Shops: anggota toko dapat membaca"
   on public.shops for select
   using (public.is_member(id));
 
 -- POLICIES SHOP_MEMBERS
+drop policy if exists "Shop members: dapat dibaca anggota" on public.shop_members;
 create policy "Shop members: dapat dibaca anggota"
   on public.shop_members for select
   using (public.is_member(shop_id));
 
 -- POLICIES CASHIERS
+drop policy if exists "Cashiers: dapat dibaca anggota" on public.cashiers;
 create policy "Cashiers: dapat dibaca anggota"
   on public.cashiers for select
   using (public.is_member(shop_id));
 
+drop policy if exists "Cashiers: hanya owner yang bisa modifikasi langsung" on public.cashiers;
 create policy "Cashiers: hanya owner yang bisa modifikasi langsung"
   on public.cashiers for all
   using (public.is_owner(shop_id));
 
 -- POLICIES MENU_GROUPS
+drop policy if exists "Menu groups: dapat dibaca anggota" on public.menu_groups;
 create policy "Menu groups: dapat dibaca anggota"
   on public.menu_groups for select
   using (public.is_member(shop_id));
 
+drop policy if exists "Menu groups: hanya owner yang bisa modifikasi langsung" on public.menu_groups;
 create policy "Menu groups: hanya owner yang bisa modifikasi langsung"
   on public.menu_groups for all
   using (public.is_owner(shop_id));
 
 -- POLICIES MENU_ITEMS
+drop policy if exists "Menu items: dapat dibaca anggota" on public.menu_items;
 create policy "Menu items: dapat dibaca anggota"
   on public.menu_items for select
   using (public.is_member(shop_id));
 
+drop policy if exists "Menu items: hanya owner yang bisa ubah harga atau hapus" on public.menu_items;
 create policy "Menu items: hanya owner yang bisa ubah harga atau hapus"
   on public.menu_items for all
   using (public.is_owner(shop_id));
 
 -- POLICIES ORDERS
+drop policy if exists "Orders: dapat dibaca anggota" on public.orders;
 create policy "Orders: dapat dibaca anggota"
   on public.orders for select
   using (public.is_member(shop_id));
 
 -- POLICIES ORDER_ITEMS
+drop policy if exists "Order items: dapat dibaca anggota" on public.order_items;
 create policy "Order items: dapat dibaca anggota"
   on public.order_items for select
   using (
@@ -200,6 +210,7 @@ create policy "Order items: dapat dibaca anggota"
   );
 
 -- POLICIES DEVICES
+drop policy if exists "Devices: dapat dibaca dan diperbarui anggota" on public.devices;
 create policy "Devices: dapat dibaca dan diperbarui anggota"
   on public.devices for all
   using (public.is_member(shop_id));

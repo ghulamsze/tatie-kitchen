@@ -14,6 +14,7 @@ alter table public.shops
 
 -- 2. Kebijakan RLS (Row Level Security) untuk tabel public.shops
 -- Semua anggota toko (role 'device' maupun 'owner') dapat membaca profil toko
+drop policy if exists "Anggota toko dapat membaca profil toko" on public.shops;
 create policy "Anggota toko dapat membaca profil toko"
   on public.shops for select
   using (
@@ -27,6 +28,7 @@ create policy "Anggota toko dapat membaca profil toko"
   );
 
 -- Hanya pemilik (role 'owner') yang dapat mengubah informasi toko
+drop policy if exists "Hanya owner yang dapat mengubah informasi toko" on public.shops;
 create policy "Hanya owner yang dapat mengubah informasi toko"
   on public.shops for update
   using (
