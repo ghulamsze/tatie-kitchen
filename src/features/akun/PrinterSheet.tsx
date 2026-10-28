@@ -201,7 +201,7 @@ export const PrinterSheet: React.FC<PrinterSheetProps> = ({ isOpen, onClose }) =
               </div>
             ) : (
               <span style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)', fontStyle: 'italic' }}>
-                {selectedDevice ? `Menggunakan: ${selectedDevice.name}` : 'Belum ada perangkat terpilih. Tekan "Pindai Ulang".'}
+                {selectedDevice && isConnected ? `Menggunakan: ${selectedDevice.name}` : 'Tidak ada printer terhubung.'}
               </span>
             )}
           </div>

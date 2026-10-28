@@ -46,7 +46,12 @@ export const usePrinterStore = create<PrinterState>((set, get) => {
   let initialDevice: PrinterDevice | null = null;
   try {
     if (savedDeviceStr) {
-      initialDevice = JSON.parse(savedDeviceStr);
+      const parsed = JSON.parse(savedDeviceStr);
+      if (parsed && parsed.address && parsed.address !== '00:11:22:33:44:55') {
+        initialDevice = parsed;
+      } else if (typeof window !== 'undefined') {
+        localStorage.removeItem('tk-printer-device');
+      }
     }
   } catch {
     initialDevice = null;
@@ -194,7 +199,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => {
           isPrinting: false,
           lastPrintResult: {
             success: true,
-            message: 'Uji cetak berhasil terkirim ke printer VSC MP-58X.',
+            message: 'Uji cetak berhasil terkirim ke printer.',
             timestamp: Date.now(),
           },
         });
