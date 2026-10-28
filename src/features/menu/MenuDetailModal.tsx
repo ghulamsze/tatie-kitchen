@@ -247,7 +247,9 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
     const msg = wasPinned
       ? `Sematan menu ${item.name} dilepas`
       : `Menu ${item.name} berhasil disematkan ke atas`;
-    useMenuStore.getState().setToastMessage(msg);
+    if (isCashierTablet) {
+      useMenuStore.getState().setToastMessage(msg);
+    }
     onClose();
   };
 

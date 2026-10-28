@@ -9,7 +9,6 @@ import {
   formatDate,
   formatQueueNo,
 } from '../../../lib/format/formatters.ts';
-import { Toast } from '../../../design/components/Toast.tsx';
 import {
   ReceiptPrintPortal,
   printReceiptCrossPlatform,
@@ -28,13 +27,10 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
   const { isConnected: isPrinterConnected, printOrderReceipt } = usePrinterStore();
 
   const hiddenReceiptRef = useRef<HTMLDivElement>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  // Tanpa notifikasi toast di HP / iOS
+  const showToast = () => {};
 
   if (!selectedOrder) {
     return (
@@ -474,14 +470,6 @@ export const PhoneOrderDetailScreen: React.FC<PhoneOrderDetailScreenProps> = ({ 
         cashierName={cashierName}
         notes={order.notes}
       />
-
-      {/* Notifikasi Toast */}
-      {toastMessage && (
-        <Toast
-          message={toastMessage}
-          visible={true}
-        />
-      )}
 
       {/* 5. Target Render Struk Fisik Monospace Identik 100% dengan Struk Tablet */}
       <div

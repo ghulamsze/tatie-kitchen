@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PrintMenuDocument } from './PrintMenuDocument.tsx';
-import { Toast } from '../../../design/components/Toast.tsx';
 
 export interface PhonePrintMenuPreviewProps {
   isOpen: boolean;
@@ -20,12 +19,9 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
   const [isInkSaver, setIsInkSaver] = useState(initialInkSaver);
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isAndroidConfirmOpen, setIsAndroidConfirmOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  // Tanpa notifikasi toast di HP / iOS
+  const showToast = (_msg?: string) => {};
 
   // Pastikan class modal terpasang saat preview aktif
   useEffect(() => {
@@ -482,9 +478,6 @@ export const PhonePrintMenuPreview: React.FC<PhonePrintMenuPreviewProps> = ({
             </div>
           </div>
         )}
-
-        {/* Toast Notifikasi */}
-        {toastMessage && <Toast message={toastMessage} visible={true} />}
       </div>
     </>
   );
