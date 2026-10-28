@@ -1,23 +1,58 @@
 /* ==========================================================================
    Google Stitch Ambient Motion Style (Beta Dynamic Background)
    Self-contained fluid mesh & aurora ambient animation
+   Aspect-ratio normalized (vmax/cqmax) for Tablet & Mobile/iOS
    ========================================================================== */
+
+:root {
+  /* Default viewport-based scaling fallback */
+  --stitch-max-dim: max(100vw, 100vh);
+  --stitch-orb-1: clamp(340px, 75vmax, 960px);
+  --stitch-orb-2: clamp(400px, 85vmax, 1100px);
+  --stitch-orb-3: clamp(360px, 78vmax, 1000px);
+  --stitch-orb-4: clamp(260px, 54vmax, 680px);
+  --stitch-blur: clamp(38px, 5.5vmax, 64px);
+}
 
 .tk-stitch-motion-container {
   position: absolute;
   inset: -15%;
+  width: 130%;
+  height: 130%;
+  min-height: 100dvh;
+  min-height: 100lvh;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   pointer-events: none;
-  filter: blur(48px);
-  will-change: transform;
   contain: strict;
+  container-type: size;
   opacity: 0.95;
   transition: opacity 0.4s ease;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+  filter: blur(var(--stitch-blur));
+  -webkit-filter: blur(var(--stitch-blur));
+}
+
+/* Aspect-ratio normalized sizing via Container Queries (container-aware) */
+@supports (width: 1cqmax) {
+  .tk-stitch-motion-container {
+    --stitch-orb-1: clamp(340px, 72cqmax, 960px);
+    --stitch-orb-2: clamp(400px, 82cqmax, 1100px);
+    --stitch-orb-3: clamp(360px, 76cqmax, 1000px);
+    --stitch-orb-4: clamp(260px, 52cqmax, 680px);
+    --stitch-blur: clamp(38px, 5cqmax, 64px);
+  }
 }
 
 @media (min-width: 768px) {
   .tk-stitch-motion-container {
-    filter: blur(64px);
+    filter: blur(calc(var(--stitch-blur) * 1.15));
+    -webkit-filter: blur(calc(var(--stitch-blur) * 1.15));
   }
 }
 
@@ -29,57 +64,73 @@
 /* Orb 1: Primary Swatch Flow (Top Left -> Center) */
 .tk-stitch-orb-1 {
   position: absolute;
-  top: 5%;
-  left: 5%;
-  width: 60vw;
-  height: 60vh;
+  top: -5%;
+  left: -5%;
+  width: var(--stitch-orb-1);
+  height: var(--stitch-orb-1);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: radial-gradient(circle at center, var(--b1) 0%, transparent 70%);
   animation: tk-stitch-drift-1 26s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Orb 2: Deep Ambient Bloom (Bottom Left / Center) */
 .tk-stitch-orb-2 {
   position: absolute;
-  bottom: 5%;
-  left: 15%;
-  width: 70vw;
-  height: 70vh;
+  bottom: -10%;
+  left: 10%;
+  width: var(--stitch-orb-2);
+  height: var(--stitch-orb-2);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: radial-gradient(circle at center, var(--b2) 0%, transparent 68%);
   animation: tk-stitch-drift-2 34s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Orb 3: Secondary Aurora Bloom (Right / Center Right) */
 .tk-stitch-orb-3 {
   position: absolute;
-  top: 20%;
-  right: 5%;
-  width: 65vw;
-  height: 65vh;
+  top: 15%;
+  right: -10%;
+  width: var(--stitch-orb-3);
+  height: var(--stitch-orb-3);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: radial-gradient(circle at center, var(--b3) 0%, transparent 70%);
   animation: tk-stitch-drift-3 30s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Orb 4: Accent Stitch Spark (Floating theme accent glow) */
 .tk-stitch-orb-4 {
   position: absolute;
-  top: 40%;
-  left: 40%;
-  width: 45vw;
-  height: 45vh;
+  top: 35%;
+  left: 35%;
+  width: var(--stitch-orb-4);
+  height: var(--stitch-orb-4);
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 45%, transparent) 0%, transparent 65%);
   animation: tk-stitch-drift-4 22s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Subtle noise overlay for tactile matte finish */
@@ -96,7 +147,7 @@
   opacity: 0.08;
 }
 
-/* Keyframes for organic, fluid Google Stitch motion */
+/* Keyframes for organic, fluid Google Stitch motion with hardware-accelerated translate3d */
 @keyframes tk-stitch-drift-1 {
   0% {
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
@@ -136,15 +187,15 @@
 @keyframes tk-stitch-drift-4 {
   0% {
     transform: translate3d(0, 0, 0) scale(0.85);
-    opacity: 0.4;
+    opacity: 0.35;
   }
   50% {
-    transform: translate3d(-22%, 18%, 0) scale(1.3);
-    opacity: 0.75;
+    transform: translate3d(-20%, 16%, 0) scale(1.28);
+    opacity: 0.72;
   }
   100% {
-    transform: translate3d(18%, -15%, 0) scale(0.9);
-    opacity: 0.45;
+    transform: translate3d(16%, -14%, 0) scale(0.9);
+    opacity: 0.42;
   }
 }
 

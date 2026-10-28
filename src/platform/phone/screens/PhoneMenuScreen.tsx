@@ -665,6 +665,20 @@ export const PhoneMenuScreen: React.FC = () => {
     setIsAddOpen(false);
   };
 
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    }
+  };
+
+  const handleAddKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveAdd();
+    }
+  };
+
   return (
     <div className="tk-phone-screen" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Input File Tersembunyi untuk Upload Foto Makanan */}
@@ -1047,6 +1061,7 @@ export const PhoneMenuScreen: React.FC = () => {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={handleEditKeyDown}
                     style={{
                       flex: 1,
                       minWidth: 0,
@@ -1107,6 +1122,7 @@ export const PhoneMenuScreen: React.FC = () => {
                       setEditPriceStr(formatted);
                       setEditPrice(parseThousands(formatted));
                     }}
+                    onKeyDown={handleEditKeyDown}
                     style={{
                       flex: 1,
                       height: '100%',
@@ -1424,6 +1440,7 @@ export const PhoneMenuScreen: React.FC = () => {
                       setAddName(e.target.value);
                       if (shakeField === 'name') setShakeField(null);
                     }}
+                    onKeyDown={handleAddKeyDown}
                     style={{
                       flex: 1,
                       minWidth: 0,
@@ -1492,6 +1509,7 @@ export const PhoneMenuScreen: React.FC = () => {
                       setAddPrice(parseThousands(formatted));
                       if (shakeField === 'price') setShakeField(null);
                     }}
+                    onKeyDown={handleAddKeyDown}
                     style={{
                       flex: 1,
                       height: '100%',
