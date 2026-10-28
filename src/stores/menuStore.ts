@@ -1424,13 +1424,21 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
     if (isSupabaseConfigured()) {
       try {
-        await (supabase.from('menu_items') as any).update({
+        const updatePayload: Record<string, any> = {
           name: updated.name,
           price_idr: updated.price_idr,
-          group_id: updated.group_id,
           available: updated.available,
           photo_path: updated.photo_path,
-        }).eq('id', updated.id);
+        };
+        if (isUuid(updated.group_id)) {
+          updatePayload.group_id = updated.group_id;
+        }
+
+        if (isUuid(updated.id)) {
+          await (supabase.from('menu_items') as any).update(updatePayload).eq('id', updated.id);
+        } else if (updated.name) {
+          await (supabase.from('menu_items') as any).update(updatePayload).ilike('name', updated.name.trim());
+        }
       } catch (err) {
         logError('menuStore:updateMenuItem', err);
       }
@@ -1438,6 +1446,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   deleteMenuItem: async (itemId: string) => {
+    const itemToDelete = get().items.find((it) => it.id === itemId);
+    const itemName = itemToDelete?.name?.trim();
+
     set((state) => {
       const newItems = state.items.filter((it) => it.id !== itemId);
       try {
@@ -1464,7 +1475,11 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('menu_items').delete().eq('id', itemId);
+        if (isUuid(itemId)) {
+          await supabase.from('menu_items').delete().eq('id', itemId);
+        } else if (itemName) {
+          await supabase.from('menu_items').delete().ilike('name', itemName);
+        }
       } catch (err) {
         logError('menuStore:deleteMenuItem:supabase', err);
       }
@@ -1472,10 +1487,10 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   addMenuItem: async (newItem) => {
-    const newId = `m-${Date.now().toString(36)}`;
+    const newId = generateUuid();
     const created: MenuItem & { hue: number } = {
       id: newId,
-      shop_id: 'shop-001',
+      shop_id: TATIE_SHOP_ID,
       group_id: newItem.group_id || 'g-snack',
       name: newItem.name,
       price_idr: newItem.price_idr || 0,
@@ -1501,17 +1516,79 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
     if (isSupabaseConfigured()) {
       try {
-        await (supabase.from('menu_items') as any).insert({
-          id: created.id,
-          shop_id: created.shop_id,
-          group_id: created.group_id,
-          name: created.name,
-          price_idr: created.price_idr,
-          available: created.available,
-          photo_path: created.photo_path,
-          active: true,
-          sort: created.sort,
-        });
+        let savedInDb = false;
+
+        // 1. Coba lewat RPC Definer public.add_menu_item
+        try {
+          const { data: rpcData, error: rpcErr } = await (supabase.rpc as any)('add_menu_item', {
+            p_name: created.name,
+            p_price_idr: created.price_idr,
+            p_category: (newItem as any).category || 'makanan',
+            p_photo_path: created.photo_path,
+            p_available: created.available,
+            p_shop_id: TATIE_SHOP_ID,
+          });
+
+          if (!rpcErr && rpcData?.id) {
+            savedInDb = true;
+            const remoteId = rpcData.id;
+            if (remoteId && remoteId !== newId) {
+              created.id = remoteId;
+              set((state) => {
+                const updated = state.items.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
+                try {
+                  const raw = localStorage.getItem('tk_added_menu_items');
+                  const addedList: any[] = raw ? JSON.parse(raw) : [];
+                  const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
+                  localStorage.setItem('tk_added_menu_items', JSON.stringify(mapped));
+                } catch {}
+                return { items: updated };
+              });
+            }
+          }
+        } catch {
+          // Lanjutkan ke direct insert jika RPC belum aktif
+        }
+
+        // 2. Fallback insert langsung ke tabel menu_items dengan UUID valid
+        if (!savedInDb) {
+          const payload: Record<string, any> = {
+            id: created.id,
+            shop_id: TATIE_SHOP_ID,
+            name: created.name,
+            price_idr: created.price_idr,
+            available: created.available,
+            photo_path: created.photo_path,
+            active: true,
+            sort: created.sort,
+          };
+          if (isUuid(created.group_id)) {
+            payload.group_id = created.group_id;
+          }
+
+          const { data: insData, error: insErr } = await (supabase.from('menu_items') as any)
+            .insert(payload)
+            .select();
+
+          if (!insErr && Array.isArray(insData) && insData.length > 0 && insData[0]?.id) {
+            const remoteId = insData[0].id;
+            if (remoteId && remoteId !== newId) {
+              created.id = remoteId;
+              set((state) => {
+                const updated = state.items.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
+                try {
+                  const raw = localStorage.getItem('tk_added_menu_items');
+                  const addedList: any[] = raw ? JSON.parse(raw) : [];
+                  const mapped = addedList.map((it) => (it.id === newId ? { ...it, id: remoteId } : it));
+                  localStorage.setItem('tk_added_menu_items', JSON.stringify(mapped));
+                } catch {}
+                return { items: updated };
+              });
+            }
+          } else if (insErr) {
+            logError('menuStore:addMenuItem:insert', insErr);
+          }
+        }
       } catch (err) {
         logError('menuStore:addMenuItem', err);
       }
