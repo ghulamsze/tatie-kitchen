@@ -9,8 +9,6 @@ import { PaymentScreen } from '../../features/bayar/PaymentScreen.tsx';
 import { ReceiptScreen } from '../../features/struk/ReceiptScreen.tsx';
 import { HistoryScreen } from '../../features/riwayat/HistoryScreen.tsx';
 import { NavbarPill, NavItem } from '../../design/components/NavbarPill.tsx';
-import { Sheet } from '../../design/components/Sheet.tsx';
-import { Button } from '../../design/components/Button.tsx';
 import { SwipePager } from './SwipePager.tsx';
 import { useSwipeNav } from './useSwipeNav.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
@@ -20,6 +18,7 @@ import { useNetworkStatus } from './useNetworkStatus.ts';
 import { NoInternetNotice } from '../../design/components/NoInternetNotice.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { DynamicBackground } from '../../design/dynamicBg/index.ts';
+import { MenuDetailModal } from '../../features/menu/MenuDetailModal.tsx';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
@@ -30,7 +29,7 @@ export const TabletRoot: React.FC = () => {
   const [isDeviceSetupOpen, setIsDeviceSetupOpen] = useState(false);
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
-  const { heldItem, setHeldItem, toggleItemAvailability } = useMenuStore();
+  const { heldItem, setHeldItem } = useMenuStore();
   const { isOnline } = useNetworkStatus();
 
   const activeNavTab: NavItem =
@@ -243,39 +242,12 @@ export const TabletRoot: React.FC = () => {
       {/* Portal Container untuk Dialog & Sheet agar overlay menutupi Navbar */}
       <div id="tk-portal-root" style={{ position: 'absolute', inset: 0, zIndex: 120, pointerEvents: 'none' }} />
 
-      {/* Sheet Ubah Status Menu di Level Root agar Navbar Tertutup Blur & Terblokir */}
-      <Sheet
+      {/* Modal Detail Menu Otomatis saat Hold Menu di Kasir Tablet */}
+      <MenuDetailModal
+        item={heldItem}
         isOpen={Boolean(heldItem)}
         onClose={() => setHeldItem(null)}
-        title={heldItem ? `Ubah status: ${heldItem.name}` : ''}
-      >
-        {heldItem && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-            <p style={{ margin: 0, fontSize: 'var(--t-sm)', color: 'var(--ink-2)' }}>
-              Status saat ini:{' '}
-              <b style={{ color: heldItem.available ? 'var(--accent-ink)' : 'var(--danger)' }}>
-                {heldItem.available ? 'Tersedia' : 'Habis'}
-              </b>
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <Button variant="flat" size="md" onClick={() => setHeldItem(null)}>
-                Batal
-              </Button>
-              <Button
-                variant={heldItem.available ? 'danger' : 'lime'}
-                size="md"
-                onClick={() => {
-                  toggleItemAvailability(heldItem.id, !heldItem.available);
-                  setHeldItem(null);
-                }}
-              >
-                {heldItem.available ? 'Tandai habis' : 'Tandai tersedia'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Sheet>
+      />
     </div>
   );
 };

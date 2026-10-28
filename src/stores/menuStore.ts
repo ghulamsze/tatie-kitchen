@@ -1566,7 +1566,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           logWarning('menuStore:addMenuItem:insert', insErr.message || String(insErr));
         }
       } catch (err) {
-        logWarning('menuStore:addMenuItem', err);
+        logError('menuStore:addMenuItem', err);
       }
     }
     return created;

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { MenuItem } from '../../lib/supabase/types.ts';
 import { formatRupiah } from '../../lib/format/formatters.ts';
+import { triggerHapticFeedback } from '../../lib/device/haptics.ts';
 
 export interface MenuCardProps {
   item: MenuItem & { hue?: number };
@@ -42,17 +43,21 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
 
   const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMovedRef = useRef<boolean>(false);
+  const didHoldRef = useRef<boolean>(false);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     hasMovedRef.current = false;
+    didHoldRef.current = false;
     pointerStartRef.current = { x: e.clientX, y: e.clientY };
     setIsHolding(true);
     timerRef.current = setTimeout(() => {
       if (!hasMovedRef.current) {
+        didHoldRef.current = true;
         setIsHolding(false);
+        triggerHapticFeedback([30]);
         onHold(item);
       }
-    }, 500); // Tahan kartu ~0,5 detik tanpa bergeser
+    }, 450); // Tahan kartu ~0,45 detik tanpa bergeser
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -80,9 +85,10 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Jika pointer bergerak (pengguna sedang scrolling), jangan tambahkan item
-    if (hasMovedRef.current) {
+    // Jika pointer bergerak (pengguna sedang scrolling) atau sedang hold buka detail, jangan tambahkan item
+    if (hasMovedRef.current || didHoldRef.current) {
       e.stopPropagation();
+      didHoldRef.current = false;
       return;
     }
     if (item.available) {

@@ -6,6 +6,7 @@ import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from 
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
 import { PhotoActionsDialog } from '../../../design/components/PhotoActionsDialog.tsx';
+import { MenuDetailModal } from '../../../features/menu/MenuDetailModal.tsx';
 
 function formatThousands(value: number | string): string {
   const digits = String(value).replace(/\D/g, '');
@@ -198,11 +199,64 @@ interface PhoneMenuItemCardProps {
 
 const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, onEdit, onToggle }) => {
   const isAvailable = item.available;
+  const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasMovedRef = useRef<boolean>(false);
+  const didHoldRef = useRef<boolean>(false);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    hasMovedRef.current = false;
+    didHoldRef.current = false;
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    holdTimerRef.current = setTimeout(() => {
+      if (!hasMovedRef.current) {
+        didHoldRef.current = true;
+        triggerHapticFeedback([30]);
+        onEdit(item);
+      }
+    }, 450);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!hasMovedRef.current) {
+      const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+      const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+      if (dx > 8 || dy > 8) {
+        hasMovedRef.current = true;
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      }
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (hasMovedRef.current || didHoldRef.current) {
+      e.stopPropagation();
+      didHoldRef.current = false;
+      return;
+    }
+    triggerHapticFeedback([15]);
+    onEdit(item);
+  };
 
   return (
     <div
       className="g-acrylic tk-phone-menu-card"
-      onClick={() => onEdit(item)}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       role="button"
       tabIndex={0}
       style={{
@@ -338,20 +392,11 @@ const PhoneMenuItemCard: React.FC<PhoneMenuItemCardProps> = React.memo(({ item, 
 PhoneMenuItemCard.displayName = 'PhoneMenuItemCard';
 
 export const PhoneMenuScreen: React.FC = () => {
-  const { items, groups, selectedCategory, toggleItemAvailability, updateMenuItem, addMenuItem, deleteMenuItem } = useMenuStore();
+  const { items, groups, selectedCategory, toggleItemAvailability, addMenuItem } = useMenuStore();
 
   const [search, setSearch] = useState('');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  // Form edit
-  const [editName, setEditName] = useState('');
-  const [editPrice, setEditPrice] = useState(0);
-  const [editPriceStr, setEditPriceStr] = useState('0');
-  const [editAvailable, setEditAvailable] = useState(true);
-  const [editGroupId, setEditGroupId] = useState('');
-  const [editPhotoPath, setEditPhotoPath] = useState<string | null>(null);
 
   // Form tambah
   const [addName, setAddName] = useState('');
@@ -364,7 +409,6 @@ export const PhoneMenuScreen: React.FC = () => {
   // Foto Makanan Crop State (1:1 fixed resolution sesuai profil)
   const [cropFoodImageSrc, setCropFoodImageSrc] = useState<string | null>(null);
   const [isCropFoodOpen, setIsCropFoodOpen] = useState(false);
-  const [targetPhotoMode, setTargetPhotoMode] = useState<'add' | 'edit'>('add');
   const foodFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFoodFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -380,11 +424,7 @@ export const PhoneMenuScreen: React.FC = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
-      if (targetPhotoMode === 'add') {
-        setAddPhotoPath(dataUrl);
-      } else {
-        setEditPhotoPath(dataUrl);
-      }
+      setAddPhotoPath(dataUrl);
       setIsCropFoodOpen(false);
       if (cropFoodImageSrc) {
         URL.revokeObjectURL(cropFoodImageSrc);
@@ -411,11 +451,9 @@ export const PhoneMenuScreen: React.FC = () => {
     }, 600);
   };
 
-  const handlePointerDownFoodPhoto = (mode: 'add' | 'edit') => {
-    setTargetPhotoMode(mode);
+  const handlePointerDownFoodPhoto = () => {
     didTriggerFoodHoldRef.current = false;
-    const photo = mode === 'add' ? addPhotoPath : editPhotoPath;
-    if (!photo) return;
+    if (!addPhotoPath) return;
     foodHoldTimerRef.current = setTimeout(() => {
       didTriggerFoodHoldRef.current = true;
       setIsPreviewFoodOpen(true);
@@ -429,14 +467,12 @@ export const PhoneMenuScreen: React.FC = () => {
     }
   };
 
-  const handlePhotoBoxClick = (mode: 'add' | 'edit') => {
+  const handlePhotoBoxClick = () => {
     if (didTriggerFoodHoldRef.current) {
       didTriggerFoodHoldRef.current = false;
       return;
     }
-    setTargetPhotoMode(mode);
-    const photo = mode === 'add' ? addPhotoPath : editPhotoPath;
-    if (photo) {
+    if (addPhotoPath) {
       setIsPhotoActionsOpen(true);
     } else {
       foodFileInputRef.current?.click();
@@ -445,7 +481,7 @@ export const PhoneMenuScreen: React.FC = () => {
 
   // Tangani tombol ESC pada keyboard (Windows) & Tombol Back hardware/gestur (Android)
   useEffect(() => {
-    if (!isCropFoodOpen && !isPreviewFoodOpen && !isPhotoActionsOpen && !isDeleteDialogOpen && !isAddOpen && !editingItem) {
+    if (!isCropFoodOpen && !isPreviewFoodOpen && !isPhotoActionsOpen && !isAddOpen) {
       return undefined;
     }
 
@@ -466,21 +502,13 @@ export const PhoneMenuScreen: React.FC = () => {
         setIsPhotoActionsOpen(false);
         return true;
       }
-      if (isDeleteDialogOpen) {
-        setIsDeleteDialogOpen(false);
-        return true;
-      }
       if (isAddOpen) {
         setIsAddOpen(false);
         return true;
       }
-      if (editingItem) {
-        handleCloseEditRef.current();
-        return true;
-      }
       return false;
     }, 70);
-  }, [isCropFoodOpen, isPreviewFoodOpen, isPhotoActionsOpen, isDeleteDialogOpen, isAddOpen, editingItem, cropFoodImageSrc]);
+  }, [isCropFoodOpen, isPreviewFoodOpen, isPhotoActionsOpen, isAddOpen, cropFoodImageSrc]);
 
   // Filter items sesuai kategori dan pencarian
   const filteredItems = useMemo(() => {
@@ -565,62 +593,11 @@ export const PhoneMenuScreen: React.FC = () => {
 
   const handleOpenEdit = useCallback((item: MenuItem) => {
     setEditingItem(item);
-    setEditName(item.name);
-    setEditPrice(item.price_idr);
-    setEditPriceStr(formatThousands(item.price_idr));
-    setEditAvailable(item.available);
-    let gid = item.group_id;
-    if (gid.startsWith('g-makanan')) gid = 'g-makanan';
-    setEditGroupId(gid);
-    setEditPhotoPath(item.photo_path || null);
-    setTargetPhotoMode('edit');
   }, []);
 
   const handleToggleAvailability = useCallback((id: string, newAvailable: boolean) => {
     toggleItemAvailability(id, newAvailable);
   }, [toggleItemAvailability]);
-
-  const handleCloseEdit = useCallback(() => {
-    if (editingItem && editAvailable !== editingItem.available) {
-      toggleItemAvailability(editingItem.id, editAvailable);
-    }
-    setEditingItem(null);
-  }, [editingItem, editAvailable, toggleItemAvailability]);
-
-  const handleCloseEditRef = useRef(handleCloseEdit);
-  useEffect(() => {
-    handleCloseEditRef.current = handleCloseEdit;
-  }, [handleCloseEdit]);
-
-  const handleDeleteMenuItem = useCallback(() => {
-    if (!editingItem) return;
-    setIsDeleteDialogOpen(true);
-  }, [editingItem]);
-
-  const handleConfirmDeleteMenu = useCallback(async () => {
-    if (!editingItem) return;
-    triggerHapticDelete();
-    const id = editingItem.id;
-    setIsDeleteDialogOpen(false);
-    setEditingItem(null);
-    await deleteMenuItem(id);
-  }, [editingItem, deleteMenuItem]);
-
-  const handleSaveEdit = async () => {
-    if (!editingItem) return;
-    const trimmed = editName.trim();
-    if (!trimmed) return;
-
-    await updateMenuItem({
-      id: editingItem.id,
-      name: trimmed,
-      price_idr: Number(editPrice) || 0,
-      available: editAvailable,
-      group_id: editGroupId,
-      photo_path: editPhotoPath,
-    });
-    setEditingItem(null);
-  };
 
   const handleSaveAdd = async () => {
     // 1. Wajib ada foto makanan
@@ -663,13 +640,6 @@ export const PhoneMenuScreen: React.FC = () => {
     setAddPhotoPath(null);
     setShakeField(null);
     setIsAddOpen(false);
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSaveEdit();
-    }
   };
 
   const handleAddKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -837,416 +807,12 @@ export const PhoneMenuScreen: React.FC = () => {
         )}
       </div>
 
-      {/* 5. Dialog Ubah Detail Menu */}
-      {editingItem && (
-        <div
-          className="tk-phone-overlay ov"
-          onClick={handleCloseEdit}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="g-liquid tk-phone-sheet sh"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b
-                style={{
-                  fontSize: 'var(--t-lg)',
-                  lineHeight: 'var(--l-lg)',
-                  fontWeight: 800,
-                  color: 'var(--ink)',
-                }}
-              >
-                Ubah Detail Menu
-              </b>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Tombol Hapus Menu */}
-                <button
-                  type="button"
-                  onClick={handleDeleteMenuItem}
-                  aria-label="Hapus menu"
-                  title="Hapus menu"
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: 'var(--r-md)',
-                    background: 'rgba(255, 59, 48, 0.12)',
-                    border: '1px solid rgba(255, 59, 48, 0.25)',
-                    color: '#ff453a',
-                    display: 'grid',
-                    placeItems: 'center',
-                    cursor: 'pointer',
-                    padding: 0,
-                    boxSizing: 'border-box',
-                    transition: 'transform 0.12s ease, background 0.15s ease',
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                  </svg>
-                </button>
-
-                {/* Toggle Ketersediaan Menu (Auto-save langsung) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextVal = !editAvailable;
-                    setEditAvailable(nextVal);
-                    triggerHapticFeedback();
-                    if (editingItem) {
-                      toggleItemAvailability(editingItem.id, nextVal);
-                    }
-                  }}
-                  aria-label={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
-                  title={editAvailable ? 'Menu aktif' : 'Menu dinonaktifkan'}
-                  style={{
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: 'var(--r-pill)',
-                    background: editAvailable ? 'var(--accent)' : 'var(--ctl-line)',
-                    border: 'none',
-                    padding: '2px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box',
-                    transition: 'background 0.2s ease',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: 'var(--r-pill)',
-                      background: '#ffffff',
-                      transform: editAvailable ? 'translateX(20px)' : 'translateX(0px)',
-                      transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                    }}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-              {/* Baris Pertama: Label Nama Menu mulai dari Box Foto */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Nama Menu
-                </label>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  {/* Box Foto Makanan (52x52) */}
-                  <div
-                    onClick={() => handlePhotoBoxClick('edit')}
-                    onPointerDown={() => handlePointerDownFoodPhoto('edit')}
-                    onPointerUp={handlePointerUpFoodPhoto}
-                    onPointerLeave={handlePointerUpFoodPhoto}
-                    onPointerCancel={handlePointerUpFoodPhoto}
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Foto makanan (Tahan untuk melihat pratinjau)"
-                    title={editPhotoPath ? "Klik untuk opsi foto, tahan untuk melihat pratinjau" : "Klik untuk memilih foto makanan"}
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: 'var(--r-md)',
-                      background: 'var(--ctl)',
-                      border: '1px solid var(--ctl-line)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      display: 'grid',
-                      placeItems: 'center',
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                      boxSizing: 'border-box',
-                      userSelect: 'none',
-                      WebkitUserSelect: 'none',
-                      touchAction: 'none',
-                    }}
-                  >
-                    {editPhotoPath ? (
-                      <img
-                        src={editPhotoPath}
-                        alt="Foto makanan"
-                        draggable={false}
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          pointerEvents: 'none',
-                          userSelect: 'none',
-                          WebkitUserSelect: 'none',
-                          WebkitTouchCallout: 'none',
-                          zIndex: 1,
-                        }}
-                      />
-                    ) : (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--ink-3)"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                        <circle cx="9" cy="9" r="2" />
-                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                      </svg>
-                    )}
-
-                    {/* Shield pelindung anti-copy / anti-hold */}
-                    <div
-                      style={{ position: 'absolute', inset: 0, zIndex: 2 }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    />
-
-                    {/* Icon Sunting Liquid Glass di ujung kanan bawah (Sesuai Dialog Tablet) */}
-                    <div
-                      className="g-liquid"
-                      style={{
-                        position: 'absolute',
-                        bottom: '3px',
-                        right: '3px',
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: 'var(--r-pill)',
-                        border: '1px solid rgba(255, 255, 255, 0.40)',
-                        background: 'color-mix(in srgb, var(--acrylic-bg) 75%, transparent)',
-                        backdropFilter: 'blur(16px)',
-                        WebkitBackdropFilter: 'blur(16px)',
-                        display: 'grid',
-                        placeItems: 'center',
-                        zIndex: 3,
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
-                        color: 'var(--ink)',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Input Nama Menu (52px) */}
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={handleEditKeyDown}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      height: '52px',
-                      padding: '0 14px',
-                      borderRadius: 'var(--r-md)',
-                      background: 'var(--ctl)',
-                      border: '1px solid var(--ctl-line)',
-                      color: 'var(--ink)',
-                      fontSize: 'var(--t-sm)',
-                      fontWeight: 700,
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Baris Kedua: Harga Jual */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--ink-3)',
-                    marginBottom: '6px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Harga Jual
-                </label>
-                <div className="tk-price-field">
-                  <span
-                    style={{
-                      fontSize: 'var(--t-sm)',
-                      fontWeight: 800,
-                      color: 'var(--ink-2)',
-                      userSelect: 'none',
-                      lineHeight: 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      marginRight: '6px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    Rp
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="tk-no-focus-outline"
-                    value={editPriceStr}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const formatted = formatThousands(e.target.value);
-                      setEditPriceStr(formatted);
-                      setEditPrice(parseThousands(formatted));
-                    }}
-                    onKeyDown={handleEditKeyDown}
-                    style={{
-                      flex: 1,
-                      height: '100%',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--ink)',
-                      fontSize: 'var(--t-sm)',
-                      fontWeight: 700,
-                      outline: 'none',
-                      padding: 0,
-                      margin: 0,
-                      lineHeight: 1,
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Baris Ketiga: Kategori Menu (Drop Up) */}
-              <CategoryDropdown
-                label="Kategori Menu"
-                selectedGroupId={editGroupId}
-                groups={groups}
-                onSelectGroup={(id) => setEditGroupId(id)}
-                direction="up"
-              />
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                <button
-                  type="button"
-                  className="tk-btn-flat"
-                  onClick={handleCloseEdit}
-                  style={{ flex: 1, height: '44px' }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="tk-btn-lime"
-                  onClick={handleSaveEdit}
-                  style={{ flex: 1, height: '44px' }}
-                >
-                  Simpan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5b. Modal Konfirmasi Hapus Menu */}
-      {isDeleteDialogOpen && editingItem && (
-        <div
-          className="tk-phone-overlay ov"
-          onClick={() => setIsDeleteDialogOpen(false)}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Konfirmasi Hapus Menu"
-          style={{ zIndex: 130 }}
-        >
-          <div
-            className="g-liquid tk-phone-dialog"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            style={{ gap: '14px' }}
-          >
-            <b
-              style={{
-                fontSize: 'var(--t-lg)',
-                lineHeight: 'var(--l-lg)',
-                fontWeight: 800,
-                color: 'var(--ink)',
-              }}
-            >
-              Hapus Menu?
-            </b>
-
-            <span
-              style={{
-                fontSize: 'var(--t-sm)',
-                lineHeight: 'var(--l-sm)',
-                color: 'var(--ink-2)',
-              }}
-            >
-              Menu <b>{editingItem.name}</b> akan dihapus dari daftar menu kafe. Tindakan ini tidak dapat dibatalkan.
-            </span>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
-              <button
-                type="button"
-                className="tk-btn-flat"
-                onClick={() => setIsDeleteDialogOpen(false)}
-                style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteMenu}
-                style={{
-                  flex: 1,
-                  height: '48px',
-                  fontSize: 'var(--t-sm)',
-                  fontWeight: 800,
-                  background: 'var(--danger)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: 'var(--r-md)',
-                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25)',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  transition: 'opacity 0.15s ease, transform 0.1s ease',
-                }}
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 5. Modal Detail Menu */}
+      <MenuDetailModal
+        item={editingItem}
+        isOpen={Boolean(editingItem)}
+        onClose={() => setEditingItem(null)}
+      />
 
       {/* 6. Dialog Tambah Menu Baru */}
       {isAddOpen && (
@@ -1329,8 +895,8 @@ export const PhoneMenuScreen: React.FC = () => {
                   {/* Box Foto Makanan (52x52) */}
                   <div
                     className={shakeField === 'photo' ? 'tk-field-rejecting' : ''}
-                    onClick={() => handlePhotoBoxClick('add')}
-                    onPointerDown={() => handlePointerDownFoodPhoto('add')}
+                    onClick={handlePhotoBoxClick}
+                    onPointerDown={handlePointerDownFoodPhoto}
                     onPointerUp={handlePointerUpFoodPhoto}
                     onPointerLeave={handlePointerUpFoodPhoto}
                     onPointerCancel={handlePointerUpFoodPhoto}
@@ -1563,22 +1129,18 @@ export const PhoneMenuScreen: React.FC = () => {
       {/* Modal Opsi Foto Makanan Murni Ikon (Eyes, Sunting, Trash, Batal) */}
       <PhotoActionsDialog
         isOpen={isPhotoActionsOpen}
-        hasPhoto={Boolean(targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath)}
+        hasPhoto={Boolean(addPhotoPath)}
         onClose={() => setIsPhotoActionsOpen(false)}
         onViewPhoto={() => setIsPreviewFoodOpen(true)}
         onChangePhoto={() => foodFileInputRef.current?.click()}
         onDeletePhoto={() => {
           triggerHapticDelete();
-          if (targetPhotoMode === 'add') {
-            setAddPhotoPath(null);
-          } else {
-            setEditPhotoPath(null);
-          }
+          setAddPhotoPath(null);
         }}
       />
 
       {/* Lightbox Pratinjau Foto Makanan (Sama Persis Profil saat di-hold) */}
-      {isPreviewFoodOpen && (targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath) && (
+      {isPreviewFoodOpen && addPhotoPath && (
         <div
           className="tk-phone-overlay ov"
           onClick={() => setIsPreviewFoodOpen(false)}
@@ -1621,8 +1183,8 @@ export const PhoneMenuScreen: React.FC = () => {
               }}
             >
               <img
-                src={(targetPhotoMode === 'add' ? addPhotoPath : editPhotoPath) || ''}
-                alt={(targetPhotoMode === 'add' ? addName : editName) || 'Foto makanan'}
+                src={addPhotoPath || ''}
+                alt={addName || 'Foto makanan'}
                 draggable={false}
                 style={{
                   position: 'absolute',
@@ -1683,7 +1245,7 @@ export const PhoneMenuScreen: React.FC = () => {
               </button>
             </div>
             <b style={{ fontSize: 'var(--t-sm)', color: 'var(--ink)' }}>
-              {(targetPhotoMode === 'add' ? addName : editName) || 'Foto Makanan'}
+              {addName || 'Foto Makanan'}
             </b>
             <button
               type="button"
