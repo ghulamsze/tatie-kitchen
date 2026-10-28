@@ -43,7 +43,7 @@ export const PhotoActionsDialog: React.FC<PhotoActionsDialogProps> = ({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      style={{ zIndex: 110, display: 'grid', placeItems: 'center' }}
+      style={{ zIndex: 160, display: 'grid', placeItems: 'center' }}
     >
       <div
         className="g-liquid tk-dialog-zoom-out"

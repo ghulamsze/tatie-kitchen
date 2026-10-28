@@ -303,7 +303,7 @@ body:has(.tk-overlay) .tk-phone-screen {
 .sh {
   position: relative;
   z-index: 105;
-  width: calc(100% - 24px);
+  width: min(480px, calc(100% - 24px));
   margin: 0 auto calc(20px + env(safe-area-inset-bottom, 0px)) auto;
   padding: 20px;
   border-radius: var(--r-xl);
@@ -339,47 +339,34 @@ body:has(.tk-overlay) .tk-phone-screen {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Modal Ubah Detail Menu Responsif (Tablet Centered Modal vs Phone Bottom Floating Sheet) */
+/* Modal Ubah Detail Menu (Bottom Floating Sheet seperti Add Menu) */
 .tk-menu-detail-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 140;
+  z-index: 120 !important;
   background: var(--ov);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  box-sizing: border-box;
-  animation: tk-overlay-fade 0.2s ease-out;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: auto !important;
   touch-action: none;
+  animation: tk-overlay-fade 0.2s ease-out;
 }
 
 .tk-menu-detail-sheet {
   position: relative;
-  z-index: 145;
-  width: min(440px, calc(100% - 24px));
+  z-index: 105;
+  width: min(480px, calc(100% - 24px));
+  margin: 0 auto calc(20px + env(safe-area-inset-bottom, 0px)) auto;
+  padding: 20px;
   border-radius: var(--r-xl);
-  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   box-sizing: border-box;
-  animation: tk-dialog-scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (max-width: 600px) {
-  .tk-menu-detail-overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-  .tk-menu-detail-sheet {
-    width: calc(100% - 20px);
-    margin: 0 auto calc(16px + env(safe-area-inset-bottom, 0px)) auto;
-    padding: 20px;
-    animation: tk-sheet-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+  animation: tk-sheet-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tk-phone-op,

@@ -48,6 +48,8 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
   const [photoPath, setPhotoPath] = useState<string | null>(null);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [canConfirmDelete, setCanConfirmDelete] = useState(false);
   const [isPhotoActionsOpen, setIsPhotoActionsOpen] = useState(false);
   const [isPreviewPhotoOpen, setIsPreviewPhotoOpen] = useState(false);
   const [isCropPhotoOpen, setIsCropPhotoOpen] = useState(false);
@@ -77,6 +79,17 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       setIsCropPhotoOpen(false);
     }
   }, [isOpen, item, groups]);
+
+  // Debounce safety delay 320ms untuk konfirmasi hapus menu (Konsisten dengan hapus kasir)
+  useEffect(() => {
+    if (!isDeleteDialogOpen) {
+      setCanConfirmDelete(false);
+      return undefined;
+    }
+    setCanConfirmDelete(false);
+    const timer = setTimeout(() => setCanConfirmDelete(true), 320);
+    return () => clearTimeout(timer);
+  }, [isDeleteDialogOpen]);
 
   // Modal open classes
   useEffect(() => {
@@ -203,15 +216,20 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
     }
   };
 
-  // Hapus menu
+  // Hapus menu (Konsisten dengan hapus kasir)
   const handleConfirmDelete = async () => {
-    if (!item) return;
-    triggerHapticDelete();
-    const id = item.id;
-    setIsDeleteDialogOpen(false);
-    onClose();
-    await deleteMenuItem(id);
-    onDeleted?.(id);
+    if (!item || !canConfirmDelete || isDeleting) return;
+    try {
+      setIsDeleting(true);
+      triggerHapticDelete();
+      const id = item.id;
+      await deleteMenuItem(id);
+      setIsDeleteDialogOpen(false);
+      onDeleted?.(id);
+      onClose();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Foto handlers
@@ -280,9 +298,9 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay (Floating Bottom Sheet persis seperti Add Menu) */}
       <div
-        className="tk-menu-detail-overlay"
+        className="tk-phone-overlay ov"
         onClick={handleClose}
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
@@ -290,7 +308,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         aria-modal="true"
       >
         <div
-          className="g-liquid tk-menu-detail-sheet"
+          className="g-liquid tk-phone-sheet sh"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
@@ -610,15 +628,16 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         </div>
       </div>
 
-      {/* Modal Konfirmasi Hapus Menu */}
+      {/* Modal Konfirmasi Hapus Menu (Konsisten 100% dengan Dialog Hapus Kasir) */}
       {isDeleteDialogOpen && (
         <div
-          className="tk-menu-detail-overlay"
-          onClick={() => setIsDeleteDialogOpen(false)}
+          className="tk-phone-overlay ov"
+          onClick={() => !isDeleting && setIsDeleteDialogOpen(false)}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
+          aria-label="Konfirmasi Hapus Menu"
           style={{ zIndex: 160 }}
         >
           <div
@@ -626,67 +645,62 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            style={{ zIndex: 165 }}
+            style={{ gap: '14px', zIndex: 165 }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: 'var(--r-md)',
-                  background: 'rgba(255, 59, 48, 0.12)',
-                  border: '1px solid rgba(255, 59, 48, 0.25)',
-                  color: '#ff453a',
-                  display: 'grid',
-                  placeItems: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  <line x1="10" y1="11" x2="10" y2="17" />
-                  <line x1="14" y1="11" x2="14" y2="17" />
-                </svg>
-              </div>
-              <div>
-                <b style={{ fontSize: 'var(--t-lg)', lineHeight: 'var(--l-lg)', color: 'var(--ink)' }}>
-                  Hapus Menu?
-                </b>
-              </div>
-            </div>
+            <b
+              style={{
+                fontSize: 'var(--t-lg)',
+                lineHeight: 'var(--l-lg)',
+                fontWeight: 800,
+                color: 'var(--ink)',
+              }}
+            >
+              Hapus menu?
+            </b>
 
-            <p style={{ margin: 0, fontSize: 'var(--t-sm)', lineHeight: 'var(--l-sm)', color: 'var(--ink-2)' }}>
-              Menu <b>{item.name}</b> akan dihapus dari daftar menu kafe. Tindakan ini tidak dapat dibatalkan.
-            </p>
+            <span
+              style={{
+                fontSize: 'var(--t-sm)',
+                lineHeight: 'var(--l-sm)',
+                color: 'var(--ink-2)',
+              }}
+            >
+              Hapus menu <b>{name || item.name}</b> dari daftar menu kafe? Tindakan ini tidak dapat dibatalkan.
+            </span>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
               <button
                 type="button"
                 className="tk-btn-flat"
                 onClick={() => setIsDeleteDialogOpen(false)}
-                style={{ flex: 1, height: '42px' }}
+                disabled={isDeleting}
+                style={{ flex: 1, height: '48px', fontSize: 'var(--t-sm)' }}
               >
                 Batal
               </button>
               <button
                 type="button"
-                onClick={handleConfirmDelete}
+                onClick={canConfirmDelete && !isDeleting ? handleConfirmDelete : undefined}
+                disabled={!canConfirmDelete || isDeleting}
                 style={{
                   flex: 1,
-                  height: '42px',
-                  borderRadius: 'var(--r-md)',
-                  background: '#ff453a',
-                  color: '#ffffff',
-                  border: 'none',
+                  height: '48px',
                   fontSize: 'var(--t-sm)',
                   fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(255, 69, 58, 0.35)',
+                  background: 'var(--danger)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: 'var(--r-md)',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25)',
+                  cursor: canConfirmDelete && !isDeleting ? 'pointer' : 'not-allowed',
+                  opacity: canConfirmDelete && !isDeleting ? 1 : 0.6,
+                  pointerEvents: canConfirmDelete && !isDeleting ? 'auto' : 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  transition: 'opacity 0.15s ease, transform 0.1s ease',
                 }}
               >
-                Hapus
+                {isDeleting ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>
