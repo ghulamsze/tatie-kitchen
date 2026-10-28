@@ -10,7 +10,7 @@ export interface CustomerMenuViewProps {
 
 interface MenuGroupDefinition {
   title: string;
-  category: 'makanan' | 'mie' | 'snack' | 'roti' | 'minuman' | 'kue';
+  category: 'makanan' | 'mie' | 'minuman' | 'roti_kue' | 'camilan';
   iconType: 'hot-coffee' | 'hot-tea' | 'iced-coffee' | 'rice' | 'noodle' | 'snack' | 'bread' | 'pizza' | 'cake';
   items: { name: string; defaultPrice: number }[];
 }
@@ -160,18 +160,18 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
   // --- PIZZA ---
   {
     title: 'Pizza Spesial',
-    category: 'makanan',
+    category: 'roti_kue',
     iconType: 'pizza',
     items: [
-      { name: 'Pizza', defaultPrice: 10000 },
+      { name: 'Pizza Mini', defaultPrice: 10000 },
       { name: 'Pizza Big', defaultPrice: 100000 },
     ],
   },
 
-  // --- ROTI ---
+  // --- ROTI & KUE ---
   {
     title: 'Roti manis & isi',
-    category: 'roti',
+    category: 'roti_kue',
     iconType: 'bread',
     items: [
       { name: 'Roti Coklat', defaultPrice: 8000 },
@@ -184,7 +184,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
   },
   {
     title: 'Roti gurih, bakar & spesial',
-    category: 'roti',
+    category: 'roti_kue',
     iconType: 'bread',
     items: [
       { name: 'Roti Abon', defaultPrice: 10000 },
@@ -197,11 +197,9 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
       { name: 'Roti John', defaultPrice: 30000 },
     ],
   },
-
-  // --- KUE ---
   {
     title: 'Kue, donat & brownies',
-    category: 'kue',
+    category: 'roti_kue',
     iconType: 'cake',
     items: [
       { name: 'Donat', defaultPrice: 18000 },
@@ -213,10 +211,10 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
     ],
   },
 
-  // --- SNACK ---
+  // --- CAMILAN ---
   {
     title: 'Gorengan & finger food',
-    category: 'snack',
+    category: 'camilan',
     iconType: 'snack',
     items: [
       { name: 'Risol', defaultPrice: 4000 },
@@ -231,7 +229,7 @@ const MENU_GROUPS_CATALOG: MenuGroupDefinition[] = [
   },
   {
     title: 'Burger & kebab',
-    category: 'snack',
+    category: 'camilan',
     iconType: 'snack',
     items: [
       { name: 'Burger Telur', defaultPrice: 20000 },
@@ -322,7 +320,7 @@ const renderGroupIcon = (type: MenuGroupDefinition['iconType']) => {
 };
 
 export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti' | 'kue' | 'snack'>('semua');
+  const [selectedCategory, setSelectedCategory] = useState<'semua' | 'makanan' | 'mie' | 'minuman' | 'roti_kue' | 'camilan'>('semua');
   const { items, groups } = useMenuStore();
   const { orders } = useHistoryStore();
 
@@ -334,15 +332,14 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     }, 25);
   }, [onClose]);
 
-  // Urutan kategori yang rapi dan terstruktur logis (Pizza masuk di makanan)
+  // Urutan kategori yang rapi dan terstruktur logis (Pizza masuk di roti & kue, snack diubah jadi camilan)
   const categories = [
     { key: 'semua', label: 'Semua' },
     { key: 'makanan', label: 'Makanan' },
     { key: 'mie', label: 'Mie' },
     { key: 'minuman', label: 'Minuman' },
-    { key: 'roti', label: 'Roti' },
-    { key: 'kue', label: 'Kue' },
-    { key: 'snack', label: 'Snack' },
+    { key: 'roti_kue', label: 'Roti & Kue' },
+    { key: 'camilan', label: 'Camilan' },
   ] as const;
 
   // Hitung menu terlaris secara dinamis berdasarkan data pesanan riil
@@ -415,8 +412,9 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
 
     extraItems.forEach((it) => {
       const cat = getItemCategory(it, groups);
+      const catLabel = cat === 'roti_kue' ? 'Roti & Kue' : cat === 'camilan' ? 'Camilan' : cat.charAt(0).toUpperCase() + cat.slice(1);
 
-      const title = `Menu Tambahan ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+      const title = `Menu Tambahan ${catLabel}`;
       if (!groupsMap.has(title)) {
         groupsMap.set(title, {
           title,
@@ -426,11 +424,9 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
               ? 'iced-coffee'
               : cat === 'mie'
               ? 'noodle'
-              : cat === 'roti'
+              : cat === 'roti_kue'
               ? 'bread'
-              : cat === 'kue'
-              ? 'cake'
-              : cat === 'snack'
+              : cat === 'camilan'
               ? 'snack'
               : 'rice',
           items: [],

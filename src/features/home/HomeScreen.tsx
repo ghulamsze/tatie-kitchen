@@ -5,12 +5,13 @@ import { useHistoryStore } from '../../stores/historyStore.ts';
 import { useCashierStore } from '../../stores/cashierStore.ts';
 import { MenuCard } from './MenuCard.tsx';
 import { MenuVariantDialog } from './MenuVariantDialog.tsx';
+import { MenuDetailModal } from '../menu/MenuDetailModal.tsx';
 import { MenuItem } from '../../lib/supabase/types.ts';
 import { Button } from '../../design/components/Button.tsx';
 import { Toast } from '../../design/components/Toast.tsx';
 import { formatRupiah } from '../../lib/format/formatters.ts';
 import { SnapDust } from '../../lib/effects/snapDust.ts';
-import { triggerHapticDelete, triggerHapticUndo } from '../../lib/device/haptics.ts';
+import { triggerHapticFeedback, triggerHapticDelete, triggerHapticUndo } from '../../lib/device/haptics.ts';
 import { CartLine } from '../../stores/cartStore.ts';
 
 export interface HomeScreenProps {
@@ -27,6 +28,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
   const [isClearing, setIsClearing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedVariantItem, setSelectedVariantItem] = useState<MenuItem | null>(null);
+  const [detailModalItem, setDetailModalItem] = useState<MenuItem | null>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const handleManualRefresh = async () => {
@@ -171,9 +173,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     { key: 'Makanan', label: 'Makanan' },
     { key: 'Mie', label: 'Mie' },
     { key: 'Minuman', label: 'Minuman' },
-        { key: 'Roti', label: 'Roti' },
-    { key: 'Kue', label: 'Kue' },
-    { key: 'Snack', label: 'Snack' },
+    { key: 'Roti & Kue', label: 'Roti & Kue' },
+    { key: 'Camilan', label: 'Camilan' },
   ];
 
   // Filter items berdasarkan kategori dan pencarian
@@ -182,7 +183,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
       // 1. Kategori
       if (selectedCategory !== 'Semua') {
         const itemCat = getItemCategory(item, groups);
-        if (itemCat !== selectedCategory.toLowerCase()) {
+        let targetKey = selectedCategory.toLowerCase().trim();
+        if (targetKey === 'roti & kue') targetKey = 'roti_kue';
+        if (itemCat !== targetKey) {
           return false;
         }
       }
@@ -374,7 +377,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
                     addItem(it);
                   }
                 }}
-                onHold={(it) => setHeldItem(it)}
+                onHold={(it) => {
+                  triggerHapticFeedback([40]);
+                  setHeldItem(it);
+                  setDetailModalItem(it);
+                }}
               />
             ))}
             {filteredItems.length === 0 && (
@@ -596,6 +603,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
             setSelectedVariantItem(null);
           }
         }}
+      />
+
+      {/* Dialog Detail Menu Kasir (Read-only Tablet saat di-hold) */}
+      <MenuDetailModal
+        item={detailModalItem}
+        isOpen={Boolean(detailModalItem)}
+        onClose={() => {
+          setDetailModalItem(null);
+          setHeldItem(null);
+        }}
+        isCashierTablet={true}
       />
 
       {/* Toast Notifikasi Feedback Status & Tombol Urungkan Kasir Tablet */}

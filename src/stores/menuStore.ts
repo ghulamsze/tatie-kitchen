@@ -29,11 +29,16 @@ const generateUuid = (): string => {
   });
 };
 
-export type CanonicalMenuCategory = 'makanan' | 'mie' | 'minuman' | 'roti' | 'kue' | 'snack';
+export type CanonicalMenuCategory = 'makanan' | 'mie' | 'minuman' | 'roti_kue' | 'camilan';
 
 /**
  * Resolver kategori kanonikal tunggal untuk seluruh aplikasi (Tablet, Phone, Menu Lengkap)
- * Aturan: hanya kategori makanan, mie, minuman, roti, kue dan snack. Pizza masuk di makanan.
+ * Aturan:
+ * 1. Roti & Kue (semua roti, pastry, donat, cake, brownies, bolu, pie, tart, toast, serta PIZZA)
+ * 2. Camilan (platter, pisang nugget coklat/keju, sosis goreng, lekor, risol, nugget, burger, kebab)
+ * 3. Mie (mie goreng/kuah/titi, indomie, bihun, kwetiau, pasta, spaghetti)
+ * 4. Minuman (kopi, teh, cokelat, cadbury, squash, butterscotch, vanilla, red velvet, matcha, susu, dll.)
+ * 5. Makanan (nasi goreng, nasi ayam, soto, coto, rawon, sop, dan hidangan berat lainnya)
  */
 export function getItemCategory(
   item: MenuItem,
@@ -46,60 +51,73 @@ export function getItemCategory(
   const grpCat = grp ? (grp.category || '').toLowerCase().trim() : '';
   const grpName = grp ? (grp.name || '').toLowerCase().trim() : '';
 
-  // 1. Pizza masuk ke makanan sesuai instruksi
+  // 1. Roti & Kue (Termasuk Pizza, Roti'O, Roti Sosis, Roti Pisang Coklat, Donat, Cake, Brownies, dll.)
   if (
+    normName.includes('roti') ||
     normName.includes('pizza') ||
-    grpCat === 'pizza' ||
-    grpName.includes('pizza') ||
-    gid.includes('pizza')
-  ) {
-    return 'makanan';
-  }
-
-  // 2. Kue
-  if (
-    grpCat === 'kue' ||
-    gid.includes('kue') ||
-    grpName.includes('kue') ||
-    grpName.includes('donat') ||
-    grpName.includes('cake') ||
-    grpName.includes('brownies') ||
     normName.includes('donat') ||
+    normName.includes('cake') ||
     normName.includes('brownies') ||
     normName.includes('bolu') ||
     normName.includes('pie') ||
-    normName.includes('cake') ||
-    normName.includes('tart')
+    normName.includes('tart') ||
+    normName.includes('toast') ||
+    normName.includes('pastry') ||
+    grpCat === 'roti' ||
+    grpCat === 'kue' ||
+    grpName.includes('kue') ||
+    grpName.includes('donat') ||
+    grpName.includes('cake') ||
+    (grpName.includes('roti') && !normName.includes('burger')) ||
+    (grpName.includes('pastry') && !normName.includes('burger'))
   ) {
-    return 'kue';
+    return 'roti_kue';
   }
 
-  // 3. Roti
+  // 2. Camilan (Platter, Pisang Nugget, Risol, Nugget, Lekor, Kentang, Sosis Goreng, Burger, Kebab)
+  // Platter dan Pisang Nugget Coklat/Keju adalah CAMILAN, BUKAN MINUMAN!
   if (
-    grpCat === 'roti' ||
-    gid.includes('roti') ||
-    grpName.includes('roti') ||
-    grpName.includes('pastry') ||
-    normName.includes('roti') ||
-    normName.includes('toast')
+    normName.includes('platter') ||
+    normName.includes('pisang') ||
+    normName.includes('nugget') ||
+    normName.includes('risol') ||
+    normName.includes('lekor') ||
+    normName.includes('kentang') ||
+    normName.includes('burger') ||
+    normName.includes('kebab') ||
+    (normName.includes('sosis') && !normName.includes('roti')) ||
+    grpCat === 'snack' ||
+    grpName.includes('camilan') ||
+    grpName.includes('snack') ||
+    grpName.includes('burger')
   ) {
-    return 'roti';
+    return 'camilan';
+  }
+
+  // 3. Mie
+  if (
+    normName.includes('mie') ||
+    normName.includes('indomie') ||
+    normName.includes('bihun') ||
+    normName.includes('kwetiau') ||
+    normName.includes('pasta') ||
+    normName.includes('spaghetti') ||
+    grpCat === 'mie' ||
+    grpName.includes('mie') ||
+    gid.includes('mie')
+  ) {
+    return 'mie';
   }
 
   // 4. Minuman
   if (
-    grpCat === 'minuman' ||
-    gid.includes('minuman') ||
-    grpName.includes('kopi') ||
-    grpName.includes('teh') ||
-    grpName.includes('es ') ||
-    grpName.includes('cokelat') ||
     normName.includes('kopi') ||
     normName.includes('coffee') ||
     normName.includes('latte') ||
     normName.includes('teh') ||
     normName.includes('tea') ||
     normName.includes('cokelat') ||
+    normName.includes('coklat') ||
     normName.includes('chocolate') ||
     normName.includes('milo') ||
     normName.includes('cadbur') ||
@@ -122,46 +140,18 @@ export function getItemCategory(
     normName.includes('air mineral') ||
     normName.includes('susu') ||
     normName.includes('extrajoss') ||
-    normName.includes('curacao')
+    normName.includes('curacao') ||
+    grpCat === 'minuman' ||
+    grpName.includes('kopi') ||
+    grpName.includes('teh') ||
+    grpName.includes('es ') ||
+    grpName.includes('cokelat') ||
+    gid.includes('minuman')
   ) {
     return 'minuman';
   }
 
-  // 5. Mie
-  if (
-    grpCat === 'mie' ||
-    gid.includes('mie') ||
-    grpName.includes('mie') ||
-    normName.includes('mie') ||
-    normName.includes('indomie') ||
-    normName.includes('bihun') ||
-    normName.includes('kwetiau') ||
-    normName.includes('pasta') ||
-    normName.includes('spaghetti')
-  ) {
-    return 'mie';
-  }
-
-  // 6. Snack
-  if (
-    grpCat === 'snack' ||
-    gid.includes('snack') ||
-    grpName.includes('camilan') ||
-    grpName.includes('burger') ||
-    normName.includes('risol') ||
-    normName.includes('nugget') ||
-    normName.includes('lekor') ||
-    normName.includes('sosis') ||
-    normName.includes('platter') ||
-    normName.includes('kentang') ||
-    normName.includes('burger') ||
-    normName.includes('kebab') ||
-    normName.includes('pisang') ||
-    normName.includes('camilan')
-  ) {
-    return 'snack';
-  }
-
+  // 5. Makanan
   return 'makanan';
 }
 
@@ -1553,8 +1543,8 @@ async function resolveAvailableGroupId(
   };
 
   let rawCat = (requestedCategory || 'makanan').toLowerCase().trim();
-  if (rawCat === 'pizza') rawCat = 'makanan';
-  if (rawCat === 'roti' || rawCat === 'kue') rawCat = 'snack';
+  if (rawCat === 'pizza' || rawCat === 'roti' || rawCat === 'kue' || rawCat === 'roti_kue') rawCat = 'snack';
+  if (rawCat === 'camilan') rawCat = 'snack';
 
   const targetCategory = ['makanan', 'mie', 'minuman', 'snack'].includes(rawCat) ? rawCat : 'makanan';
   const defaultFallback = fallbackMap[targetCategory] || fallbackMap.makanan;
@@ -1925,8 +1915,8 @@ export const useMenuStore = create<MenuState>((set, get) => ({
             return {
               ...item,
               id: matchingRow.id || item.id,
-              name: matchingRow.name || item.name,
-              price_idr: typeof matchingRow.price_idr === 'number' ? matchingRow.price_idr : item.price_idr,
+              name: item.variants && item.variants.length > 0 ? item.name : matchingRow.name || item.name,
+              price_idr: item.variants && item.variants.length > 0 ? item.price_idr : (typeof matchingRow.price_idr === 'number' ? matchingRow.price_idr : item.price_idr),
               group_id: matchingRow.group_id || item.group_id,
               available: Boolean(matchingRow.available),
               photo_path:
@@ -1935,6 +1925,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
                   : item.photo_path || matchingRow.photo_path,
               sort: typeof matchingRow.sort === 'number' ? matchingRow.sort : item.sort,
               active: Boolean(matchingRow.active),
+              variants: item.variants,
             };
           }
 

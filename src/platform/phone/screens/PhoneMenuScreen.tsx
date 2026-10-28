@@ -527,7 +527,9 @@ export const PhoneMenuScreen: React.FC = () => {
       // 1. Filter kategori
       if (selectedCategory !== 'Semua') {
         const itemCat = getItemCategory(item, groups);
-        if (itemCat !== selectedCategory.toLowerCase()) {
+        let targetKey = selectedCategory.toLowerCase().trim();
+        if (targetKey === 'roti & kue') targetKey = 'roti_kue';
+        if (itemCat !== targetKey) {
           return false;
         }
       }
