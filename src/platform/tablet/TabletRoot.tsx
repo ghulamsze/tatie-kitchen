@@ -18,7 +18,6 @@ import { useNetworkStatus } from './useNetworkStatus.ts';
 import { NoInternetNotice } from '../../design/components/NoInternetNotice.tsx';
 import { initPosRealtimeSync } from '../../lib/supabase/realtime.ts';
 import { DynamicBackground } from '../../design/dynamicBg/index.ts';
-import { MenuDetailModal } from '../../features/menu/MenuDetailModal.tsx';
 
 export type TabletScreen = 'intro' | 'select-cashier' | 'payment' | 'receipt' | NavItem;
 
@@ -29,7 +28,7 @@ export const TabletRoot: React.FC = () => {
   const [isDeviceSetupOpen, setIsDeviceSetupOpen] = useState(false);
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const { activeCashier } = useCashierStore();
-  const { heldItem, setHeldItem } = useMenuStore();
+  const { heldItem } = useMenuStore();
   const { isOnline } = useNetworkStatus();
 
   const activeNavTab: NavItem =
@@ -281,13 +280,6 @@ export const TabletRoot: React.FC = () => {
 
       {/* Portal Container untuk Dialog & Sheet agar overlay menutupi Navbar */}
       <div id="tk-portal-root" style={{ position: 'absolute', inset: 0, zIndex: 120, pointerEvents: 'none' }} />
-
-      {/* Modal Detail Menu Otomatis saat Hold Menu di Kasir Tablet */}
-      <MenuDetailModal
-        item={heldItem}
-        isOpen={Boolean(heldItem)}
-        onClose={() => setHeldItem(null)}
-      />
     </div>
   );
 };

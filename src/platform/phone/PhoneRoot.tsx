@@ -17,12 +17,14 @@ import { useMenuStore } from '../../stores/menuStore.ts';
 import { SwipePager } from '../tablet/SwipePager.tsx';
 import { usePhoneSwipeNav } from './usePhoneSwipeNav.ts';
 import { useDevice } from '../../lib/device/useDevice.ts';
+import { Toast } from '../../design/components/Toast.tsx';
 
 const PHONE_NAV_TABS: NavItem[] = ['Beranda', 'Menu', 'Akun'];
 
 export const PhoneRoot: React.FC = () => {
   const device = useDevice();
   const isSwipeEnabled = device.platform === 'ios';
+  const toastMessage = useMenuStore((state) => state.toastMessage);
   const [showIntro, setShowIntro] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<NavItem>('Beranda');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -285,6 +287,24 @@ export const PhoneRoot: React.FC = () => {
         id="tk-portal-root"
         className="tk-phone-portal-root"
       />
+
+      {/* Global Toast Notification on Phone (Always above dialogs, zIndex 9999) */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '84px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            width: 'max-content',
+            maxWidth: '90%',
+          }}
+        >
+          <Toast message={toastMessage} />
+        </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useMenuStore, getItemCategory, sortMenuItems } from '../../../stores/menuStore.ts';
 import { useHistoryStore } from '../../../stores/historyStore.ts';
 import { formatRupiah } from '../../../lib/format/formatters.ts';
-import { MenuItem } from '../../../lib/supabase/types.ts';
+import { MenuItem, MenuVariant } from '../../../lib/supabase/types.ts';
 import { triggerHapticFeedback, triggerHapticDelete, triggerHapticReject } from '../../../lib/device/haptics.ts';
 import { CropProfileDialog } from '../../../features/akun/CropProfileDialog.tsx';
 import { registerBackHandler } from '../../../lib/device/backButton.ts';
@@ -418,6 +418,8 @@ export const PhoneMenuScreen: React.FC = () => {
   const [addAvailable, setAddAvailable] = useState(true);
   const [addCategory, setAddCategory] = useState<'camilan' | 'makanan' | 'minuman' | 'roti_kue' | 'tunagizi'>('makanan');
   const [addPhotoPath, setAddPhotoPath] = useState<string | null>(null);
+  const [addVariants, setAddVariants] = useState<MenuVariant[]>([]);
+  const [isAddAdvancedOpen, setIsAddAdvancedOpen] = useState(false);
 
   useEffect(() => {
     fetchMenu().catch(() => {});
@@ -566,10 +568,11 @@ export const PhoneMenuScreen: React.FC = () => {
     return map;
   }, [orders]);
 
-  // Urutkan item: Disematkan (Pin) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
+  // Urutkan item: Disematkan (Pin) -> Kategori A-Z (pada tab Semua) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
   const sortedItems = useMemo(() => {
-    return sortMenuItems(filteredItems, pinnedIds, soldCounts);
-  }, [filteredItems, pinnedIds, soldCounts]);
+    const isAll = selectedCategory === 'Semua';
+    return sortMenuItems(filteredItems, pinnedIds, soldCounts, groups, isAll);
+  }, [filteredItems, pinnedIds, soldCounts, groups, selectedCategory]);
 
   // Virtualisasi Viewport Culling List Menu
   const ITEM_HEIGHT = 86;
@@ -626,6 +629,18 @@ export const PhoneMenuScreen: React.FC = () => {
     toggleItemAvailability(id, newAvailable);
   }, [toggleItemAvailability]);
 
+  const handleOpenAdd = () => {
+    setAddName('');
+    setAddPrice(0);
+    setAddPriceStr('');
+    setAddAvailable(true);
+    setAddPhotoPath(null);
+    setAddVariants([]);
+    setIsAddAdvancedOpen(false);
+    setShakeField(null);
+    setIsAddOpen(true);
+  };
+
   const handleSaveAdd = async () => {
     // 1. Wajib ada nama menu
     const trimmed = addName.trim();
@@ -650,6 +665,8 @@ export const PhoneMenuScreen: React.FC = () => {
       return gc === addCategory;
     });
 
+    const validVariants = addVariants.filter((v) => v.name.trim().length > 0);
+
     await addMenuItem({
       name: trimmed,
       price_idr: Number(addPrice) || 0,
@@ -658,6 +675,7 @@ export const PhoneMenuScreen: React.FC = () => {
       category: addCategory,
       photo_path: addPhotoPath,
       sort: items.length + 1,
+      variants: validVariants.length > 0 ? validVariants : undefined,
     } as any);
 
     setAddName('');
@@ -665,6 +683,8 @@ export const PhoneMenuScreen: React.FC = () => {
     setAddPriceStr('');
     setAddAvailable(true);
     setAddPhotoPath(null);
+    setAddVariants([]);
+    setIsAddAdvancedOpen(false);
     setShakeField(null);
     setIsAddOpen(false);
   };
@@ -703,7 +723,7 @@ export const PhoneMenuScreen: React.FC = () => {
         </h1>
         <button
           type="button"
-          onClick={() => setIsAddOpen(true)}
+          onClick={handleOpenAdd}
           aria-label="Tambah menu baru"
           title="Tambah menu baru"
           style={{
@@ -1144,6 +1164,210 @@ export const PhoneMenuScreen: React.FC = () => {
                 onSelectCategory={(cat) => setAddCategory(cat)}
                 direction="up"
               />
+
+              {/* Baris Keempat: Varian Lanjutan (Murni Tanda Panah ke Bawah) */}
+              <div
+                style={{
+                  borderRadius: 'var(--r-md)',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--ctl-line)',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddAdvancedOpen(!isAddAdvancedOpen);
+                    triggerHapticFeedback([15]);
+                  }}
+                  aria-label="Buka varian"
+                  title="Buka pilihan varian"
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: 0.85,
+                    padding: 0,
+                    color: 'var(--ink)',
+                  }}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isAddAdvancedOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {isAddAdvancedOpen && (
+                  <div
+                    style={{
+                      padding: '10px 14px 14px 14px',
+                      borderTop: '1px solid var(--ctl-line)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    {addVariants.length === 0 ? (
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          padding: '8px',
+                          color: 'var(--ink-3)',
+                          fontSize: '12px',
+                        }}
+                      >
+                        Belum ada varian menu.
+                      </div>
+                    ) : (
+                      addVariants.map((variant, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}
+                        >
+                          <input
+                            type="text"
+                            value={variant.name}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[index] = { ...updated[index], name: e.target.value };
+                              setAddVariants(updated);
+                            }}
+                            placeholder="Nama varian"
+                            style={{
+                              flex: 1.2,
+                              height: '40px',
+                              padding: '0 10px',
+                              borderRadius: 'var(--r-md)',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--ctl-line)',
+                              color: 'var(--ink)',
+                              fontSize: 'var(--t-xs)',
+                              fontWeight: 700,
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          <div
+                            style={{
+                              flex: 1,
+                              height: '40px',
+                              padding: '0 8px',
+                              borderRadius: 'var(--r-md)',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--ctl-line)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink-3)', marginRight: '4px' }}>
+                              Rp
+                            </span>
+                            <input
+                              type="text"
+                              value={formatThousands(variant.price_idr)}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[index] = { ...updated[index], price_idr: parseThousands(e.target.value) };
+                                setAddVariants(updated);
+                              }}
+                              placeholder="0"
+                              style={{
+                                width: '100%',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--ink)',
+                                fontSize: 'var(--t-xs)',
+                                fontWeight: 700,
+                                outline: 'none',
+                                padding: 0,
+                                margin: 0,
+                              }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              triggerHapticDelete();
+                              setAddVariants(addVariants.filter((_, i) => i !== index));
+                            }}
+                            aria-label="Hapus varian"
+                            style={{
+                              width: '36px',
+                              height: '40px',
+                              borderRadius: 'var(--r-md)',
+                              background: 'rgba(255, 255, 255, 0.04)',
+                              border: '1px solid var(--ctl-line)',
+                              color: 'var(--ink-3)',
+                              display: 'grid',
+                              placeItems: 'center',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              padding: 0,
+                            }}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddVariants([...addVariants, { name: '', price_idr: addPrice || 0 }]);
+                      }}
+                      style={{
+                        height: '38px',
+                        borderRadius: 'var(--r-md)',
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px dashed var(--ctl-line)',
+                        color: 'var(--accent)',
+                        fontSize: 'var(--t-xs)',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        marginTop: '2px',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      Tambah Varian
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                 <button

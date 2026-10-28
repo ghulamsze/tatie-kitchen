@@ -404,10 +404,16 @@ export const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ onClose }) =
     MENU_GROUPS_CATALOG.forEach((grp) => {
       grp.items.forEach((it) => catalogNames.add(it.name.toLowerCase()));
     });
+    // Hindari redundansi pizza katalog dengan menu store 'Pizza'
+    catalogNames.add('pizza');
+    catalogNames.add('pizza mini');
+    catalogNames.add('pizza big');
 
-    // Item dari store yang belum terdaftar di katalog statis
+    // Item dari store yang belum terdaftar di katalog statis (pizza sudah terdaftar di kelompok Pizza Spesial)
     const extraItems = items.filter(
-      (it) => it.active !== false && !catalogNames.has(it.name.toLowerCase())
+      (it) => it.active !== false &&
+        !catalogNames.has(it.name.toLowerCase().trim()) &&
+        !it.name.toLowerCase().trim().includes('pizza')
     );
 
     extraItems.forEach((it) => {

@@ -164,27 +164,31 @@ export const MenuCard: React.FC<MenuCardProps> = React.memo(({
       />
       <div className="blur-layer" />
 
-      {/* Pin Badge jika disematkan ke paling atas */}
+      {/* Pin Badge jika disematkan ke paling atas (Seimbang dan proporsional dengan price-tag di sampingnya) */}
       {isPinned && (
         <span
           className="g-liquid"
           style={{
             position: 'absolute',
-            top: '8px',
-            left: '8px',
-            width: '24px',
-            height: '24px',
+            top: '10px',
+            left: '10px',
+            height: '28px',
+            padding: '4px 10px',
             borderRadius: 'var(--r-pill)',
-            display: 'grid',
-            placeItems: 'center',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
             zIndex: 4,
-            background: 'var(--accent)',
+            background: 'color-mix(in srgb, var(--accent) 85%, transparent)',
             color: '#ffffff',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.35)',
+            boxSizing: 'border-box',
+            border: '1px solid rgba(255, 255, 255, 0.40)',
           }}
           title="Menu disematkan di paling atas"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 3a1 1 0 0 1 .117 1.993L16 5v4.586l1.707 1.707A1 1 0 0 1 17.79 12.7l-.083.093H13v7a1 1 0 0 1-1.993.117L11 20v-7.207H6.293a1 1 0 0 1-.787-1.614l.08-.086L7.293 9.586V5a1 1 0 0 1-.117-1.993L7 3h9z" />
           </svg>
         </span>

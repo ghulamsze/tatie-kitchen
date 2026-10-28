@@ -158,16 +158,28 @@ export function getItemCategory(
   return 'makanan';
 }
 
+const CANONICAL_CATEGORY_ORDER: CanonicalMenuCategory[] = [
+  'camilan',
+  'makanan',
+  'minuman',
+  'roti_kue',
+  'tunagizi',
+];
+
 /**
  * Pengurutan menu cerdas:
  * 1. Pinned Item (disematkan) selalu di urutan paling atas.
- * 2. Terlaris jika pemesanan sering (>= 5 terjual).
- * 3. Default: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah.
+ * 2. Jika di tab "Semua", urutkan per kelompok kategori alfabetis:
+ *    Camilan (A-Z) -> Makanan (A-Z) -> Minuman (A-Z) -> Roti & Kue (A-Z) -> Tunagizi (A-Z).
+ * 3. Di dalam kategori yang sama: terlaris jika pemesanan sering (>= 5 terjual).
+ * 4. Default dalam kategori: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah.
  */
 export function sortMenuItems(
   items: MenuItem[],
   pinnedIds: string[] = [],
-  soldCounts: Map<string, number> = new Map()
+  soldCounts: Map<string, number> = new Map(),
+  groups: MenuGroup[] = [],
+  isAllCategory: boolean = false
 ): MenuItem[] {
   const pinnedSet = new Set(pinnedIds.map((id) => id.toLowerCase().trim()));
   const FREQUENT_THRESHOLD = 5;
@@ -188,7 +200,18 @@ export function sortMenuItems(
       return (a.name || '').localeCompare(b.name || '', 'id');
     }
 
-    // 2. Terlaris jika pemesanan sering (>= 5 kali terjual)
+    // 2. Jika di tab "Semua", kelompokkan berdasarkan urutan kategori kanonikal terlebih dahulu
+    if (isAllCategory) {
+      const catA = getItemCategory(a, groups);
+      const catB = getItemCategory(b, groups);
+      const idxA = CANONICAL_CATEGORY_ORDER.indexOf(catA);
+      const idxB = CANONICAL_CATEGORY_ORDER.indexOf(catB);
+      if (idxA !== idxB) {
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+      }
+    }
+
+    // 3. Di dalam kategori yang sama: terlaris jika pemesanan sering (>= 5 kali terjual)
     const aQty = Math.max(soldCounts.get(aId) || 0, soldCounts.get(aName) || 0);
     const bQty = Math.max(soldCounts.get(bId) || 0, soldCounts.get(bName) || 0);
 
@@ -201,7 +224,7 @@ export function sortMenuItems(
       if (bQty !== aQty) return bQty - aQty;
     }
 
-    // 3. Default: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah
+    // 4. Default: Alfabetis A-Z dari kiri atas berlanjut ke kanan bawah
     return (a.name || '').localeCompare(b.name || '', 'id');
   });
 }
@@ -1605,78 +1628,23 @@ async function resolveAvailableGroupId(
   const targetCategory = ['makanan', 'mie', 'minuman', 'snack'].includes(rawCat) ? rawCat : 'makanan';
   const defaultFallback = fallbackMap[targetCategory] || fallbackMap.makanan;
 
+  // 1. Jika requestedGroupId sudah merupakan UUID valid, gunakan langsung
+  if (requestedGroupId && isUuid(requestedGroupId)) {
+    return requestedGroupId;
+  }
+
   try {
-    // 1. Ambil hitungan item aktif per kelompok saat ini dari Supabase
-    const { data: activeItems } = await (supabase.from('menu_items') as any)
-      .select('group_id')
-      .eq('active', true);
+    // 2. Ambil grup yang sesuai kategorinya dari database
+    const { data: matchedGroups } = await (supabase.from('menu_groups') as any)
+      .select('id')
+      .eq('category', targetCategory)
+      .limit(1);
 
-    const counts: Record<string, number> = {};
-    if (Array.isArray(activeItems)) {
-      activeItems.forEach((it: any) => {
-        if (it?.group_id) {
-          counts[it.group_id] = (counts[it.group_id] || 0) + 1;
-        }
-      });
+    if (matchedGroups && matchedGroups[0]?.id && isUuid(matchedGroups[0].id)) {
+      return matchedGroups[0].id;
     }
 
-    // 2. Jika requestedGroupId adalah UUID valid dan kapasitasnya masih < 7, gunakan langsung
-    if (requestedGroupId && isUuid(requestedGroupId)) {
-      if ((counts[requestedGroupId] || 0) < 7) {
-        return requestedGroupId;
-      }
-    }
-
-    // 3. Ambil daftar semua kelompok menu dari Supabase
-    const { data: allGroups } = await (supabase.from('menu_groups') as any)
-      .select('id, category')
-      .order('sort', { ascending: true });
-
-    if (Array.isArray(allGroups) && allGroups.length > 0) {
-      // Cari kelompok yang kategorinya sama dan memiliki item < 7
-      const sameCategoryGroups = allGroups.filter(
-        (g: any) => (g.category || '').toLowerCase() === targetCategory
-      );
-      const availableSameCat = sameCategoryGroups.find((g: any) => (counts[g.id] || 0) < 7);
-      if (availableSameCat?.id) {
-        return availableSameCat.id;
-      }
-
-      // Periksa apakah kelompok umum (00000000-0000-0000-0000-000000000010..13) masih ada slot < 7
-      if ((counts[defaultFallback] || 0) < 7) {
-        return defaultFallback;
-      }
-
-      // Jika kategori tersebut penuh, cari kelompok apa pun yang masih memiliki slot < 7
-      const anyAvailable = allGroups.find((g: any) => (counts[g.id] || 0) < 7);
-      if (anyAvailable?.id) {
-        return anyAvailable.id;
-      }
-
-      // Jika seluruh kelompok sudah terisi 7 item, buat kelompok baru secara otomatis agar aman dari trigger
-      try {
-        const freshGrpId = generateUuid();
-        const grpTitle = `${targetCategory.charAt(0).toUpperCase() + targetCategory.slice(1)} ${sameCategoryGroups.length + 1}`;
-        const { data: newGrp } = await (supabase.from('menu_groups') as any)
-          .insert({
-            id: freshGrpId,
-            shop_id: TATIE_SHOP_ID,
-            category: targetCategory,
-            name: grpTitle,
-            icon_key: targetCategory,
-            sort: 50 + (allGroups?.length || 0),
-          })
-          .select('id')
-          .single();
-        if (newGrp?.id) {
-          return newGrp.id;
-        }
-      } catch (createErr) {
-        logWarning('menuStore:resolveAvailableGroupId:createGrp', String(createErr));
-      }
-    }
-
-    return null;
+    return defaultFallback;
   } catch {
     return defaultFallback;
   }
@@ -1828,7 +1796,23 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       active: true,
       created_at: new Date().toISOString(),
       hue: getStableHue(newItem.name),
+      variants: newItem.variants,
     };
+
+    if (newItem.variants && newItem.variants.length > 0) {
+      try {
+        const raw = localStorage.getItem('tk_custom_menu_items');
+        const map = raw ? JSON.parse(raw) : {};
+        map[newId] = {
+          name: created.name,
+          price_idr: created.price_idr,
+          variants: newItem.variants,
+          photo_path: created.photo_path,
+        };
+        localStorage.setItem('tk_custom_menu_items', JSON.stringify(map));
+      } catch {}
+    }
+
     set((state) => {
       const newItems = [created, ...state.items];
       try {
@@ -1864,7 +1848,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         if (isUuid(created.id)) {
           payload.id = created.id;
         }
-        if (isUuid(safeGroupId)) {
+        if (safeGroupId && isUuid(safeGroupId)) {
           payload.group_id = safeGroupId;
         }
 
@@ -1872,37 +1856,17 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           .insert(payload)
           .select();
 
-        // Jika kena trigger batas 7 item atau error constraint group_id, coba buat kelompok baru
-        if (insErr) {
-          logWarning('menuStore:addMenuItem:retryWithNewGroup', insErr.message || String(insErr));
-          try {
-            const freshGid = generateUuid();
-            await (supabase.from('menu_groups') as any).insert({
-              id: freshGid,
-              shop_id: TATIE_SHOP_ID,
-              category: 'makanan',
-              name: 'Menu Tambahan',
-              icon_key: 'makanan',
-              sort: 99,
-            });
-            const resRetry = await (supabase.from('menu_items') as any)
-              .insert({ ...payload, group_id: freshGid })
-              .select();
-            if (!resRetry.error && resRetry.data && resRetry.data.length > 0) {
-              insData = resRetry.data;
-              insErr = null;
-            }
-          } catch {}
-
-          if (insErr && payload.group_id) {
-            const retryPayload = { ...payload, group_id: null };
-            const resNull = await (supabase.from('menu_items') as any)
-              .insert(retryPayload)
-              .select();
-            if (!resNull.error && resNull.data && resNull.data.length > 0) {
-              insData = resNull.data;
-              insErr = null;
-            }
+        // Fallback jika group_id bermasalah: insert tanpa group_id
+        if (insErr && payload.group_id) {
+          logWarning('menuStore:addMenuItem:retryNullGroup', insErr.message || String(insErr));
+          const retryPayload = { ...payload };
+          delete retryPayload.group_id;
+          const resNull = await (supabase.from('menu_items') as any)
+            .insert(retryPayload)
+            .select();
+          if (!resNull.error && resNull.data && resNull.data.length > 0) {
+            insData = resNull.data;
+            insErr = null;
           }
         }
 
@@ -1913,6 +1877,16 @@ export const useMenuStore = create<MenuState>((set, get) => ({
             created.id = remoteId;
           }
           created.group_id = assignedGroupId;
+
+          if (newItem.variants && newItem.variants.length > 0 && remoteId !== newId) {
+            try {
+              const raw = localStorage.getItem('tk_custom_menu_items');
+              const map = raw ? JSON.parse(raw) : {};
+              map[remoteId] = { ...map[newId] };
+              localStorage.setItem('tk_custom_menu_items', JSON.stringify(map));
+            } catch {}
+          }
+
           set((state) => {
             const updated = state.items.map((it) => (it.id === newId ? { ...it, id: created.id, group_id: assignedGroupId } : it));
             try {
@@ -1959,7 +1933,6 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       }
       return {
         items: updatedItems,
-        heldItem: null,
       };
     });
 

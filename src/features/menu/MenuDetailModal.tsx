@@ -4,6 +4,8 @@ import { MenuItem, MenuVariant } from '../../lib/supabase/types.ts';
 import { useMenuStore, getItemCategory, CanonicalMenuCategory } from '../../stores/menuStore.ts';
 import { triggerHapticFeedback, triggerHapticDelete } from '../../lib/device/haptics.ts';
 import { registerBackHandler } from '../../lib/device/backButton.ts';
+import { PhotoActionsDialog } from '../../design/components/PhotoActionsDialog.tsx';
+import { CropProfileDialog } from '../../features/akun/CropProfileDialog.tsx';
 
 function formatThousands(value: number | string): string {
   const digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
@@ -54,6 +56,12 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
+  // Alur Foto Makanan Konsisten (Sama dengan Profil & Tambah Menu: Actions -> Crop 1:1 -> Preview)
+  const [isPhotoActionsOpen, setIsPhotoActionsOpen] = useState(false);
+  const [isPreviewPhotoOpen, setIsPreviewPhotoOpen] = useState(false);
+  const [isCropPhotoOpen, setIsCropPhotoOpen] = useState(false);
+  const [cropPhotoImageSrc, setCropPhotoImageSrc] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +78,10 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       setIsAdvancedOpen(false);
       setIsCategoryDropdownOpen(false);
       setIsConfirmDeleteOpen(false);
+      setIsPhotoActionsOpen(false);
+      setIsPreviewPhotoOpen(false);
+      setIsCropPhotoOpen(false);
+      setCropPhotoImageSrc(null);
     }
   }, [isOpen, item, groups]);
 
@@ -112,6 +124,19 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
   useEffect(() => {
     if (!isOpen) return undefined;
     return registerBackHandler(() => {
+      if (isCropPhotoOpen) {
+        setIsCropPhotoOpen(false);
+        setCropPhotoImageSrc(null);
+        return true;
+      }
+      if (isPreviewPhotoOpen) {
+        setIsPreviewPhotoOpen(false);
+        return true;
+      }
+      if (isPhotoActionsOpen) {
+        setIsPhotoActionsOpen(false);
+        return true;
+      }
       if (isConfirmDeleteOpen) {
         setIsConfirmDeleteOpen(false);
         return true;
@@ -123,7 +148,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       handleClose();
       return true;
     }, 80);
-  }, [isOpen, isConfirmDeleteOpen, isCategoryDropdownOpen, handleClose]);
+  }, [isOpen, isCropPhotoOpen, isPreviewPhotoOpen, isPhotoActionsOpen, isConfirmDeleteOpen, isCategoryDropdownOpen, handleClose]);
 
   // Toggle ketersediaan menu (auto-save langsung)
   const handleToggleAvailability = () => {
@@ -184,10 +209,23 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
     onClose();
   };
 
-  // Upload foto makanan (khusus HP/iOS)
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Alur Foto Makanan Konsisten (Sesuai Profile Pict)
+  const handlePhotoBoxClick = () => {
+    if (isCashierTablet) return;
+    setIsPhotoActionsOpen(true);
+  };
+
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropPhotoImageSrc(url);
+    setIsCropPhotoOpen(true);
+    setIsPhotoActionsOpen(false);
+    e.target.value = '';
+  };
+
+  const handlePhotoCropComplete = (croppedBlob: Blob) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
@@ -195,8 +233,22 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         triggerHapticFeedback([20]);
       }
     };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    reader.readAsDataURL(croppedBlob);
+    setIsCropPhotoOpen(false);
+    setCropPhotoImageSrc(null);
+  };
+
+  // Sematkan menu (Pin) - Tampilkan notif toast & otomatis keluar dari dialog
+  const handleTogglePin = () => {
+    if (!item) return;
+    triggerHapticFeedback([25]);
+    const wasPinned = isItemPinned(item.id, item.name);
+    togglePinItem(item.id);
+    const msg = wasPinned
+      ? `Sematan menu ${item.name} dilepas`
+      : `Menu ${item.name} berhasil disematkan ke atas`;
+    useMenuStore.getState().setToastMessage(msg);
+    onClose();
   };
 
   // Tambah varian baru (khusus HP/iOS)
@@ -238,6 +290,10 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
@@ -245,13 +301,14 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         padding: '0 0 calc(16px + env(safe-area-inset-bottom, 0px)) 0',
         boxSizing: 'border-box',
         overflow: 'hidden',
+        pointerEvents: 'auto',
       }}
     >
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onChange={handlePhotoUpload}
+        onChange={handlePhotoFileChange}
         style={{ display: 'none' }}
         aria-hidden="true"
       />
@@ -262,7 +319,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         style={{
-          width: 'min(440px, calc(100% - 24px))',
+          width: 'calc(100% - 24px)',
           maxWidth: '440px',
           maxHeight: 'min(90dvh, 620px)',
           overflowY: 'auto',
@@ -290,12 +347,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
             {/* Tombol Sematkan Menu (Pin) */}
             <button
               type="button"
-              onClick={() => {
-                if (item) {
-                  triggerHapticFeedback([25]);
-                  togglePinItem(item.id);
-                }
-              }}
+              onClick={handleTogglePin}
               aria-label={isPinned ? 'Lepas sematan menu' : 'Sematkan menu ke atas'}
               title={isPinned ? 'Lepas sematan menu dari paling atas' : 'Sematkan menu ke paling atas'}
               style={{
@@ -418,14 +470,10 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
                 }}
               >
                 <div
-                  onClick={() => {
-                    if (!isCashierTablet) {
-                      fileInputRef.current?.click();
-                    }
-                  }}
+                  onClick={handlePhotoBoxClick}
                   role={isCashierTablet ? 'img' : 'button'}
                   aria-label="Foto makanan"
-                  title={isCashierTablet ? 'Foto makanan' : 'Klik untuk mengubah foto'}
+                  title={isCashierTablet ? 'Foto makanan' : 'Klik untuk opsi foto makanan'}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -482,7 +530,7 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      fileInputRef.current?.click();
+                      handlePhotoBoxClick();
                     }}
                     aria-label="Sunting foto makanan"
                     title="Sunting foto makanan"
@@ -1020,8 +1068,82 @@ export const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Dialog Pilihan Aksi Foto Makanan (Sesuai Profile Pict) */}
+      <PhotoActionsDialog
+        isOpen={isPhotoActionsOpen}
+        hasPhoto={Boolean(photoPath)}
+        onClose={() => setIsPhotoActionsOpen(false)}
+        onViewPhoto={() => {
+          setIsPhotoActionsOpen(false);
+          setIsPreviewPhotoOpen(true);
+        }}
+        onChangePhoto={() => {
+          setIsPhotoActionsOpen(false);
+          fileInputRef.current?.click();
+        }}
+        onDeletePhoto={() => {
+          setIsPhotoActionsOpen(false);
+          setPhotoPath(null);
+          triggerHapticDelete();
+        }}
+      />
+
+      {/* Dialog Crop 1:1 Foto Makanan */}
+      <CropProfileDialog
+        isOpen={isCropPhotoOpen && Boolean(cropPhotoImageSrc)}
+        imageSrc={cropPhotoImageSrc}
+        title="Sesuaikan Foto Menu"
+        onCropComplete={handlePhotoCropComplete}
+        onClose={() => {
+          setIsCropPhotoOpen(false);
+          setCropPhotoImageSrc(null);
+        }}
+      />
+
+      {/* Lightbox Preview Foto Makanan */}
+      {isPreviewPhotoOpen && photoPath && (
+        <div
+          className="tk-phone-overlay ov"
+          onClick={() => setIsPreviewPhotoOpen(false)}
+          style={{
+            zIndex: 1100,
+            display: 'grid',
+            placeItems: 'center',
+            padding: '24px',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: 'var(--r-xl)',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+            }}
+          >
+            <img
+              src={photoPath}
+              alt={name}
+              style={{
+                width: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  const portalTarget =
+    typeof document !== 'undefined'
+      ? document.getElementById('tk-portal-root') || document.body
+      : null;
+
+  return portalTarget ? createPortal(modalContent, portalTarget) : null;
 };

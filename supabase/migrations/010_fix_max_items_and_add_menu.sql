@@ -75,3 +75,4 @@ end;
 $$;
 
 grant execute on function public.add_menu_item(text, int, text, text, boolean, uuid) to anon, authenticated;
+

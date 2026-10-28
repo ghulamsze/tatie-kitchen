@@ -216,10 +216,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
     });
   }, [items, selectedCategory, searchQuery, groups]);
 
-  // Urutkan item: Disematkan (Pin) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
+  // Urutkan item: Disematkan (Pin) -> Kategori A-Z (pada tab Semua) -> Terlaris (>= 5 terjual) -> Alfabetis A-Z
   const sortedItems = useMemo(() => {
-    return sortMenuItems(filteredItems, pinnedIds, soldCounts);
-  }, [filteredItems, pinnedIds, soldCounts]);
+    const isAll = selectedCategory === 'Semua';
+    return sortMenuItems(filteredItems, pinnedIds, soldCounts, groups, isAll);
+  }, [filteredItems, pinnedIds, soldCounts, groups, selectedCategory]);
 
   const total = calculateTotal();
 
@@ -640,9 +641,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
         isCashierTablet={true}
       />
 
-      {/* Toast Notifikasi Feedback Status & Tombol Urungkan Kasir Tablet */}
+      {/* Toast Notifikasi Feedback Status & Tombol Urungkan Kasir Tablet (Z-Index di atas layer dialog) */}
       {undoCart ? (
-        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 120 }}>
+        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, pointerEvents: 'auto' }}>
           <Toast
             message="Pesanan dikosongkan"
             actionLabel="Urungkan"
@@ -655,7 +656,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = React.memo(({
           />
         </div>
       ) : toastMessage ? (
-        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 120 }}>
+        <div style={{ position: 'absolute', bottom: '88px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, pointerEvents: 'none' }}>
           <Toast message={toastMessage} />
         </div>
       ) : null}
