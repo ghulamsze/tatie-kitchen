@@ -17,6 +17,10 @@ export const AppShell: React.FC = () => {
     registerDevice(device);
     // Bersihkan selectedOrder dari riwayat saat berganti device agar tidak bocor antar tampilan
     useHistoryStore.getState().setSelectedOrder(null);
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.platform = device.platform;
+      document.documentElement.dataset.formFactor = device.formFactor;
+    }
   }, [device]);
 
   // Cek jika pengguna membuka rute galeri langsung

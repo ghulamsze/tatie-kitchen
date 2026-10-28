@@ -8,7 +8,18 @@ export interface PhoneDevFrameProps {
 
 export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState<number>(1);
+  const isIos = device.platform === 'ios';
+  const phoneWidth = isIos ? 393 : 390;
+  const phoneHeight = isIos ? 852 : 800;
+
+  const [scale, setScale] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    const availableWidth = window.innerWidth - 32;
+    const availableHeight = window.innerHeight - 48;
+    const sX = availableWidth / (device.platform === 'ios' ? 393 : 390);
+    const sY = availableHeight / (device.platform === 'ios' ? 852 : 800);
+    return Math.min(Math.max(Math.min(sX, sY), 0.25), 1);
+  });
   const [isWideScreen, setIsWideScreen] = useState<boolean>(() => {
     return typeof window !== 'undefined' ? window.innerWidth > 500 : true;
   });
@@ -19,10 +30,6 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
     isWideScreen &&
     (import.meta.env.DEV || import.meta.env.VITE_BETA_FRAME === '1');
 
-  const isIos = device.platform === 'ios';
-  const phoneWidth = isIos ? 393 : 390;
-  const phoneHeight = isIos ? 852 : 800;
-
   useEffect(() => {
     const handleResize = () => {
       const wide = window.innerWidth > 500;
@@ -30,11 +37,11 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
 
       if (wide) {
         const availableWidth = window.innerWidth - 32;
-        const availableHeight = window.innerHeight - 32;
+        const availableHeight = window.innerHeight - 48;
 
         const scaleX = availableWidth / phoneWidth;
         const scaleY = availableHeight / phoneHeight;
-        const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1);
+        const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.25), 1);
         setScale(newScale);
       }
     };
@@ -52,7 +59,9 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
     <div
       ref={containerRef}
       style={{
-        minHeight: '100vh',
+        width: '100vw',
+        height: '100dvh',
+        maxHeight: '100dvh',
         background: '#070a0e',
         display: 'flex',
         flexDirection: 'column',
@@ -69,6 +78,8 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
           width: `${phoneWidth * scale}px`,
           height: `${phoneHeight * scale}px`,
           position: 'relative',
+          margin: 'auto',
+          flexShrink: 0,
         }}
       >
         <div
@@ -93,11 +104,11 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
             <div
               style={{
                 position: 'absolute',
-                top: '10px',
+                top: '11px',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: '110px',
-                height: '30px',
+                width: '124px',
+                height: '35px',
                 borderRadius: '20px',
                 background: '#000000',
                 zIndex: 999,
@@ -134,7 +145,6 @@ export const PhoneDevFrame: React.FC<PhoneDevFrameProps> = ({ device, children }
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              paddingTop: isIos ? '54px' : 0,
               boxSizing: 'border-box',
             }}
           >

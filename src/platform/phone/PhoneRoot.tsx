@@ -59,6 +59,40 @@ export const PhoneRoot: React.FC = () => {
     };
   }, []);
 
+  // Cegah bouncing/rubber-banding dan scroll Y halaman website pada iPhone / iOS
+  useEffect(() => {
+    if (device.platform !== 'ios') return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      let el = e.target as HTMLElement | null;
+      let canScroll = false;
+
+      while (el && el !== document.body && el !== document.documentElement) {
+        const isScrollable =
+          el.classList.contains('tk-phone-scrollable') ||
+          el.classList.contains('tk-phone-scroll') ||
+          el.dataset.scrollable === 'true' ||
+          window.getComputedStyle(el).overflowY === 'auto' ||
+          window.getComputedStyle(el).overflowY === 'scroll';
+
+        if (isScrollable && el.scrollHeight > el.clientHeight) {
+          canScroll = true;
+          break;
+        }
+        el = el.parentElement;
+      }
+
+      if (!canScroll && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [device.platform]);
+
   const isModalOrOverlayActive = Boolean(
     selectedOrderId || isPrintMenuOpen || isAllHistoryOpen || isSalesReportOpen
   );
@@ -103,7 +137,7 @@ export const PhoneRoot: React.FC = () => {
   // 1. Layar Intro Tati’e Kitchen yang sama persis seperti di Tablet
   if (showIntro) {
     return (
-      <div className="tk-phone-root" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
+      <div className={`tk-phone-root ${device.platform === 'ios' ? 'is-ios' : ''}`} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: 'var(--scr-bg)' }}>
         <div
           className="tk-global-bg"
           aria-hidden="true"
@@ -127,7 +161,7 @@ export const PhoneRoot: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="tk-phone-root"
+      className={`tk-phone-root ${device.platform === 'ios' ? 'is-ios' : ''}`}
       style={{
         '--bg-t': bgT,
       } as React.CSSProperties}

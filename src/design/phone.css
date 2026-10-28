@@ -32,6 +32,12 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Untuk iOS (iPhone / iPad), berikan jarak aman (safe area) Dynamic Island & Notch 56px agar header tidak tertabrak/terpotong */
+[data-platform="ios"] .tk-phone-screen,
+.tk-phone-root.is-ios .tk-phone-screen {
+  padding-top: max(56px, calc(16px + env(safe-area-inset-top, 0px))) !important;
+}
+
 .tk-swipe-page .tk-phone-screen {
   background: transparent !important;
 }
